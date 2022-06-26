@@ -5,9 +5,12 @@ Threaded Loops Code Generation Infrastructure targeting Tensor Contraction Appli
 * Evangelos Georganas (Intel Corp.)
 * Dhiraj Kalamkar (Intel Corp.)
 
+
+## Compiler requirements
+* gcc  >=  6.1.0
+
 ## Build instructions
 ```
-source /swtools/gcc/latest/gcc_vars.sh 
 bash prepare_libxsmm.sh 
 make
 ```
