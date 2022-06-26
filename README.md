@@ -1,4 +1,4 @@
-# Threaded loops infrastructure with exemplary GEMM/MLP/CONV implementations
+# PARLOOPER : PARallel LOOP gEneratoR
 
 ## Contributors
 * Evangelos Georganas (Intel Corp.)
