@@ -1,4 +1,5 @@
 # PARLOOPER : PARallel LOOP gEneratoR
+Threaded Loops Code Generation Infrastructure targeting Tensor Contraction Applications such as GEMMs, Convolutions and Fused Deep Learning Primitives
 
 ## Contributors
 * Evangelos Georganas (Intel Corp.)
