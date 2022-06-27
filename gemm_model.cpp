@@ -78,6 +78,13 @@ int gemm_benchmark(int argc, char** argv) {
   long n_iters = 1;
   long i;
   // Setup model and trace
+  int use_model = 0;
+  const char* const env_use_model = getenv("USE_MODEL");
+  if (0 == env_use_model) {
+    use_model = 0;
+  } else {
+    use_model = atoi(env_use_model);
+  }
   ifreq = 1.0 / getFreq();
   std::vector<std::string> inp_trace[128];
   platform_spec_t my_platform;
@@ -275,6 +282,7 @@ int gemm_benchmark(int argc, char** argv) {
         [&]() {if (sizeof(DType) == 2) tilerelease_kernel(NULL);});
   }
 
+#if 0
   // Nuke buffers from cache in case we run 1 layer
   if (n_layers == 1) {
     gemm_loop(
@@ -299,6 +307,7 @@ int gemm_benchmark(int argc, char** argv) {
         [&]() {},
         [&]() {});
   }
+#endif
   
   // benchmark the GEMM
   auto t_start = getTime();
@@ -326,6 +335,15 @@ int gemm_benchmark(int argc, char** argv) {
   auto t_end = getTime();
  
   // Check correctness if requested
+  if (n_layers == 1) {
+    printf("##########################################\n");
+    printf("#  GEMM %d x %d x %d  (M x N x K)        \n", M, N, K);
+    printf("##########################################\n");
+  } else {
+    printf("##########################################\n");
+    printf("#  %d Layer MLP with sizes  %d x %d x %d  (M x N x K)  \n", n_layers, M, N, K);
+    printf("##########################################\n");
+  }
   if (check_correctness) {
     if (sizeof(DType) == 2) {
       matrix_copy_NCNC_to_NC_bf16( (libxsmm_bfloat16*)ACT[n_layers], (libxsmm_bfloat16*)naive_output_bf16, 1, N, M, bn, bm );
@@ -353,40 +371,46 @@ int gemm_benchmark(int argc, char** argv) {
 
   // Model GEMM
   auto t_trace_start = getTime();
-  set_tensor_metadata(bm, bn, bk, brcount, sizeof(DType), &tensor_metadata);
-  for (i = 0; i < n_layers; i++) {
-    gemm_loop(
-        [&](int* ind) {
-          int nc = ind[0], s1 = ind[1], nk = ind[2];
-          char record[256];
-          int my_thread_id = omp_get_thread_num();
-          sprintf(record, "WGT%d[%d][%d]", i, s1, nc);
-          std::string a_access(record);
-          inp_trace[my_thread_id].push_back(a_access);
-          sprintf(record, "ACT%d[%d][%d]", i,  nk, nc);
-          std::string b_access(record);
-          inp_trace[my_thread_id].push_back(b_access);
-          sprintf(record, "ACT%d[%d][%d]", i+1,  nk, s1);
-          std::string c_access(record);
-          inp_trace[my_thread_id].push_back(c_access);
-        },
-        [&]() {},
-        [&]() {});
+  double modeled_time = 0.0;
+  if (use_model > 0) {
+    set_tensor_metadata(bm, bn, bk, brcount, sizeof(DType), &tensor_metadata);
+    for (i = 0; i < n_layers; i++) {
+      gemm_loop(
+          [&](int* ind) {
+            int nc = ind[0], s1 = ind[1], nk = ind[2];
+            char record[256];
+            int my_thread_id = omp_get_thread_num();
+            sprintf(record, "WGT%d[%d][%d]", i, s1, nc);
+            std::string a_access(record);
+            inp_trace[my_thread_id].push_back(a_access);
+            sprintf(record, "ACT%d[%d][%d]", i,  nk, nc);
+            std::string b_access(record);
+            inp_trace[my_thread_id].push_back(b_access);
+            sprintf(record, "ACT%d[%d][%d]", i+1,  nk, s1);
+            std::string c_access(record);
+            inp_trace[my_thread_id].push_back(c_access);
+          },
+          [&]() {},
+          [&]() {});
+    }
   }
   auto t2 = getTime();
-  double modeled_time = tensor_contraction_cost_estimator(
-      PARALLEL_TRACES, inp_trace, tensor_metadata, my_platform);
+  if (use_model > 0) {
+    modeled_time = tensor_contraction_cost_estimator(
+        PARALLEL_TRACES, inp_trace, tensor_metadata, my_platform);
+  }
   auto t3 = getTime();
 
   // Print performance/model numbers
   double gflop = (2.0*(double)n_layers*(double)M*(double)N*(double)K) / (1000*1000*1000);
-  printf("Model time gemm is %.5g ms (%.5g GFLOPS)\n", modeled_time, gflop/(modeled_time/1000.0));
-  printf("Actual time is %.5g ms (%.5g GFLOPS)\n", 1000.0*(t_end-t_start)/(1.0*n_iters), gflop/((t_end-t_start)/(1.0*n_iters)));
-  printf("Tracing takes %.5g ms and modeling takes %.5g ms\n", 1000.0*(t2-t_trace_start), 1000.0*(t3-t2));
-  printf("Compilation time is %.5g s\n", t1-t0);
+  printf("Time is %.5g ms (%.5g GFLOPS)\n", 1000.0*(t_end-t_start)/(1.0*n_iters), gflop/((t_end-t_start)/(1.0*n_iters)));
+  if (use_model > 0) {
+    printf("Model time gemm is %.5g ms (%.5g GFLOPS)\n", modeled_time, gflop/(modeled_time/1000.0));
+    printf("Tracing takes %.5g ms and modeling takes %.5g ms\n", 1000.0*(t2-t_trace_start), 1000.0*(t3-t2));
+    printf("Compilation time is %.5g s\n", t1-t0);
+    printf("MODELED %.5g %s_%d_%d_%d_%d_%d_%d_bf%d_threads%d\n", gflop/(modeled_time/1000.0), loop_specs_str, M, N, K, bm, bn, bk, kbf, omp_get_max_threads());
+  }
   printf("MEASURE %.5g %s_%d_%d_%d_%d_%d_%d_bf%d_threads%d\n", gflop/((t_end-t_start)/(1.0*n_iters)), loop_specs_str, M, N, K, bm, bn, bk, kbf, omp_get_max_threads());
-  printf("MODELED %.5g %s_%d_%d_%d_%d_%d_%d_bf%d_threads%d\n", gflop/(modeled_time/1000.0), loop_specs_str, M, N, K, bm, bn, bk, kbf, omp_get_max_threads());
-
 
   // Free buffers
   libxsmm_free(naive_input);
