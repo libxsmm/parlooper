@@ -80,6 +80,7 @@ int conv_benchmark(int argc, char** argv) {
   long k_block = 1;
   long h_block = 1;
   long h_in_gemm = 1;
+  long pack_input = 0;
   // Setup model and trace
   ifreq = 1.0 / getFreq();
   std::vector<std::string> inp_trace[128];
@@ -110,8 +111,9 @@ int conv_benchmark(int argc, char** argv) {
       c_block  = atoi(argv[17]);
       k_block  = atoi(argv[18]);
       h_in_gemm  = atoi(argv[19]);
-      if (argc > 20) {
-        n_iters = atoi(argv[20]);
+      pack_input = atoi(argv[20]);    
+      if (argc > 21) {
+        n_iters = atoi(argv[21]);
       }
     }
   }
@@ -150,6 +152,7 @@ int conv_benchmark(int argc, char** argv) {
   float *naive_filter = (float*)libxsmm_aligned_malloc( C*K*R*S*sizeof(float), 2097152);
   float *naive_filter_kcrsck = (float*)libxsmm_aligned_malloc( C*K*R*S*sizeof(float), 2097152);
   DType *input_libxsmm  = (DType*)libxsmm_aligned_malloc( N*ifhp*ifwp*C*sizeof(DType), 2097152);
+  DType *packed_input_libxsmm  = (DType*)libxsmm_aligned_malloc( N*ofh*ofw*C*sizeof(DType), 2097152);
   DType *output_libxsmm = (DType*)libxsmm_aligned_malloc( N*ofhp*ofwp*K*sizeof(DType), 2097152);
   DType *filter_libxsmm = (DType*)libxsmm_aligned_malloc( C*K*R*S*sizeof(DType), 2097152);
   DType *output_libxsmm_off= (DType*)output_libxsmm + (size_t) (pad_h_out * ofwp * bk + pad_w_out * bk);
@@ -194,11 +197,16 @@ int conv_benchmark(int argc, char** argv) {
   libxsmm_xmmfunction brgemm_kernel;
   libxsmm_xmmfunction brgemm_kernel2;
   libxsmm_meltwfunction_unary zero_kernel;
+  libxsmm_meltwfunction_unary input_pack_kernel;
 
   long Cb_step = Cb/c_block;
   long avoid_rim_fmas = 0;
   if (ofh <= 7 && ofw <=7 && R == 3 && S == 3 && stride_w == 1 && stride_h == 1 && h_in_gemm == 1) {
     avoid_rim_fmas = 1;
+  }
+
+  if (R != 1 || S != 1) {
+    pack_input = 0;
   }
 
   if ((R == 1 && S == 1) ||
@@ -214,7 +222,15 @@ int conv_benchmark(int argc, char** argv) {
     zero_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);  
     tileconfig_kernel.gemm  = libxsmm_dispatch_gemm_v2( l_shape, l_tc_flags, l_prefetch_flags );
     tilerelease_kernel.gemm = libxsmm_dispatch_gemm_v2( l_shape, l_tr_flags, l_prefetch_flags );
-    brgemm_kernel.gemm      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
+    if (pack_input == 0) {
+      brgemm_kernel.gemm      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
+    } else {
+      auto l_pack_shape = libxsmm_create_meltw_unary_shape(bc, gemm_n, bc*stride_w, bc, dtype, dtype, dtype);
+      input_pack_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_IDENTITY, l_pack_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);  
+      l_shape = libxsmm_create_gemm_shape( gemm_m, gemm_n, gemm_k, bk, bc, bk, dtype, dtype, dtype, dtype );
+      l_brconfig = libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, R*S*bc*bk*sizeof(DType), bc*ofh*ofw*sizeof(DType), Cb_step );   
+      brgemm_kernel.gemm      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
+    }
     l_shape = libxsmm_create_gemm_shape( gemm_m, gemm_n-1, gemm_k, bk, bc*stride_w, bk, dtype, dtype, dtype, dtype );
     brgemm_kernel2.gemm      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
   } else {
@@ -315,8 +331,25 @@ int conv_benchmark(int argc, char** argv) {
           gemm_param.a.secondary = (void*)A_offsets;
           gemm_param.b.secondary = (void*)B_offsets;
           gemm_param.a.primary = LIBXSMM_ACCESS_RAW(6, sizeof(DType), filter_libxsmm, i_k, i_c, i_r, i_s, 0, 0, Cb, R, S, bc, bk);
-          gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);        
-          gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);      
+          if (pack_input ==  0) {    
+            gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
+          } else {
+            gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), packed_input_libxsmm, i_n, i_c, i_h, i_w, 0, Cb, ofh, ofw, bc);     
+          }
+          gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
+          
+          if (pack_input > 0 && i_r == 0 && i_s == 0 && i_k == 0 && i_c == 0) {
+            libxsmm_blasint _br, _h;
+            for (_br = 0; _br < Cb; _br++) {
+              for (_h = 0; _h < h_step; _h++) {
+                libxsmm_meltw_unary_param pack_param;
+                pack_param.in.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, _br, (i_h+_h) * stride_h, i_w * stride_w, 0, Cb, ifhp, ifwp, bc);
+                pack_param.out.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), packed_input_libxsmm, i_n, _br, i_h+_h, i_w, 0, Cb, ofh, ofw, bc);
+                input_pack_kernel( &pack_param );
+              }
+            }
+          } 
+
           if (i_c == 0 && i_r == 0 && i_s == 0) {
             libxsmm_meltw_unary_param zero_param;
             zero_param.out.primary = (void*)gemm_param.c.primary;
@@ -397,6 +430,7 @@ int conv_benchmark(int argc, char** argv) {
   libxsmm_free(naive_filter);
   libxsmm_free(naive_filter_kcrsck);
   libxsmm_free(input_libxsmm);
+  libxsmm_free(packed_input_libxsmm);
   libxsmm_free(output_libxsmm);
   libxsmm_free(filter_libxsmm);
   libxsmm_free(A_offsets);
