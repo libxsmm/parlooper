@@ -12,14 +12,13 @@ IFLAGS = -I./libxsmm/include -I./libxsmm/samples/deeplearning/libxsmm_dnn/includ
 LFLAGS = -L./libxsmm/lib/
 SRCFILES = common_loops.cpp par_loop_cost_estimator.cpp par_loop_generator.cpp jit_compile.cpp
 
-XFILES := $(OUTDIR)/conv_bwd $(OUTDIR)/conv_upd $(OUTDIR)/test $(OUTDIR)/loop_permute_generator $(OUTDIR)/conv_fwd
-#XFILES :=  $(OUTDIR)/conv_upd
+XFILES := $(OUTDIR)/conv_bwd $(OUTDIR)/conv_upd $(OUTDIR)/gemm $(OUTDIR)/loop_permute_generator $(OUTDIR)/conv_fwd
 
 .PHONY: all
 all: $(XFILES)
 
-$(OUTDIR)/test:
-	g++  gemm_model.cpp $(SRCFILES) $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -o test
+$(OUTDIR)/gemm:
+	g++  gemm_model_fwd.cpp $(SRCFILES) $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -o gemm
 
 $(OUTDIR)/conv_fwd:
 	g++ conv_model_fwd.cpp $(SRCFILES) $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -o conv_fwd
@@ -35,4 +34,4 @@ $(OUTDIR)/loop_permute_generator:
 
 .PHONY: clean
 clean:
-	rm -rf test loop_permute_generator conv_fwd conv_bwd conv_upd
+	rm -rf gemm loop_permute_generator conv_fwd conv_bwd conv_upd
