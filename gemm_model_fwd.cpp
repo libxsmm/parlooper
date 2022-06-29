@@ -6,65 +6,7 @@
 * Further information: https://github.com/libxsmm/libxsmm/                    *
 * SPDX-License-Identifier: BSD-3-Clause                                       *
 ******************************************************************************/
-#include <stdio.h>
-#include <array>
-#include <cassert>
-#include <fstream>
-#include <initializer_list>
-#include <iostream>
-#include <sstream>
-#include <string>
-#include <unordered_map>
-#include <functional>
-#include <omp.h>
-#include "jit_compile.h"
-#include "par_loop_cost_estimator.h"
-#include "par_loop_generator.h"
-#include "threaded_loops.h"
-#include <cstring>
-#include <unistd.h>
-#include <libxsmm.h>
-#include <dnn_common.h>
-
-double ifreq;
-
-static __inline__ unsigned long long rdtsc(void) {
-  unsigned hi, lo;
-  __asm__ __volatile__("rdtsc" : "=a"(lo), "=d"(hi));
-  return ((unsigned long long)lo) | (((unsigned long long)hi) << 32);
-}
-
-inline double getFreq() {
-  long long int s = rdtsc();
-  sleep(1);
-  long long int e = rdtsc();
-  return (e - s) * 1.0;
-}
-
-inline double getTime() {
-  return rdtsc() * ifreq;
-}
-
-void find_prime_factors(long num, std::vector<long>& res) {
-  long n = num;
-  if (n == 1) {
-    res.push_back(n);   
-  }
-  while (n % 2 == 0) {
-    res.push_back(2);
-    n = n/2;
-  }
-  for (int i = 3; i <= sqrt(n); i = i + 2) {
-    while (n % i == 0) {
-      res.push_back(i);
-      n = n/i;
-    }
-  }
-  if (n > 2) {
-    res.push_back(n);
-  }
-  return;
-}
+#include "common_utils.h"
 
 template<typename DType>
 int gemm_benchmark(int argc, char** argv) {
