@@ -259,6 +259,7 @@ int gemm_benchmark(int argc, char** argv) {
       gemm_loop(
         [&](int* ind) {
           int i_k = ind[0], i_m = ind[1], i_n = ind[2];
+          // Negative partial_filter_id means that there is no parallelization across N
           int partial_filter_id = gemm_loop.get_tid_in_parallel_dim('c', ind);
           libxsmm_gemm_param gemm_param;
           gemm_param.op.tertiary = (void*)&brcount;
@@ -355,6 +356,7 @@ int gemm_benchmark(int argc, char** argv) {
       gemm_loop(
         [&](int* ind) {
           int i_k = ind[0], i_m = ind[1], i_n = ind[2];
+          // Negative partial_filter_id means that there is no parallelization across N        
           int partial_filter_id = gemm_loop.get_tid_in_parallel_dim('c', ind);       
           libxsmm_gemm_param gemm_param;
           gemm_param.op.tertiary = (void*)&brcount;
@@ -503,7 +505,7 @@ int gemm_benchmark(int argc, char** argv) {
   // Print performance numbers
   double gflop = (2.0*(double)M*(double)N*(double)K) / (1000*1000*1000);
   printf("Time is %.5g ms (%.5g GFLOPS)\n", 1000.0*(t_end-t_start)/(1.0*n_iters), gflop/((t_end-t_start)/(1.0*n_iters)));
-  printf("MEASURE %.5g %s_%d_%d_%d_%d_%d_%d_bf%d_threads%d_private_act_trans%d\n", gflop/((t_end-t_start)/(1.0*n_iters)), loop_specs_str, M, N, K, bm, bn, bk, nbf, omp_get_max_threads(), private_trans); 
+  printf("MEASURE %.5g %s_%d_%d_%d_%d_%d_%d_bf%d_threads%d_private_act_trans%d_npartialFilters%d\n", gflop/((t_end-t_start)/(1.0*n_iters)), loop_specs_str, M, N, K, bm, bn, bk, nbf, omp_get_max_threads(), private_trans, n_partial_filters); 
   // Free buffers
   libxsmm_free(tr_input); 
   libxsmm_free(tr_input_prv);
