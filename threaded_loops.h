@@ -309,10 +309,13 @@ class ThreadedLoop {
       return idx[1 + 3*N];
     } else if (partype == THREADED_LOOP_PARALLEL_THREAD_COLS) {
       return idx[2 + 3*N]; 
-    }  else if (partype == THREADED_LOOP_PARALLEL_THREAD_LAYERS) {
+    } else if (partype == THREADED_LOOP_PARALLEL_THREAD_LAYERS) {
       return idx[3 + 3*N];
+    } else if (partype == THREADED_LOOP_PARALLEL_COLLAPSE) {
+      return idx[0 + 3*N];
+    } else {
+      return -1;
     }
-    return 0;
   }
 
   int get_tid(int *idx) {

@@ -65,6 +65,7 @@ typedef struct {
   int n_col_teams;
   int n_layer_teams;
   char par_options[512];
+  int logical_loop_partype[26];
 } loop_code;
 
 loop_param_t find_loop_param_at_pos(loop_param_t* i_loop_params, int pos) {
@@ -155,8 +156,7 @@ void emit_parallel_region(loop_code* i_code) {
     sprintf(tmp_buf, "if (tid < row_teams * col_teams) {\n");
     add_buf_to_code(i_code, tmp_buf);
     increase_nest_level(i_code);
-  }
-  if (i_code->use_3d_par > 0) {
+  } else if (i_code->use_3d_par > 0) {
     align_line(i_code);
     sprintf(tmp_buf, "int tid = omp_get_thread_num();\n");
     add_buf_to_code(i_code, tmp_buf);
@@ -182,6 +182,10 @@ void emit_parallel_region(loop_code* i_code) {
     sprintf(tmp_buf, "if (tid < layer_teams * row_teams * col_teams) {\n");
     add_buf_to_code(i_code, tmp_buf);
     increase_nest_level(i_code);
+  } else {
+    align_line(i_code);
+    sprintf(tmp_buf, "int tid = omp_get_thread_num();\n");
+    add_buf_to_code(i_code, tmp_buf);
   }
 
   return;
@@ -389,7 +393,7 @@ void emit_loop_body(loop_code* i_code, char* body_func_name) {
     sprintf(tmp_buf, "idx[%d] = tid;\n", 0 + 3*i_code->n_logical_loops);
     add_buf_to_code(i_code, tmp_buf);
     for (i = 0; i < i_code->n_logical_loops; i++) {
-      if (i_code->loop_params[i].is_par_across_row_teams > 0) {
+      if (i_code->logical_loop_partype[i] == 2) {
         align_line(i_code);
         sprintf(tmp_buf, "idx[%d] = 2;\n", i + i_code->n_logical_loops);
         add_buf_to_code(i_code, tmp_buf);
@@ -398,8 +402,8 @@ void emit_loop_body(loop_code* i_code, char* body_func_name) {
         add_buf_to_code(i_code, tmp_buf);
         align_line(i_code);
         sprintf(tmp_buf, "idx[%d] = row_id;\n", 1 + 3*i_code->n_logical_loops);
-        add_buf_to_code(i_code, tmp_buf);        
-      } else if (i_code->loop_params[i].is_par_across_col_teams > 0) {
+        add_buf_to_code(i_code, tmp_buf);
+      } else if (i_code->logical_loop_partype[i] == 3) {
         align_line(i_code);
         sprintf(tmp_buf, "idx[%d] = 3;\n", i + i_code->n_logical_loops);
         add_buf_to_code(i_code, tmp_buf);
@@ -409,7 +413,7 @@ void emit_loop_body(loop_code* i_code, char* body_func_name) {
         align_line(i_code);
         sprintf(tmp_buf, "idx[%d] = col_id;\n", 2 + 3*i_code->n_logical_loops);
         add_buf_to_code(i_code, tmp_buf);        
-      } else if (i_code->loop_params[i].is_par_across_layer_teams > 0) {
+      } else if (i_code->logical_loop_partype[i] == 4) {
         align_line(i_code);
         sprintf(tmp_buf, "idx[%d] = 4;\n", i + i_code->n_logical_loops);
         add_buf_to_code(i_code, tmp_buf);
@@ -426,8 +430,11 @@ void emit_loop_body(loop_code* i_code, char* body_func_name) {
       }
     }
   } else {
+    align_line(i_code);
+    sprintf(tmp_buf, "idx[%d] = tid;\n", 0 + 3*i_code->n_logical_loops);
+    add_buf_to_code(i_code, tmp_buf); 
     for (i = 0; i < i_code->n_logical_loops; i++) {
-      if (i_code->loop_params[i].is_parallelizable > 0) {
+      if (i_code->logical_loop_partype[i] == 1) {
         align_line(i_code);
         sprintf(tmp_buf, "idx[%d] = 1;\n", i + i_code->n_logical_loops);
         add_buf_to_code(i_code, tmp_buf);     
@@ -698,14 +705,17 @@ void extract_2d_par_info(
         loop_params[loop_id - 1].is_par_across_row_teams = 1;
         loop_params[loop_id - 1].is_par_across_col_teams = 0;
         loop_params[loop_id - 1].is_par_across_layer_teams = 0;
+        i_code->logical_loop_partype[tolower(in_desc[i-2])-'a'] = 2;
       } else if (cur == 'C' || cur == 'c') {
         loop_params[loop_id - 1].is_par_across_col_teams = 1;
         loop_params[loop_id - 1].is_par_across_row_teams = 0;
         loop_params[loop_id - 1].is_par_across_layer_teams = 0;
+        i_code->logical_loop_partype[tolower(in_desc[i-2])-'a'] = 3;  
       } else if (cur == 'L' || cur == 'l') {
         loop_params[loop_id - 1].is_par_across_layer_teams = 1;
         loop_params[loop_id - 1].is_par_across_col_teams = 0;
         loop_params[loop_id - 1].is_par_across_row_teams = 0;
+        i_code->logical_loop_partype[tolower(in_desc[i-2])-'a'] = 4;        
       }
       /* Consume :  */
       i += 2;
@@ -789,6 +799,7 @@ std::string loop_generator(const char* ____loop_nest_desc_extended) {
   l_code.use_2d_par = use_2d_par;
   l_code.use_3d_par = use_3d_par;
 
+  memset(l_code.logical_loop_partype, 0, 26 * sizeof(int));
   if (use_2d_par > 0 || use_3d_par > 0) {
     l_code.n_col_teams = 1;
     l_code.n_row_teams = 1;
@@ -869,6 +880,13 @@ std::string loop_generator(const char* ____loop_nest_desc_extended) {
     char end_var_name[512];
     char step_var_name[512];
     int loop_abs_index = tolower(loop_nest_desc[i]) - 'a';
+    
+    if ((is_parallelizable > 0) &&
+        (loop_params[i].is_par_across_col_teams == 0) &&
+        (loop_params[i].is_par_across_row_teams == 0) &&
+        (loop_params[i].is_par_across_layer_teams == 0)) {
+      l_code.logical_loop_partype[loop_abs_index] = 1;
+    }
 
     occurence_id = occurence_map[tolower(loop_nest_desc[i])];
     is_blocked_outer = (occurence_id == 0) ? 1 : 0;
