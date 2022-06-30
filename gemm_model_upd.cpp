@@ -113,15 +113,22 @@ int gemm_benchmark(int argc, char** argv) {
   auto zero_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);  
   auto tileconfig_kernel  = libxsmm_dispatch_gemm_v2( l_shape, l_tc_flags, l_prefetch_flags );
   auto tilerelease_kernel = libxsmm_dispatch_gemm_v2( l_shape, l_tr_flags, l_prefetch_flags );
-  if (brcount == Nb) l_flags |= LIBXSMM_GEMM_FLAG_BETA_0;
+  if (brcount == Nb) {
+    l_flags |= LIBXSMM_GEMM_FLAG_BETA_0;
+    if (sizeof(DType) == 2) {
+      l_flags |= LIBXSMM_GEMM_FLAG_VNNI_C;  
+    }
+  }
   auto brgemm_kernel      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
 
-  libxsmm_meltwfunction_unary inp_trans_kernel, out_trans_kernel;
+  libxsmm_meltwfunction_unary inp_trans_kernel, out_trans_kernel, wt_vnni_kernel;
   if (dtype == LIBXSMM_DATATYPE_BF16) {
     auto tr_unary_shape = libxsmm_create_meltw_unary_shape(bk, bn, bk, bn, dtype, dtype, dtype);
     inp_trans_kernel = libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_NORMT, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
     tr_unary_shape = libxsmm_create_meltw_unary_shape(bm, bn, bm, bm, dtype, dtype, dtype);
     out_trans_kernel = libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI2, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
+    tr_unary_shape = libxsmm_create_meltw_unary_shape(bm, bk, bm, bm, dtype, dtype, dtype);
+    wt_vnni_kernel = libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI2, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
   }
 
   // Compute reference if requested
@@ -279,6 +286,13 @@ int gemm_benchmark(int argc, char** argv) {
           }
 
           brgemm_kernel( &gemm_param );
+
+          if ((i_n + brcount >= Nb) && (brcount != Nb)) {
+            libxsmm_meltw_unary_param trans_param;
+            trans_param.in.primary  = LIBXSMM_ACCESS_RAW(4, sizeof(DType), filter, i_m, i_k, 0, 0, Kb, bk, bm);
+            trans_param.out.primary = LIBXSMM_ACCESS_RAW(4, sizeof(DType), filter, i_m, i_k, 0, 0, Kb, bk, bm);
+            wt_vnni_kernel(&trans_param);
+          }
         },
         [&]() {if (sizeof(DType) == 2) tileconfig_kernel(NULL);},
         [&]() {if (sizeof(DType) == 2) tilerelease_kernel(NULL);});
