@@ -105,7 +105,8 @@ int gemm_benchmark(int argc, char** argv) {
   auto l_tc_flags = (sizeof(DType) == 2) ? ( LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') ) : LIBXSMM_GEMM_FLAGS('N', 'N');
   auto l_tr_flags = (sizeof(DType) == 2) ? ( LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') ) : LIBXSMM_GEMM_FLAGS('N', 'N');
   auto dtype      = (sizeof(DType) == 2) ? LIBXSMM_DATATYPE_BF16 : LIBXSMM_DATATYPE_F32;
-  auto l_shape = libxsmm_create_gemm_shape( bm, bk, bn, bm, bk, bm, dtype, dtype, dtype, dtype );
+  auto l_shape = (sizeof(DType) == 2) ? libxsmm_create_gemm_shape( bm, bk, bn, bm, bn, bm, dtype, dtype, dtype, dtype ) 
+                                      : libxsmm_create_gemm_shape( bm, bk, bn, bm, bk, bm, dtype, dtype, dtype, dtype );
   auto l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
   auto l_brconfig = (sizeof(DType) == 2) ? libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, bm*bn*sizeof(DType), bk*bn*sizeof(DType), brcount )
                                          : libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, M*bn*sizeof(DType), K*bn*sizeof(DType), brcount );
@@ -121,7 +122,7 @@ int gemm_benchmark(int argc, char** argv) {
   }
   auto brgemm_kernel      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
 
-  libxsmm_meltwfunction_unary inp_trans_kernel, out_trans_kernel, wt_vnni_kernel;
+  libxsmm_meltwfunction_unary inp_trans_kernel, out_trans_kernel, wt_vnni_kernel, wt_copy_kernel;
   if (dtype == LIBXSMM_DATATYPE_BF16) {
     auto tr_unary_shape = libxsmm_create_meltw_unary_shape(bk, bn, bk, bn, dtype, dtype, dtype);
     inp_trans_kernel = libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_NORMT, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
@@ -129,6 +130,7 @@ int gemm_benchmark(int argc, char** argv) {
     out_trans_kernel = libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI2, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
     tr_unary_shape = libxsmm_create_meltw_unary_shape(bm, bk, bm, bm, dtype, dtype, dtype);
     wt_vnni_kernel = libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI2, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
+    wt_copy_kernel = libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_IDENTITY, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
   }
 
   // Compute reference if requested
@@ -288,8 +290,12 @@ int gemm_benchmark(int argc, char** argv) {
           brgemm_kernel( &gemm_param );
 
           if ((i_n + brcount >= Nb) && (brcount != Nb)) {
+            libxsmm_bfloat16 tmp[bk*bm];
             libxsmm_meltw_unary_param trans_param;
             trans_param.in.primary  = LIBXSMM_ACCESS_RAW(4, sizeof(DType), filter, i_m, i_k, 0, 0, Kb, bk, bm);
+            trans_param.out.primary = tmp;
+            wt_copy_kernel(&trans_param);
+            trans_param.in.primary = tmp;
             trans_param.out.primary = LIBXSMM_ACCESS_RAW(4, sizeof(DType), filter, i_m, i_k, 0, 0, Kb, bk, bm);
             wt_vnni_kernel(&trans_param);
           }
