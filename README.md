@@ -204,6 +204,24 @@ auto gemm_loop = ThreadedLoop<3>({
 and depending on the runtime parameter *loop_string* given to PARLOOPER, arbitrarily complex parallelized loop nests will be generated Just-In-Time.
 
 ### Expressing the desired computation
+Once the desired nested loop has been declared/specified, we get back an initialized *ThreadedLoop* object (i.e. the gemm_loop in the example above) which can be passed at runtime (up to) three parameters:
+1. A function pointer to a function with signature:
+```
+void loop_body_func(int *idx)
+```
+This function is called at the inner-most level of the generated loop-nest, and essentially it will perform the desired computation. The function *loop_body_func* gets as input an array of integers values which contains in the first N locations the values of the logical indices used in the nested loop in alphabetical order. In essense idx[0] corresponds to the value of the logical index *a* in the current nested-loop iteration, idx[1] corresponds to the value of the logical index *b* in the current nested-loop iteration etc. This idx array is automatically allocated and initialized by PARLOOPER. By leveraging these values of the logical indices the user now can express the desired computation as a function of these logical indices. For convenience, we use as loop_body_function a C++ lambda expression.
+
+2. (Optional)  A function pointer to a function with signature:
+```
+void init_func()
+```
+This function is called just before the generated loop-nest and can be used for "initialization code" purposes (e.g. code that would initialize some data structures etc). Again, for convenience we may use as init_func a C++ lambda expression.
+
+3. (Optional)  A function pointer to a function with signature:
+```
+void term_func()
+```
+This function is called just after the generated loop-nest and can be used for "termination code" purposes (e.g. code that would clean-up some data structures etc). Again, for convenience we may use as term_func a C++ lambda expression.
 
 ## Exemplary run of test matmul and convolutions
 ```
