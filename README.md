@@ -21,7 +21,7 @@ make
 ## How to use PARLOOPER
 The development of applications via PARLOOPER is comprised of two steps:
 1. Declaring the nested loops along with their specification
-2. Expresing the desired computation using the logical indices of the nested loops.
+2. Expressing the desired computation using the logical indices of the nested loops.
 
 We will illustrate these two steps with a simple Matrix Multiplication (GEMM) example, and our desired computation will be expressed by leveraging exclusively Tensor Processing Primitives (TPP).
 
@@ -45,7 +45,7 @@ The third loop which has the mnemonic *c*, corresponds to a loop with start 0, u
 The specific instantiation of these loops, i.e. the loop order with which they appear, the number of times each one is blocked and also the way they are parallelized are controlled by the string *loop_string* which is provided at run-time. More specifically, the *loop_string* can be constructed using the following rules:
 
 ### RULE 1 (Loops ordering and blockings)
-Each character (from *a* to *z* depending on the number of the logical loops - in our case since we have 3 logical loops the characters range from *a* to *c*) can appear in any order and any number of times. The order with which the loop characters appear in the string determine the nesting loop order, and the times each character appears determines how many times the corresponding logical loop is blocked. For example, a *loop_string* **bcabcb** corresponds to a loop where logical loop b is blocked twice (the character b appears 3 times), logical loop c is blocked once (the character c appears 2 times) and the logical loop a is not blocked (it appears only once). The blocking/tiling sizes for each logical loop level are extracted from the corresponding list of step/blocking parameters in order they appear in the list. For example, the aforementioned *loop_string* **bcabcb** correponds to the following loop nest:
+Each character (from *a* to *z* depending on the number of the logical loops - in our case since we have 3 logical loops the characters range from *a* to *c*) can appear in any order and any number of times. The order with which the loop characters appear in the string determine the nesting loop order, and the times each character appears determines how many times the corresponding logical loop is blocked. For example, a *loop_string* **bcabcb** corresponds to a loop where logical loop b is blocked twice (the character b appears 3 times), logical loop c is blocked once (the character c appears 2 times) and the logical loop a is not blocked (it appears only once). The blocking/tiling sizes for each logical loop level are extracted from the corresponding list of step/blocking parameters in order they appear in the list. For example, the aforementioned *loop_string* **bcabcb** corresponds to the following loop nest:
 
 ```
 for b0 = 0 to Mb with step l1_m_step
@@ -57,12 +57,12 @@ for b0 = 0 to Mb with step l1_m_step
              // Logical indices to use for the computation are a0, b2, c1
 ```
 
-Currently our Proof-Of-Concept (POC) implementation of PARLOOPER allows only perfectly nested blocking/tiling sizes, i.e. in the example above it should hold:
+Currently our Proof-Of-Concept (POC) implementation of PARLOOPER allows only perfectly nested blocking/tiling sizes, i.e., in the example above it should hold:
  - l1_m_step mod l0_m_step = 0
  - l0_m_step mod m_step = 0
  - l1_n_step mod n_step = 0
 
-An important thing to note here is that all these  blocking/tiling sizes lists may be provided at runtime (e.g. one could programatically determine the blocking sizes given the problem/input at hand) and do not have to be statically determined. 
+An important thing to note here is that all these blocking/tiling sizes lists may be provided at runtime (e.g., one could programmatically determine the blocking sizes given the problem/input at hand) and do not have to be statically determined. 
 
 ### RULE 2 (Parallelization)
 If a loop character in the *loop_string* appears in its upper-case form, it dictates the intention to parallelize this loop at the specific nest-level it appears. For example, following the previous example, if the *loop_string* was **bcaBcb**, it would correspond to the following loop nest:
@@ -130,7 +130,7 @@ In the user desires a barrier at the end of a specific loop-level, it may be req
 }
 ```
 2. **PAR-MODE 2: Using explicit multi-dimensional thread decompositions** Using this parallelization paradigm, the user can specify 1D, 2D or 3D loop parallelization schemes by parallelizing 1,2 or 3 loops respectively.
- * For the 1D decomposition, the threads are forming a logical "Rx1" 1D grid and are assigned the corresponding parallelized loop iterations in a block fashion. To apply this explicit decomposition, the user merely has to append after the desired upper-case loop character the substring "{R:#threads}", where #threads is a number dictating in how many ways to paralllelize that loop. For example, the *loop_string* **bC{R:16}abcb** would yield:
+ * For the 1D decomposition, the threads are forming a logical "Rx1" 1D grid and are assigned the corresponding parallelized loop iterations in a block fashion. To apply this explicit decomposition, the user merely has to append after the desired upper-case loop character the substring "{R:#threads}", where #threads is a number dictating in how many ways to parallelize that loop. For example, the *loop_string* **bC{R:16}abcb** would yield:
 ```
 #pragma omp parallel
 {
@@ -195,7 +195,7 @@ In the user desires a barrier at the end of a specific loop-level, it may be req
 }
 ```
 
-Now that we have described how to declare the desired nested loops along with their specification, we will show how to express the desired computation using the logical indices of the nested loops (i.e. the logical indices a0, b2, c1 in the example above). We want to emphasize that PARLOOPER will generate the desired loop nest Just-In-Time with zero lines of user-code change. The user code merely looks like
+Now that we have described how to declare the desired nested loops along with their specification, we will show how to express the desired computation using the logical indices of the nested loops (i.e., the logical indices a0, b2, c1 in the example above). We want to emphasize that PARLOOPER will generate the desired loop nest Just-In-Time with zero lines of user-code change. The user code merely looks like
 ```
 auto gemm_loop = ThreadedLoop<3>({
      LoopSpecs{0, Kb, k_step, {l1_k_step, l0_k_step}},   // a loop - Logical K loop specs
@@ -206,18 +206,18 @@ auto gemm_loop = ThreadedLoop<3>({
 and depending on the runtime parameter *loop_string* given to PARLOOPER, arbitrarily complex parallelized loop nests will be generated Just-In-Time.
 
 ### Expressing the desired computation
-Once the desired nested loop has been declared/specified, we get back an initialized *ThreadedLoop* object (i.e. the gemm_loop in the example above) which can be passed at runtime (up to) three parameters:
+Once the desired nested loop has been declared/specified, we get back an initialized *ThreadedLoop* object (i.e., the gemm_loop in the example above) which can be passed at runtime (up to) three parameters:
 1. A function pointer to a function with signature:
 ```
 void loop_body_func(int *ind)
 ```
-This function is called at the inner-most level of the generated loop-nest, and essentially it will perform the desired computation. The function *loop_body_func* gets as input an array of integer values which contains in the first N locations the values of the logical indices used in the nested loop in alphabetical order. In essense ind[0] corresponds to the value of the logical index *a* in the current nested-loop iteration, ind[1] corresponds to the value of the logical index *b* in the current nested-loop iteration etc. This index array is automatically allocated and initialized by PARLOOPER. By leveraging the values of the logical indices the user can express the desired computation as a function of these logical indices. For convenience, we use as loop_body_function a C++ lambda expression.
+This function is called at the inner-most level of the generated loop-nest, and essentially it will perform the desired computation. The function *loop_body_func* gets as input an array of integer values which contains in the first N locations the values of the logical indices used in the nested loop in alphabetical order. In essence ind[0] corresponds to the value of the logical index *a* in the current nested-loop iteration, ind[1] corresponds to the value of the logical index *b* in the current nested-loop iteration etc. This index array is automatically allocated and initialized by PARLOOPER. By leveraging the values of the logical indices, the user can express the desired computation as a function of these logical indices. For convenience, we use as loop_body_function a C++ lambda expression.
 
 2. (Optional)  A function pointer to a function with signature:
 ```
 void init_func()
 ```
-This function is called just before the generated loop-nest and can be used for "initialization code" purposes (e.g. code that would initialize some data structures etc). Again, for convenience we may use as init_func a C++ lambda expression.
+This function is called just before the generated loop-nest and can be used for "initialization code" purposes (e.g., code that would initialize some data structures etc.). Again, for convenience we may use as init_func a C++ lambda expression.
 
 3. (Optional)  A function pointer to a function with signature:
 ```
@@ -255,7 +255,7 @@ gemm_loop(
     brgemm_tpp(&A[i_m][i_k][0][0], &B[i_n][i_k][0][0], &C[i_n][i_m][0][0], &brcount);
   });
 ```
-Note that the user's code is extremely simple since it merely defines in a *declarative* way the computational loop-nest and the desired computation as a function of the 3 logical indices and TPP. At runtime, by providing proper *loop_string* parameter one could get complex parallel loop nest implementation which is JITed by PARLOOPER without any changes in the user code. For example the PARLOOPER-generated code with a *loop_string* **bcaBCb** would be equivalent to:
+Note that the user's code is extremely simple since it merely defines in a *declarative* way the computational loop-nest and the desired computation as a function of the 3 logical indices and TPP. At runtime, by providing proper *loop_string* parameter one could get complex parallel loop nest implementation which is JITed by PARLOOPER without any changes in the user code. For example, the PARLOOPER-generated code with a *loop_string* **bcaBCb** would be equivalent to:
 ```
 #pragma omp parallel
 {
@@ -318,11 +318,11 @@ The helper methods 1-4 enable the user to express *programmatically* in the *loo
 For all the developed sample codes, by exporting: ```export USE_BF16=1``` during runtime, the used precision will be bfloat16, otherwise it will be single precision (float).
 
 1. **gemm_model_fwd.cpp** : This is the full GEMM working example used in this README. It also supports chaining together multiple GEMMs to effectively implement a Multi-Layer Perceptron primitive (MLP) by setting n_layers > 1 in the argument list.
-2. **gemm_model_bwd.cpp** : This is the backward-by-data pass in packpropagation of a Fully-Connected layer primitive. It supports "privately" tranposing matrix A by setting private_wt_trans = 1 in the argument list. Otherwise the matrix A is transposed upfront.
-3. **gemm_model_upd.cpp** : This is the backward-by-weights pass in packpropagation of a Fully-Connected layer primitive. For bfloat16 precision it supports "privately" tranposing matrices A (vnni-formating) and B (normal transpose) by setting private_trans = 1 in the argument list, otherwise the matrices A and B are transposed upfront. This primitve also allows parallelization across the "inner-product"/contraction dimension N by setting n_partial_filters to non-zero value in the argument list (i.e. the code extracts also parallelization across the N dimension, and at the end a reduction across all partial filters is performed to calculate the final result). More specifically, if the *loop_string* has "collapse" type parallelization, then n_partial_filters should be equal to the number of threads. If the *loop_string* has "explicit" thread decomposition (PAR-MODE 2) accross the N dimension in X-ways, then n_partial_filters should have the value X.
+2. **gemm_model_bwd.cpp** : This is the backward-by-data pass in backpropagation of a Fully-Connected layer primitive. It supports "privately" transposing matrix A by setting private_wt_trans = 1 in the argument list. Otherwise the matrix A is transposed upfront.
+3. **gemm_model_upd.cpp** : This is the backward-by-weights pass in backpropagation of a Fully-Connected layer primitive. For bfloat16 precision it supports "privately" transposing matrices A (vnni-formating) and B (normal transpose) by setting private_trans = 1 in the argument list, otherwise the matrices A and B are transposed upfront. This primitive also allows parallelization across the "inner-product"/contraction dimension N by setting n_partial_filters to non-zero value in the argument list (i.e. the code extracts also parallelization across the N dimension, and at the end a reduction across all partial filters is performed to calculate the final result). More specifically, if the *loop_string* has "collapse" type parallelization, then n_partial_filters should be equal to the number of threads. If the *loop_string* has "explicit" thread decomposition (PAR-MODE 2) across the N dimension in X-ways, then n_partial_filters should have the value X.
 4. **conv_model_fwd.cpp** Forward pass of a convolution layer.
-5. **conv_model_bwd.cpp** Backward-by-data pass in packpropagation of a convolution layer.
-6. **conv_model_upd.cpp** Backward-by-weights pass in packpropagation of a convolution layer.
+5. **conv_model_bwd.cpp** Backward-by-data pass in backpropagation of a convolution layer.
+6. **conv_model_upd.cpp** Backward-by-weights pass in backpropagation of a convolution layer.
 
 ## Auto-tuning codes using the PARLOOPER infrastructure
 The general methodology of auto-tuning codes using the PARLOOPER infrastructure is to (auto)-generate valid *loop_string* permutations and effectively explore different parallelization strategies, loop orders, and loop blockings to find the ones that maximize performance for the platform and problem at hand. To this extent we have created some auxiliary/helper codes:
