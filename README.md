@@ -23,10 +23,10 @@ The development of applications via PARLOOPER is comprised of two steps:
 1. Declaring the nested loops along with their specification
 2. Expresing the desired computation using the logical indices of the nested loops.
 
-We will illustrate these two steps with a simple Matrix Multiplication (GEMM) example, and out desired computation will be expressed be leveraging exclusively Tensor Processing Primitives (TPP).
+We will illustrate these two steps with a simple Matrix Multiplication (GEMM) example, and our desired computation will be expressed by leveraging exclusively Tensor Processing Primitives (TPP).
 
 ### Declaring the logical loops
-The Matrix Multiplication algorithm is comprised of three logical nested loops which can be declared as follows:
+The Matrix Multiplication algorithm multiples a Matrix A with a matrix B and gets as result an output matrix C. Matrix A is an MxK matrix (M rows and K columns), matrix B is an KxN matrix (K rows and N columns), whereas the output matrix C is an MxN matrix (M rows and N columns). The Matrix Multiplication algorithm is comprised of three logical nested loops which can be declared as follows:
 ```
 auto gemm_loop = ThreadedLoop<3>({
      LoopSpecs{0, Kb, k_step, {l1_k_step, l0_k_step}},   // a loop - Logical K loop specs
@@ -36,13 +36,13 @@ auto gemm_loop = ThreadedLoop<3>({
 ```
 Since our computation involves three logical loops we use in the declaration ```ThreadedLoop<3>```.
 
-The first loop which has the mnemonic *a*, corresponds to a loop with start 0, upper bound Kb and step k_step, and for our use-csae corresponds to the "K" loop of the GEMM. This loop has an _optional_ list of step/blocking parameters {l1_k_step, l0_k_step}.
+The first loop which has the mnemonic *a*, corresponds to a loop with start 0, upper bound Kb and step k_step, and in our use-case corresponds to the "K" loop of the GEMM (K is the inner-product/contraction dimension). This loop has an _optional_ list of step/blocking parameters {l1_k_step, l0_k_step}.
 
-The second loop which has the mnemonic *b*, corresponds to a loop with start 0, upper bound Mb and step m_step, and for our use-csae corresponds to the "M" loop of the GEMM. This loop has an _optional_ list of step/blocking parameters {l1_m_step, l0_m_step}.
+The second loop which has the mnemonic *b*, corresponds to a loop with start 0, upper bound Mb and step m_step, and in our use-case corresponds to the "M" loop of the GEMM (number of rows of the output tensor in column-major format). This loop has an _optional_ list of step/blocking parameters {l1_m_step, l0_m_step}.
 
-The thord loop which has the mnemonic *c*, corresponds to a loop with start 0, upper bound Nb and step N_step, and for our use-csae corresponds to the "N" loop of the GEMM. This loop has an _optional_ list of step/blocking parameters {l1_n_step, l0_n_step}.
+The third loop which has the mnemonic *c*, corresponds to a loop with start 0, upper bound Nb and step n_step, and in our use-case corresponds to the "N" loop of the GEMM (number of columns of the output tensor in column-major format). This loop has an _optional_ list of step/blocking parameters {l1_n_step, l0_n_step}.
 
-The specific instantion of these loops, i.e. the loop order with which they appear, the number of times each one is blocked and also the way they are parallelized are controlled by the string *loop_string* provided at run-time. More specifically, the *loop_string* can be constructed using the following rules:
+The specific instantiation of these loops, i.e. the loop order with which they appear, the number of times each one is blocked and also the way they are parallelized are controlled by the string *loop_string* provided at run-time. More specifically, the *loop_string* can be constructed using the following rules:
 
 ### RULE 1 (Loops ordering and blockings)
 Each character (from *a* to *z* depending on the number of the logical loops - in our case since we have 3 logical loops the characters range from *a* to *c*) can appear in any order and any number of times. The order with which the loop characters appear in the string determine the nesting loop order, and the times each character appears determines how many times the corresponding logical loop is blocked. For example, a *loop_string* **bcabcb** corresponds to a loop where logical loop b is blocked twice (the character b appears 3 times), logical loop c is blocked once (the character c appears 2 times) and the logical loop a is not blocked (it appears only once). The blocking/tiling sizes for each logical loop level are extracted from the corresponding list of step/blocking parameters in order they appear in the list. For example, the aforementioned *loop_string* **bcabcb** correponds to the following loop nest:
