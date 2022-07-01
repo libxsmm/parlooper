@@ -207,9 +207,9 @@ and depending on the runtime parameter *loop_string* given to PARLOOPER, arbitra
 Once the desired nested loop has been declared/specified, we get back an initialized *ThreadedLoop* object (i.e. the gemm_loop in the example above) which can be passed at runtime (up to) three parameters:
 1. A function pointer to a function with signature:
 ```
-void loop_body_func(int *idx)
+void loop_body_func(int *ind)
 ```
-This function is called at the inner-most level of the generated loop-nest, and essentially it will perform the desired computation. The function *loop_body_func* gets as input an array of integers values which contains in the first N locations the values of the logical indices used in the nested loop in alphabetical order. In essense idx[0] corresponds to the value of the logical index *a* in the current nested-loop iteration, idx[1] corresponds to the value of the logical index *b* in the current nested-loop iteration etc. This idx array is automatically allocated and initialized by PARLOOPER. By leveraging these values of the logical indices the user now can express the desired computation as a function of these logical indices. For convenience, we use as loop_body_function a C++ lambda expression.
+This function is called at the inner-most level of the generated loop-nest, and essentially it will perform the desired computation. The function *loop_body_func* gets as input an array of integers values which contains in the first N locations the values of the logical indices used in the nested loop in alphabetical order. In essense ind[0] corresponds to the value of the logical index *a* in the current nested-loop iteration, ind[1] corresponds to the value of the logical index *b* in the current nested-loop iteration etc. This index array is automatically allocated and initialized by PARLOOPER. By leveraging these values of the logical indices the user now can express the desired computation as a function of these logical indices. For convenience, we use as loop_body_function a C++ lambda expression.
 
 2. (Optional)  A function pointer to a function with signature:
 ```
@@ -222,6 +222,63 @@ This function is called just before the generated loop-nest and can be used for 
 void term_func()
 ```
 This function is called just after the generated loop-nest and can be used for "termination code" purposes (e.g. code that would clean-up some data structures etc). Again, for convenience we may use as term_func a C++ lambda expression.
+
+Considering the GEMM example above, and using lambda expression for *loop_body_func* we can express the desired GEMM computation using TPPs (zero_tpp and brgemm_tpp) and the logical indices as follows:
+```
+gemm_loop(
+  [&](int* ind) {
+    int i_k = ind[0], i_m = ind[1], i_n = ind[2];
+    unsigned long long brcount = k_step;    
+    if (i_k == 0) {
+      zero_tpp( &C[i_n][i_m][0][0]);
+    }
+    brgemm_tpp(&A[i_m][i_k][0][0], &B[i_n][i_k][0][0], &C[i_n][i_m][0][0], &brcount);
+  });
+```
+In this example we are using blocked tensor layouts for matrices A, B and C. Putting everything together, this is how the user's code will look like for the toy GEMM example:
+```
+auto gemm_loop = ThreadedLoop<3>({
+     LoopSpecs{0, Kb, k_step, {l1_k_step, l0_k_step}},   // a loop - Logical K loop specs
+     LoopSpecs{0, Mb, m_step, {l1_m_step, l0_m_step}},   // b loop - Logical M loop specs
+     LoopSpecs{0, Nb, n_step, {l1_n_step, l0_n_step}}},  // c loop - Logical N loop specs
+     loop_string);
+     
+gemm_loop(
+  [&](int* ind) {
+    int i_k = ind[0], i_m = ind[1], i_n = ind[2];
+    unsigned long long brcount = k_step;
+    if (i_k == 0) {
+      zero_tpp( &C[i_n][i_m][0][0]);
+    }
+    brgemm_tpp(&A[i_m][i_k][0][0], &B[i_n][i_k][0][0], &C[i_n][i_m][0][0], &brcount);
+  });
+```
+Note that the user's code is extremely simple since it merely defines in a *declarative* way the computational loop-nest and the desired computation as a function of the 3 logical indices and TPP. At runtime, by providing proper *loop_string* parameter one could get complex parallel loop nest implementation which is JITed by PARLOOPER without any changes in the user code. For example the PARLOOPER generated code with a *loop_string* **bcaBCb** would be equivalent to:
+```
+#pragma omp parallel
+{
+  for b0 = 0 to Mb with step l1_m_step {
+    for c0 = 0 to Nb with step l1_n_step { 
+      for a0 = 0 to Kb with step k_step {
+        #pragma omp for collapse(2) nowait {
+        for b1 = b0 to b0 + l1_m_step with step l0_m_step {
+          for c1 = c0 to c0 + l1_n_step with step n_step {
+            for b2 = b1 to b1 + l0_m_step with step m_step {
+              // Logical indices to use for the computation are a0, b2, c1
+              int i_k = a0, i_m = b2, i_n = c1;
+              unsigned long long brcount = k_step;
+              if (i_k == 0) {
+                zero_tpp( &C[i_n][i_m][0][0]);
+              }
+              brgemm_tpp(&A[i_m][i_k][0][0], &B[i_n][i_k][0][0], &C[i_n][i_m][0][0], &brcount);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
 
 ## Exemplary run of test matmul and convolutions
 ```
