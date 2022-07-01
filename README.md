@@ -18,6 +18,42 @@ PARLOOPER aims to further simplify the "outer loop" writing by enabling the user
 bash prepare_libxsmm.sh 
 make
 ```
+## How to use PARLOOPER
+The development of applications via PARLOOPER is comprised of two steps:
+1. Declaring the nested loops along with their specification
+2. Expresing the desired computation using the logical indices of the nested loops.
+
+We will illustrate these two steps with a simple Matrix Multiplication (GEMM) example, and out desired computation will be expressed be leveraging exclusively Tensor Processing Primitives (TPP).
+
+### Declaring the logical loops
+The Matrix Multiplication algorithm is comprised of three logical nested loops which can be declared as follows:
+```
+auto gemm_loop = ThreadedLoop<3>({
+     LoopSpecs{0, Kb, k_step, {l1_k_step, l0_k_step}},   // a loop - Logical K loop specs
+     LoopSpecs{0, Mb, m_step, {l1_m_step, l0_m_step}},   // b loop - Logical M loop specs
+     LoopSpecs{0, Nb, n_step, {l1_n_step, l0_n_step}}},  // c loop - Logical N loop specs
+     loop_string);
+```
+The first loop which has the mnemonic *a*, corresponds to a loop with start 0, upper bound Kb and step k_step, and for our use-csae corresponds to the "K" loop of the GEMM. This loop has an _optional_ list of step/blocking parameters {l1_k_step, l0_k_step}.
+
+The second loop which has the mnemonic *b*, corresponds to a loop with start 0, upper bound Mb and step m_step, and for our use-csae corresponds to the "M" loop of the GEMM. This loop has an _optional_ list of step/blocking parameters {l1_m_step, l0_m_step}.
+
+The thord loop which has the mnemonic *c*, corresponds to a loop with start 0, upper bound Nb and step N_step, and for our use-csae corresponds to the "N" loop of the GEMM. This loop has an _optional_ list of step/blocking parameters {l1_n_step, l0_n_step}.
+
+The specific instantion of these loops, i.e. the loop order with which they appear, the number of times each one is blocked and also the way they are parallelized are controlled by the string *loop_string* provided at run-time.
+
+The *loop_string* can be constroctued using the following rules:
+1. Each character (from *a* to *z* depending on the number of the logical loops - in our case since we have 3 logical loops the characters range from *a* to *c*) can appear in any order and any number of times. The order with which the loop characters appear determine the nesting loop order, and the times each character appears determines how many times the corresponding logical loop is blocked. For example, a *loop_string* **bcabcb** correspond to a loop where logical loop b is blocked twice (it appears 3 times), logical loop c is blocked once (it appears 2 times) and the logical loop a is not blocked (it appears only once). The blocking factors for each loop (if any are requested) are extracted from the corresponding list in order they appear in the list. For example, the aforementioned string correpond to the following pseudocode
+
+```
+for b0 = 0 to Mb with step l1_m_step
+  for c0 = 0 to Nb with step l1_n_step
+    for a0 = 0 to Kb with step k_step
+      for b1 = b0 to b0 + l1_m_step with step l0_m_step
+        for c1 = c0 to c0 + l1_n_step with step n_step
+          for b2 = b1 to b1 + l0_m_step with step m_step
+             // Logical indices to use for the computation are a0, b2, c1
+```
 
 ## Exemplary run of test matmul and forward convolution
 ```
