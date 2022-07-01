@@ -40,11 +40,9 @@ The second loop which has the mnemonic *b*, corresponds to a loop with start 0, 
 
 The thord loop which has the mnemonic *c*, corresponds to a loop with start 0, upper bound Nb and step N_step, and for our use-csae corresponds to the "N" loop of the GEMM. This loop has an _optional_ list of step/blocking parameters {l1_n_step, l0_n_step}.
 
-The specific instantion of these loops, i.e. the loop order with which they appear, the number of times each one is blocked and also the way they are parallelized are controlled by the string *loop_string* provided at run-time.
+The specific instantion of these loops, i.e. the loop order with which they appear, the number of times each one is blocked and also the way they are parallelized are controlled by the string *loop_string* provided at run-time. More specifically, the *loop_string* can be constructed using the following rules:
 
-The *loop_string* can be constroctued using the following rules:
-
-### RULE 1
+### RULE 1 (Loops ordering and blockings)
 Each character (from *a* to *z* depending on the number of the logical loops - in our case since we have 3 logical loops the characters range from *a* to *c*) can appear in any order and any number of times. The order with which the loop characters appear in the string determine the nesting loop order, and the times each character appears determines how many times the corresponding logical loop is blocked. For example, a *loop_string* **bcabcb** corresponds to a loop where logical loop b is blocked twice (the character b appears 3 times), logical loop c is blocked once (the character c appears 2 times) and the logical loop a is not blocked (it appears only once). The blocking/tiling sizes for each logical loop level are extracted from the corresponding list of step/blocking parameters in order they appear in the list. For example, the aforementioned *loop_string* **bcabcb** correponds to the following loop nest:
 
 ```
@@ -62,8 +60,75 @@ Currently our Proof-Of-Concept (POC) implementation of PARLOOPER allows only per
  - l0_m_step mod m_step = 0
  - l1_n_step mod n_step = 0
 
-### RULE 2
+An important thing to note here is that all these  blocking/tiling sizes lists may be provided at runtime (e.g. one could programatically determine the blocking sizes given the problem/input at hand) and do not have to be statically determined. 
 
+### RULE 2 (Parallelization)
+If a loop character in the *loop_string* appears in its upper-case form, it dictates the intention to parallelize this loop at the specific nest-level it appears. For example, following the previous example, if the *loop_string* was **bcaBcb**, it would correspond to the following loop nest:
+```
+for b0 = 0 to Mb with step l1_m_step
+  for c0 = 0 to Nb with step l1_n_step
+    for a0 = 0 to Kb with step k_step
+      #parallelize loop directive
+      for b1 = b0 to b0 + l1_m_step with step l0_m_step
+        for c1 = c0 to c0 + l1_n_step with step n_step
+          for b2 = b1 to b1 + l0_m_step with step m_step
+            // Logical indices to use for the computation are a0, b2, c1
+```
+Currently our POC supports 2 modes of parallelization:
+1. **PAR-MODE 1: Relying on OpenMP runtime for parallelizing the loops.** By following this method, effectively the "#parallelize loop directive" above corresponds to "#pragma omp for nowait". If one wants to parallelize multiple loops, the corresponding capitalized characters should appear consecutively and it would result in parallelization using collapse semantics. For example, if the *loop_string* was **bcaBCb** we would get:
+```
+for b0 = 0 to Mb with step l1_m_step
+  for c0 = 0 to Nb with step l1_n_step
+    for a0 = 0 to Kb with step k_step
+      #pragma omp for collapse(2) nowait
+      for b1 = b0 to b0 + l1_m_step with step l0_m_step
+        for c1 = c0 to c0 + l1_n_step with step n_step
+          for b2 = b1 to b1 + l0_m_step with step m_step
+            // Logical indices to use for the computation are a0, b2, c1
+```
+When using **PAR-MODE 1** we allow to specify optiionally additional directives at the end of the *loop_string* by using the special character *@* as separator. For example the loop string **bcaBCb@schedule(dynamic,1)** yields the parallelization directive:
+```
+      #pragma omp for collapse(2) schedule(dynamic,1) nowait
+```
+in the aforementioned loop nest.
+
+The constructed loop nest is embraced by a "pragma omp parallel" region, i.e. the generated code with a *loop_string* **bcaBCb** would look like :
+```
+#pragma omp parallel
+{
+  for b0 = 0 to Mb with step l1_m_step
+    for c0 = 0 to Nb with step l1_n_step
+      for a0 = 0 to Kb with step k_step
+        #pragma omp for collapse(2) nowait
+        for b1 = b0 to b0 + l1_m_step with step l0_m_step
+          for c1 = c0 to c0 + l1_n_step with step n_step
+            for b2 = b1 to b1 + l0_m_step with step m_step
+              // Logical indices to use for the computation are a0, b2, c1
+}
+```
+In the user desires a barrier at the end of a specific loop-level, it may be requested using the special character "|". For example if we want to have a synchronization barrier at the end of the outermost *c* loop we can specify as *loop_string* **bc|aBCb** :
+```
+#pragma omp parallel
+{
+  for b0 = 0 to Mb with step l1_m_step {
+    for c0 = 0 to Nb with step l1_n_step { 
+      for a0 = 0 to Kb with step k_step {
+        #pragma omp for collapse(2) nowait {
+        for b1 = b0 to b0 + l1_m_step with step l0_m_step {
+          for c1 = c0 to c0 + l1_n_step with step n_step {
+            for b2 = b1 to b1 + l0_m_step with step m_step {
+              // Logical indices to use for the computation are a0, b2, c1
+            }
+          }
+        }
+      }
+    }// end of loop c0
+    #pragma omp barrier
+  }
+}
+```
+2. **PAR-MODE 2: Using multi-dimensional thread decompositions** Using this parallelization paradigm, the user can specify 1D, 2D or 3D loop parallelization schemes by parallelizing 1,2 or 3 loops repsectively.
+ * For the 1D decomposition, the threads are forming a "Row" and are assigned the corresponding parallelized llo iteration in a block fashion.
 
 ## Exemplary run of test matmul and convolutions
 ```
