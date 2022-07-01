@@ -193,6 +193,10 @@ In the user desires a barrier at the end of a specific loop-level, it may be req
 }
 ```
 
+Now that we have described how to declare the desired nested loops along with their specification, we will show how to express the desired computation using the logical indices of the nested loops (i.e. the logical indices a0, b2, c1 in the example above). 
+
+### Expressing the desired computation
+
 ## Exemplary run of test matmul and convolutions
 ```
 salloc --nodes=1 --partition=clx --time=03:59:00
