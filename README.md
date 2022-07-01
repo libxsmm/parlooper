@@ -282,9 +282,12 @@ Note that the user's code is extremely simple since it merely defines in a *decl
 ### Helper methods in PARLOOPER
 The obtained *ThreadedLoop* object has a few auxiliary methods that can be used in the *loop_body_func* to express the desired computation and can be helpful/necessary e.g. when considering explicit multi-dimensional thread decompositions.
 
-1. ```
-threaded_loop_par_type get_loop_par_type(char loop_name, int *ind)
-```
+1. ``` int get_tid(int *ind)```
+
+This method merely returns the "thread id" of the calling thread, and as such the return value ranges from 0 ... #threads-1.
+
+2. ``` threaded_loop_par_type get_loop_par_type(char loop_name, int *ind)```
+
 This method returns the parallelization type of the logical loop with name *loop_name*. The return type *threaded_loop_par_type* is essentially an enum:
 ```
 typedef enum threaded_loop_par_type {
@@ -295,9 +298,21 @@ typedef enum threaded_loop_par_type {
   THREADED_LOOP_PARALLEL_THREAD_LAYERS  =  4
 } threaded_loop_par_type;
 ```
-In the example above, calling ```get_loop_par_type('a', ind) ``` would return ```THREADED_LOOP_NO_PARALLEL``` since the logical loop *a* is not parallelized whereas ```get_loop_par_type('b', ind) ``` would return ```THREADED_LOOP_PARALLEL_COLLAPSE```since the logical loop *b* has been used in a collapse-fashio parallelization scheme.
+In the example above with *loop_string* **bcaBCb**, calling ```get_loop_par_type('a', ind) ``` would return ```THREADED_LOOP_NO_PARALLEL``` since the logical loop *a* is not parallelized whereas ```get_loop_par_type('b', ind) ``` would return ```THREADED_LOOP_PARALLEL_COLLAPSE```since the logical loop *b* has been used in a collapse-fashion parallelization scheme.
 
-## Exemplary run of test matmul and convolutions
+3. ``` int get_loop_parallel_degree(char loop_name, int *ind)```
+
+This method is valid only when leveraging "PAR-MODE 2: Using explicit multi-dimensional thread decompositions" and returns the number of "ways"/degree the requested logical loop is parallelized. For example, assuming that the *loop_string* is **bC{R:5}B{C:4}cba**, then calling ```get_loop_parallel_degree('b', ind) ``` would return ```4``` since the logical loop *b* is parallelized 4-ways.
+
+4. ``` int get_tid_in_parallel_dim(char loop_name, int *ind)```
+
+When using "PAR-MODE 1" this method merely returns the "thread id" of the calling thread (and as such the return value ranges from 0 ... #threads-1) **if** the corresponding logical loop *loop_name* **is parallelized**, otherwise it returns the value -1.
+
+When leveraging "PAR-MODE 2" this method returns the "thread id" of the calling thread in the parallelized logical loop dimension. For example, assuming that the *loop_string* is **bC{R:5}B{C:4}cbA{L:3}**, then calling ```get_tid_in_parallel_dim('c', ind) ``` would return a number between 0-4 depending on the "**R**ow team" the calling thread belongs in the logical 3D thread grid of size 5x4x3 (RxCxL). In an analogous way, calling ```get_tid_in_parallel_dim('b', ind) ``` would return a number between 0-3 depending on the "**C**olumn team" this thread belongs in the logical 3D thread grid, and finally calling ```get_tid_in_parallel_dim('a', ind) ``` would return a number between 0-2 depending on the "**L**ayer team" this thread belongs in the logical 3D thread grid.
+
+The helper methods 1-4 essentially allow the user to express programmatically in the *loop_body_func* complex parallelization strategies "ahead of time" since the exact loop-nest instantiation depends on the *loop_string* which is a runtime/JIT parameter.
+
+## Exemplary run of sample matmul and convolutions
 ```
 salloc --nodes=1 --partition=clx --time=03:59:00
 export OMP_NUM_THREADS=28
