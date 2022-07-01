@@ -127,8 +127,71 @@ In the user desires a barrier at the end of a specific loop-level, it may be req
   }
 }
 ```
-2. **PAR-MODE 2: Using multi-dimensional thread decompositions** Using this parallelization paradigm, the user can specify 1D, 2D or 3D loop parallelization schemes by parallelizing 1,2 or 3 loops repsectively.
- * For the 1D decomposition, the threads are forming a "Row" and are assigned the corresponding parallelized llo iteration in a block fashion.
+2. **PAR-MODE 2: Using explicit multi-dimensional thread decompositions** Using this parallelization paradigm, the user can specify 1D, 2D or 3D loop parallelization schemes by parallelizing 1,2 or 3 loops respectively.
+ * For the 1D decomposition, the threads are forming a logical "Rx1" 1D and are assigned the corresponding parallelized loop iterations in a block fashion. To apply this explicit decomposition, the user merely has to append after the desired upper-case loop letter the substring "{R:#threads}", where #threads is a number dictating in how many ways to paralllelize that loop. For example, the *loop_string* **bC{R:16}abcb** would yield:
+```
+#pragma omp parallel
+{
+  for b0 = 0 to Mb with step l1_m_step {
+    # Parallelize 16-ways loop c0
+    for c0 = 0 to Nb with step l1_n_step { 
+      for a0 = 0 to Kb with step k_step {
+        for b1 = b0 to b0 + l1_m_step with step l0_m_step {
+          for c1 = c0 to c0 + l1_n_step with step n_step {
+            for b2 = b1 to b1 + l0_m_step with step m_step {
+              // Logical indices to use for the computation are a0, b2, c1
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+ * For the 2D decomposition, the threads are forming a logical "RxC" 2D grid that effectively parallelizes the requested two loops. Note that the parallelized loops do **not** have to appear consecutively in the *loop_string*. For example consider the *loop_string* **bC{R:16}aB{C:4}cb**. In this example the loop *c0* is parallelized 16-ways and the loop *b1* is parallelized 4-ways using a logical thread grid of 16x4 (R=16, C=4). Each loop that is parallelized is done so in a block-fashion using the requested number of "ways".
+```
+#pragma omp parallel
+{
+  for b0 = 0 to Mb with step l1_m_step {
+    # Parallelize 16-ways loop c0
+    for c0 = 0 to Nb with step l1_n_step { 
+      for a0 = 0 to Kb with step k_step {
+        # Parallelize 4-ways loop b1
+        for b1 = b0 to b0 + l1_m_step with step l0_m_step {
+          for c1 = c0 to c0 + l1_n_step with step n_step {
+            for b2 = b1 to b1 + l0_m_step with step m_step {
+              // Logical indices to use for the computation are a0, b2, c1
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+ * For the 3D decomposition, the threads are forming a logical "RxCxL" 3D grid that effectively parallelizes the requested three loops. Note that the parallelized loops do **not** have to appear consecutively in the *loop_string*. For example consider the *loop_string* **bC{R:5}B{C:4}cbA{L:3}**. In this example the loop *c0* is parallelized 5-ways, the loop *b1* is parallelized 4-ways, and the loop *a0* is parallelized 3-ways using a logical thread grid of 5x4x3 (R=5, C=4, L=3). Each loop that is parallelized is done so in a block-fashion using the requested number of "ways".
+```
+#pragma omp parallel
+{
+  for b0 = 0 to Mb with step l1_m_step {
+    # Parallelize 5-ways loop c0
+    for c0 = 0 to Nb with step l1_n_step { 
+      # Parallelize 4-ways loop b1
+      for b1 = b0 to b0 + l1_m_step with step l0_m_step {
+        for c1 = c0 to c0 + l1_n_step with step n_step {
+          for b2 = b1 to b1 + l0_m_step with step m_step {
+            # Parallelize 3-ways loop a0
+            for a0 = 0 to Kb with step k_step {
+              // Logical indices to use for the computation are a0, b2, c1
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
 
 ## Exemplary run of test matmul and convolutions
 ```
