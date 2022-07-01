@@ -302,7 +302,7 @@ In the example above with *loop_string* **bcaBCb**, calling ```get_loop_par_type
 
 3. ``` int get_loop_parallel_degree(char loop_name, int *ind)```
 
-This method is valid only when leveraging "PAR-MODE 2: Using explicit multi-dimensional thread decompositions" and returns the number of "ways"/degree the requested logical loop is parallelized. For example, assuming that the *loop_string* is **bC{R:5}B{C:4}cba**, then calling ```get_loop_parallel_degree('b', ind) ``` would return ```4``` since the logical loop *b* is parallelized 4-ways.
+This method is valid only when leveraging "PAR-MODE 2: Using explicit multi-dimensional thread decompositions" and returns the number of "ways"/degree the requested logical loop is parallelized. For example, assuming that the *loop_string* is **bC{R:5}B{C:4}cba**, then calling ```get_loop_parallel_degree('b', ind) ``` would return 4 since the logical loop *b* is parallelized 4-ways.
 
 4. ``` int get_tid_in_parallel_dim(char loop_name, int *ind)```
 
