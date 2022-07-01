@@ -43,7 +43,9 @@ The thord loop which has the mnemonic *c*, corresponds to a loop with start 0, u
 The specific instantion of these loops, i.e. the loop order with which they appear, the number of times each one is blocked and also the way they are parallelized are controlled by the string *loop_string* provided at run-time.
 
 The *loop_string* can be constroctued using the following rules:
-1. Each character (from *a* to *z* depending on the number of the logical loops - in our case since we have 3 logical loops the characters range from *a* to *c*) can appear in any order and any number of times. The order with which the loop characters appear determine the nesting loop order, and the times each character appears determines how many times the corresponding logical loop is blocked. For example, a *loop_string* **bcabcb** correspond to a loop where logical loop b is blocked twice (it appears 3 times), logical loop c is blocked once (it appears 2 times) and the logical loop a is not blocked (it appears only once). The blocking factors for each loop (if any are requested) are extracted from the corresponding list in order they appear in the list. For example, the aforementioned string correpond to the following pseudocode
+
+### RULE 1
+Each character (from *a* to *z* depending on the number of the logical loops - in our case since we have 3 logical loops the characters range from *a* to *c*) can appear in any order and any number of times. The order with which the loop characters appear in the string determine the nesting loop order, and the times each character appears determines how many times the corresponding logical loop is blocked. For example, a *loop_string* **bcabcb** corresponds to a loop where logical loop b is blocked twice (the character b appears 3 times), logical loop c is blocked once (the character c appears 2 times) and the logical loop a is not blocked (it appears only once). The blocking/tiling sizes for each logical loop level are extracted from the corresponding list of step/blocking parameters in order they appear in the list. For example, the aforementioned *loop_string* **bcabcb** correponds to the following loop nest:
 
 ```
 for b0 = 0 to Mb with step l1_m_step
@@ -55,7 +57,15 @@ for b0 = 0 to Mb with step l1_m_step
              // Logical indices to use for the computation are a0, b2, c1
 ```
 
-## Exemplary run of test matmul and forward convolution
+Currently our Proof-Of-Concept (POC) implementation of PARLOOPER allows only perfectly nested blocking/tiling sizes, i.e. in the example above it should hold:
+ - l1_m_step mod l0_m_step = 0
+ - l0_m_step mod m_step = 0
+ - l1_n_step mod n_step = 0
+
+### RULE 2
+
+
+## Exemplary run of test matmul and convolutions
 ```
 salloc --nodes=1 --partition=clx --time=03:59:00
 export OMP_NUM_THREADS=28
