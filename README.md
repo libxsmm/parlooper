@@ -86,7 +86,7 @@ for b0 = 0 to Mb with step l1_m_step
           for b2 = b1 to b1 + l0_m_step with step m_step
             // Logical indices to use for the computation are a0, b2, c1
 ```
-When using **PAR-MODE 1** we allow to specify optiionally additional directives at the end of the *loop_string* by using the special character *@* as separator. For example the loop string **bcaBCb@schedule(dynamic,1)** yields the parallelization directive:
+When using **PAR-MODE 1** we allow to specify optionally additional directives at the end of the *loop_string* by using the special character *@* as separator. For example the loop string **bcaBCb@schedule(dynamic,1)** yields the parallelization directive:
 ```
       #pragma omp for collapse(2) schedule(dynamic,1) nowait
 ```
