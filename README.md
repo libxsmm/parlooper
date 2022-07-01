@@ -75,7 +75,7 @@ for b0 = 0 to Mb with step l1_m_step
             // Logical indices to use for the computation are a0, b2, c1
 ```
 Currently our POC supports 2 modes of parallelization:
-1. **PAR-MODE 1: Relying on OpenMP runtime for parallelizing the loops.** By following this method, effectively the "#parallelize loop directive" above corresponds to "#pragma omp for nowait". If one wants to parallelize multiple loops, the corresponding capitalized characters should appear consecutively and it would result in parallelization using collapse semantics. For example, if the *loop_string* was **bcaBCb** we would get:
+1. **PAR-MODE 1: Relying on OpenMP runtime for parallelizing the loops.** By following this method, effectively the "#parallelize loop directive" above corresponds to "#pragma omp for nowait". If one wants to parallelize multiple loops, the corresponding capitalized characters should appear consecutively and it would result in parallelization using collapse semantics. For example, if the *loop_string* was **bcaBCb**, PARLOOPER would yield:
 ```
 for b0 = 0 to Mb with step l1_m_step
   for c0 = 0 to Nb with step l1_n_step
