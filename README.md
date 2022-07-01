@@ -315,11 +315,14 @@ When leveraging "PAR-MODE 2" this method returns the "thread id" of the calling 
 The helper methods 1-4 enable the user to express *programmatically* in the *loop_body_func* complex parallelization strategies "ahead of time" since the exact loop-nest instantiation depends on the *loop_string* which is a runtime/JIT parameter.
 
 ## Sample codes using the PARLOOPER infrastructure
-For all the developed sample codes, by exporting: ```export USE_BF16=1``` the used precision will be bfloat16, otherwie it will be single precision (float).
+For all the developed sample codes, by exporting: ```export USE_BF16=1``` during runtime, the used precision will be bfloat16, otherwise it will be single precision (float).
 
 1. **gemm_model_fwd.cpp** : This is the full GEMM working example used in this README. It also supports chaining together multiple GEMMs to effectively implement a Multi-Layer Perceptron primitive (MLP) by setting n_layers > 1 in the argument list.
-
-
+2. **gemm_model_bwd.cpp** : This is the backward-by-data pass in packpropagation of a Fully-Connected layer primitive. It supports "privately" tranposing matrix A by setting private_wt_trans = 1 in the argument list. Otherwise the matrix A is transposed upfront.
+3. **gemm_model_upd.cpp** : This is the backward-by-weights pass in packpropagation of a Fully-Connected layer primitive. For bfloat16 precision it supports "privately" tranposing matrices A (vnni-formating) and B (normal transpose) by setting private_trans = 1 in the argument list, otherwise the matrices A and B are transposed upfront. This primitve also allows paralellization across the "inner-product"/contraction dimension N by setting n_partial_filters to non-zero value in the argument list (i.e. the code extracts also parallelization across the N dimension, and at the nd a reduction is performed to calculate the final result). More specifically, if the *loop_string* has "collapse" type parallelization, then n_partial_filters should be equal to the number of threads. If the *loop_string* has "explicit" thread decomposition accross the N dimension in X-ways, then n_partial_filters should have the value X.
+4. **conv_model_fwd.cpp** Forward pass of a convolution layer.
+5. **conv_model_bwd.cpp** Backward-by-data pass in packpropagation of a convolution layer.
+6. **conv_model_upd.cpp** Backward-by-weights pass in packpropagation of a convolution layer.
 
 ## Exemplary run of sample matmul and convolution
 ```
