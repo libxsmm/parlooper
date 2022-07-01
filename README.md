@@ -279,6 +279,23 @@ Note that the user's code is extremely simple since it merely defines in a *decl
   }
 }
 ```
+### Helper methods in PARLOOPER
+The obtained *ThreadedLoop* object has a few auxiliary methods that can be used in the *loop_body_func* to express the desired computation and can be helpful/necessary e.g. when considering explicit multi-dimensional thread decompositions.
+
+1. ```
+threaded_loop_par_type get_loop_par_type(char loop_name, int *ind)
+```
+This method returns the parallelization type of the logical loop with name *loop_name*. The return type *threaded_loop_par_type* is essentially an enum:
+```
+typedef enum threaded_loop_par_type {
+  THREADED_LOOP_NO_PARALLEL             =  0,
+  THREADED_LOOP_PARALLEL_COLLAPSE       =  1,
+  THREADED_LOOP_PARALLEL_THREAD_ROWS    =  2,
+  THREADED_LOOP_PARALLEL_THREAD_COLS    =  3,
+  THREADED_LOOP_PARALLEL_THREAD_LAYERS  =  4
+} threaded_loop_par_type;
+```
+In the example above, calling ```get_loop_par_type('a', ind) ``` would return ```THREADED_LOOP_NO_PARALLEL``` since the logical loop *a* is not parallelized whereas ```get_loop_par_type('b', ind) ``` would return ```THREADED_LOOP_PARALLEL_COLLAPSE```since the logical loop *b* has been used in a collapse-fashio parallelization scheme.
 
 ## Exemplary run of test matmul and convolutions
 ```
