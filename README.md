@@ -324,6 +324,12 @@ For all the developed sample codes, by exporting: ```export USE_BF16=1``` during
 5. **conv_model_bwd.cpp** Backward-by-data pass in packpropagation of a convolution layer.
 6. **conv_model_upd.cpp** Backward-by-weights pass in packpropagation of a convolution layer.
 
+## Auto-tuning codes using the PARLOOPER infrastructure
+The general methodology of auto-tuning codes using the PARLOOPER infrastructure is to (auto)-generate valid *loop_string* permutations and effectively explore different parallelization strategies, loop orders, and loop blockings to find the ones that maximize performance for the platform and problem at hand. To this extend we have generated some auxiliary/helper codes:
+
+1. **spec_loop_generator.cpp**: It can be used as a blueprint to geenrate loop permutattions.
+2. **gemm_loop_tuner.sh** Can be used a bluprint to auto-tune GEMMa
+
 ## Exemplary run of sample matmul and convolution
 ```
 salloc --nodes=1 --partition=clx --time=03:59:00
