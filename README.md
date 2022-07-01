@@ -314,6 +314,13 @@ When leveraging "PAR-MODE 2" this method returns the "thread id" of the calling 
 
 The helper methods 1-4 enable the user to express *programmatically* in the *loop_body_func* complex parallelization strategies "ahead of time" since the exact loop-nest instantiation depends on the *loop_string* which is a runtime/JIT parameter.
 
+## Sample codes using the PARLOOPER infrastructure
+For all the developed sample codes, by exporting: ```export USE_BF16=1``` the used precision will be bfloat16, otherwie it will be single precision (float).
+
+1. **gemm_model_fwd.cpp** : This is the full GEMM working example used in this README. It also supports chaining together multiple GEMMs to effectively implement a Multi-Layer Perceptron primitive (MLP) by setting n_layers > 1 in the argument list.
+
+
+
 ## Exemplary run of sample matmul and convolution
 ```
 salloc --nodes=1 --partition=clx --time=03:59:00
