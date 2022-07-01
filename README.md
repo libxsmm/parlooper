@@ -34,7 +34,7 @@ auto gemm_loop = ThreadedLoop<3>({
      LoopSpecs{0, Nb, n_step, {l1_n_step, l0_n_step}}},  // c loop - Logical N loop specs
      loop_string);
 ```
-Since our computation has three logical loops we use in the declaration ```ThreadedLoop<3>````.
+Since our computation has three logical loops we use in the declaration ```ThreadedLoop<3>```.
 
 The first loop which has the mnemonic *a*, corresponds to a loop with start 0, upper bound Kb and step k_step, and for our use-csae corresponds to the "K" loop of the GEMM. This loop has an _optional_ list of step/blocking parameters {l1_k_step, l0_k_step}.
 
