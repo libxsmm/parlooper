@@ -129,6 +129,7 @@ int gemm_benchmark(int argc, char** argv) {
   auto zero_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);  
   auto tileconfig_kernel  = libxsmm_dispatch_gemm_v2( l_shape, l_tc_flags, l_prefetch_flags );
   auto tilerelease_kernel = libxsmm_dispatch_gemm_v2( l_shape, l_tr_flags, l_prefetch_flags );
+  if (brcount == Kb) l_flags |= LIBXSMM_GEMM_FLAG_BETA_0;
   auto brgemm_kernel      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
   
   // Compute reference if requested
@@ -213,7 +214,7 @@ int gemm_benchmark(int argc, char** argv) {
           gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
           gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
           gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
-          if (i_k == 0) {
+          if ((i_k == 0) && (brcount != Kb)) {
             libxsmm_meltw_unary_param zero_param;
             zero_param.out.primary = (void*)gemm_param.c.primary;
             zero_kernel( &zero_param );
@@ -263,7 +264,7 @@ int gemm_benchmark(int argc, char** argv) {
             gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
             gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
             gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
-            if (i_k == 0) {
+            if ((i_k == 0) && (brcount != Kb)) {
               libxsmm_meltw_unary_param zero_param;
               zero_param.out.primary = (void*)gemm_param.c.primary;
               zero_kernel( &zero_param );
