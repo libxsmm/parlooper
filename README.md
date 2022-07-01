@@ -306,13 +306,13 @@ This method is valid only when leveraging "PAR-MODE 2: Using explicit multi-dime
 
 4. ``` int get_tid_in_parallel_dim(char loop_name, int *ind)```
 
-When using "PAR-MODE 1" this method merely returns the "thread id" of the calling thread (and as such the return value ranges from 0 ... #threads-1) **if** the corresponding logical loop *loop_name* **is parallelized**, otherwise it returns the value -1.
+When leveraging "PAR-MODE 1" this method merely returns the "thread id" of the calling thread (and as such the return value ranges from 0 ... #threads-1) **if** the corresponding logical loop *loop_name* **is parallelized**, otherwise it returns the value -1.
 
 When leveraging "PAR-MODE 2" this method returns the "thread id" of the calling thread in the parallelized logical loop dimension. For example, assuming that the *loop_string* is **bC{R:5}B{C:4}cbA{L:3}**, then calling ```get_tid_in_parallel_dim('c', ind) ``` would return a number between 0-4 depending on the "**R**ow team" the calling thread belongs in the logical 3D thread grid of size 5x4x3 (RxCxL). In an analogous way, calling ```get_tid_in_parallel_dim('b', ind) ``` would return a number between 0-3 depending on the "**C**olumn team" this thread belongs in the logical 3D thread grid, and finally calling ```get_tid_in_parallel_dim('a', ind) ``` would return a number between 0-2 depending on the "**L**ayer team" this thread belongs in the logical 3D thread grid.
 
-The helper methods 1-4 essentially allow the user to express programmatically in the *loop_body_func* complex parallelization strategies "ahead of time" since the exact loop-nest instantiation depends on the *loop_string* which is a runtime/JIT parameter.
+The helper methods 1-4 enable the user to express *programmatically* in the *loop_body_func* complex parallelization strategies "ahead of time" since the exact loop-nest instantiation depends on the *loop_string* which is a runtime/JIT parameter.
 
-## Exemplary run of sample matmul and convolutions
+## Exemplary run of sample matmul and convolution
 ```
 salloc --nodes=1 --partition=clx --time=03:59:00
 export OMP_NUM_THREADS=28
