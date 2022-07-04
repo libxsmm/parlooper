@@ -17,7 +17,7 @@
 source /swtools/gcc/9.4.0/gcc_vars.sh
 
 export OMP_NUM_THREADS=28
-export KMP_AFFINITY=granularity=fine,compact,1,0
+export GOMP_CPU_AFFINITY="0-27"
 
 loop_names=()
 loop_specs=()
@@ -70,9 +70,9 @@ for m in 512 1024 2048; do
         for (( j = 0 ; j < $nLoops ; j++)); do
           line=${loopArray[$j]}
           export OMP_NUM_THREADS=28
-          export KMP_AFFINITY=granularity=fine,compact,1,0
+          export GOMP_CPU_AFFINITY="0-27"
           unset LIBXSMM_VERBOSE
-          ./test ${line} ${m} ${n} ${k} 32 32 32 ${b} >> ${benchmark_out_name}
+          ./gemm ${line} ${m} ${n} ${k} 32 32 32 ${b} >> ${benchmark_out_name}
         done
       done
     done
