@@ -26,7 +26,7 @@ The development of applications via PARLOOPER is comprised of two steps:
 We will illustrate these two steps with a simple Matrix Multiplication (GEMM) example, and our desired computation will be expressed by leveraging exclusively Tensor Processing Primitives (TPP).
 
 ### Declaring the logical loops
-The Matrix Multiplication algorithm multiples a Matrix A with a matrix B and gets as result an output matrix C. Matrix A is an MxK matrix (M rows and K columns), matrix B is an KxN matrix (K rows and N columns), whereas the output matrix C is an MxN matrix (M rows and N columns). The Matrix Multiplication algorithm is comprised of three logical nested loops which can be declared as follows:
+The Matrix Multiplication algorithm multiples a Matrix A with a matrix B and gets as result an output matrix C. Matrix A is an MxK matrix (M rows and K columns), matrix B is a KxN matrix (K rows and N columns), whereas the output matrix C is an MxN matrix (M rows and N columns). The Matrix Multiplication algorithm is comprised of three logical nested loops which can be declared as follows:
 ```
 auto gemm_loop = ThreadedLoop<3>({
      LoopSpecs{0, Kb, k_step, {l1_k_step, l0_k_step}},   // a loop - Logical K loop specs
