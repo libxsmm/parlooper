@@ -72,7 +72,7 @@ for m in 512 1024 2048; do
           export OMP_NUM_THREADS=28
           export GOMP_CPU_AFFINITY="0-27"
           unset LIBXSMM_VERBOSE
-          ./gemm ${line} ${m} ${n} ${k} 32 32 32 ${b} >> ${benchmark_out_name}
+          ./gemm ${line} ${m} ${n} ${k} 32 32 32 ${b} 1 400 >> ${benchmark_out_name}
         done
       done
     done
