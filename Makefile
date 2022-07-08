@@ -6,10 +6,12 @@
 # Further information: https://github.com/libxsmm/libxsmm/                    #
 # SPDX-License-Identifier: BSD-3-Clause                                       #
 ###############################################################################
+LIBXSMM_ROOT := $(if $(LIBXSMM_ROOT),$(LIBXSMM_ROOT),./)
+
 CXXFLAGS = -fopenmp -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14 -O2 
 LDFLAGS = -ldl -lxsmm -lxsmmnoblas
-IFLAGS = -I./libxsmm/include -I./libxsmm/samples/deeplearning/libxsmm_dnn/include/
-LFLAGS = -L./libxsmm/lib/
+IFLAGS = -I$(LIBXSMM_ROOT)/include -I$(LIBXSMM_ROOT)/samples/deeplearning/libxsmm_dnn/include/
+LFLAGS = -L$(LIBXSMM_ROOT)/lib/
 SRCFILES = common_loops.cpp par_loop_cost_estimator.cpp par_loop_generator.cpp jit_compile.cpp
 
 XFILES := $(OUTDIR)/conv_bwd $(OUTDIR)/conv_upd $(OUTDIR)/gemm $(OUTDIR)/gemm_bwd $(OUTDIR)/gemm_upd $(OUTDIR)/loop_permute_generator $(OUTDIR)/conv_fwd
