@@ -22,12 +22,12 @@ void* jit_compile_and_load(
   char fdname[50];
   sprintf(fdname, "/proc/self/fd/%d", fd);
   auto cmd = std::string("g++ -shared -fPIC -x c++ ") + flags;
-  cmd = cmd + " -o " + fdname + " " + filename;
+  cmd = cmd + " -o " + libname + " " + filename;
   printf("JIT COMPILE: %s\n", cmd.c_str());
   int ret = system(cmd.c_str());
   if (ret != 0)
     return NULL;
-  auto handle = dlopen(fdname, RTLD_LAZY | RTLD_NODELETE);
+  auto handle = dlopen(libname, RTLD_LAZY | RTLD_NODELETE);
   if (!handle) {
     fputs(dlerror(), stderr);
     return NULL;
