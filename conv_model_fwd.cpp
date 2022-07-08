@@ -225,7 +225,7 @@ int conv_benchmark(int argc, char** argv) {
     if (pack_input == 0) {
       brgemm_kernel.gemm      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
     } else {
-      auto l_pack_shape = libxsmm_create_meltw_unary_shape(bc, gemm_n, bc*stride_w, bc, dtype, dtype, dtype);
+      auto l_pack_shape = libxsmm_create_meltw_unary_shape(bc, w_gemm_pixels, bc*stride_w, bc, dtype, dtype, dtype);
       input_pack_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_IDENTITY, l_pack_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);  
       l_shape = libxsmm_create_gemm_shape( gemm_m, gemm_n, gemm_k, bk, bc, bk, dtype, dtype, dtype, dtype );
       l_brconfig = libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, R*S*bc*bk*sizeof(DType), bc*ofh*ofw*sizeof(DType), Cb_step );   
