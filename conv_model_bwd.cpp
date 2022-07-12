@@ -73,6 +73,11 @@ int conv_benchmark(int argc, char** argv) {
   char loop_specs_str[256] = "aBC";  
   long N = 14, H = 28, W = 28, C = 512, K = 1024, R = 1, S = 1, stride_h = 1, stride_w = 1, pad_h = 0, pad_w = 0;
   long bc = 32, bk = 32;
+  long w_block = 1;
+  long c_block = 1;
+  long k_block = 1;
+  long h_block = 1;
+  long h_in_gemm = 1;
   long n_iters = 1;
   long i;
   // Setup model and trace
@@ -100,9 +105,22 @@ int conv_benchmark(int argc, char** argv) {
     bc  = atoi(argv[13]);
     bk  = atoi(argv[14]);
     if (argc > 15) {
-      n_iters = atoi(argv[15]);
+      h_block  = atoi(argv[15]);
+      w_block  = atoi(argv[16]);
+      c_block  = atoi(argv[17]);
+      k_block  = atoi(argv[18]);
+      h_in_gemm  = atoi(argv[19]);
+      if (argc > 20) {
+        n_iters = atoi(argv[20]);
+      }
     }
   }
+
+  if ( (h_in_gemm > 1) && (w_block != 1) ) {
+    printf("Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...\n");
+    return 0;
+  }
+
   long Kb = K/bk, Cb = C/bc;
   // For now only physical padding
   long  pad_h_in = pad_h;
@@ -186,7 +204,7 @@ int conv_benchmark(int argc, char** argv) {
     wt_trans_kernel = libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_VNNI2_TO_VNNI2T, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
   }
 
-  long Kb_step = Kb;
+  long Kb_step = Kb/k_block;
   long avoid_rim_fmas = 0;
   long non_1x1_with_strides = 0;
   if (ofh <= 7 && ofw <=7 && R == 3 && S == 3 && stride_w == 1 && stride_h == 1) {
@@ -201,7 +219,9 @@ int conv_benchmark(int argc, char** argv) {
   if ((R == 1 && S == 1) ||
       (avoid_rim_fmas == 1) ||
       (non_1x1_with_strides == 1)) {
-    auto gemm_n = ofw;
+    auto w_gemm_pixels = ofw/w_block;
+    auto gemm_n = (w_gemm_pixels +  2 * pad_w) * (h_in_gemm - 2) + 2 * (w_gemm_pixels + pad_w);
+    //auto gemm_n = ofw;
     auto gemm_m = bc;
     auto gemm_k = bk;
     auto l_shape = libxsmm_create_gemm_shape( gemm_m, gemm_n, gemm_k, bc, bk, stride_w*bc, dtype, dtype, dtype, dtype );
@@ -219,7 +239,9 @@ int conv_benchmark(int argc, char** argv) {
     l_shape = libxsmm_create_gemm_shape( gemm_m, gemm_n-1, gemm_k, bc, bk, stride_w*bc, dtype, dtype, dtype, dtype );
     brgemm_kernel2.gemm      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
   } else {
-    auto gemm_n = ofw;
+    auto w_gemm_pixels = ofw/w_block;
+    auto gemm_n = (w_gemm_pixels +  2 * pad_w) * (h_in_gemm - 2) + 2 * (w_gemm_pixels + pad_w);
+    //auto gemm_n = ofw;
     auto gemm_m = bc;
     auto gemm_k = bk;
     auto l_shape = libxsmm_create_gemm_shape( gemm_m, gemm_n, gemm_k, bc, bk, stride_w*bc, dtype, dtype, dtype, dtype );
@@ -282,7 +304,7 @@ int conv_benchmark(int argc, char** argv) {
   long c_step = 1;
   long k_step = Kb_step;
   long h_step = 1;
-  long w_step = ofw;
+  long w_step = ofw/w_block;
   long r_step = R;
   long s_step = S;
 
@@ -301,9 +323,9 @@ int conv_benchmark(int argc, char** argv) {
 
   auto conv_loop = ThreadedLoop<7>({
       LoopSpecs{0, N, n_step, true},
-      LoopSpecs{0, Cb, c_step},
-      LoopSpecs{0, Kb, k_step, true},
-      LoopSpecs{0, ofh, h_step},
+      LoopSpecs{0, Cb, c_step, {c_block}},
+      LoopSpecs{0, Kb, k_step},
+      LoopSpecs{0, ofh, h_step, {h_block}},
       LoopSpecs{0, ofw, w_step},
       LoopSpecs{0, R, r_step},
       LoopSpecs{0, S, s_step}},
@@ -448,7 +470,7 @@ int conv_benchmark(int argc, char** argv) {
   // Print performance/model numbers
   double gflop = (2.0*(double)n_iters*(double)N*(double)C*(double)K*(double)R*(double)S*(double)ofh*(double)ofw)/(1000*1000*1000);
   //printf("Compilation time is %.5g s\n", t1-t0);
-  printf("GFLOPS %.6g %s\n", gflop/(t_end-t_start), loop_specs_str);
+  printf("GFLOPS %.6g %s_hb=%d_wb=%d_cb=%d_kb=%d\n", gflop/(t_end-t_start), loop_specs_str, h_block, w_block, c_block, k_block);
 
   // Free buffers
   libxsmm_free(naive_input);
