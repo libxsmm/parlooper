@@ -121,6 +121,11 @@ int conv_benchmark(int argc, char** argv) {
     return 0;
   }
 
+  if ( (h_in_gemm > 1) && (stride_h != 1) ) {
+    printf("Invalid input GEMM config: When multiple H pixels are handled in the gemm, stride must be one...\n");
+    return 0;
+  }
+
   long Kb = K/bk, Cb = C/bc;
   // For now only physical padding
   long  pad_h_in = pad_h;
@@ -221,13 +226,15 @@ int conv_benchmark(int argc, char** argv) {
       (non_1x1_with_strides == 1)) {
     auto w_gemm_pixels = ofw/w_block;
     auto gemm_n = (w_gemm_pixels +  2 * pad_w) * (h_in_gemm - 2) + 2 * (w_gemm_pixels + pad_w);
+    auto w_zero_pixels = ifw/w_block;
+    auto zero_n = (w_zero_pixels +  2 * pad_w) * (h_in_gemm - 2) + 2 * (w_zero_pixels + pad_w);
     //auto gemm_n = ofw;
     auto gemm_m = bc;
     auto gemm_k = bk;
     auto l_shape = libxsmm_create_gemm_shape( gemm_m, gemm_n, gemm_k, bc, bk, stride_w*bc, dtype, dtype, dtype, dtype );
     auto l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
     auto l_brconfig = libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, R*S*bc*bk*sizeof(DType), bk*ofhp*ofwp*sizeof(DType), Kb_step );
-    auto l_unary_shape = libxsmm_create_meltw_unary_shape(bc*ifwp/w_block, 1, bc*ifwp/w_block, bc*ifwp/w_block, dtype, dtype, dtype);
+    auto l_unary_shape = libxsmm_create_meltw_unary_shape(bc*zero_n, 1, bc*zero_n, bc*zero_n, dtype, dtype, dtype);
     zero_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
     l_unary_shape = libxsmm_create_meltw_unary_shape(bc*ifwp*ifhp, 1, bc*ifwp*ifhp, bc*ifwp*ifhp, dtype, dtype, dtype);
     zero_kernel_all_pixels = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);  
@@ -242,12 +249,14 @@ int conv_benchmark(int argc, char** argv) {
     auto w_gemm_pixels = ofw/w_block;
     auto gemm_n = (w_gemm_pixels +  2 * pad_w) * (h_in_gemm - 2) + 2 * (w_gemm_pixels + pad_w);
     //auto gemm_n = ofw;
+    auto w_zero_pixels = ifw/w_block;
+    auto zero_n = (w_zero_pixels +  2 * pad_w) * (h_in_gemm - 2) + 2 * (w_zero_pixels + pad_w);
     auto gemm_m = bc;
     auto gemm_k = bk;
     auto l_shape = libxsmm_create_gemm_shape( gemm_m, gemm_n, gemm_k, bc, bk, stride_w*bc, dtype, dtype, dtype, dtype );
     auto l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
     auto l_brconfig = libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_OFFSET, 0, 0, 0 );
-    auto l_unary_shape = libxsmm_create_meltw_unary_shape(bc*ifwp/w_block, 1, bc*ifwp/w_block, bc*ifwp/w_block, dtype, dtype, dtype);
+    auto l_unary_shape = libxsmm_create_meltw_unary_shape(bc*zero_n, 1, bc*zero_n, bc*zero_n, dtype, dtype, dtype);
     zero_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
     l_unary_shape = libxsmm_create_meltw_unary_shape(bc*ifwp*ifhp, 1, bc*ifwp*ifhp, bc*ifwp*ifhp, dtype, dtype, dtype);
     zero_kernel_all_pixels = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);   
@@ -303,7 +312,7 @@ int conv_benchmark(int argc, char** argv) {
   long n_step = 1;
   long c_step = 1;
   long k_step = Kb_step;
-  long h_step = 1;
+  long h_step = h_in_gemm;
   long w_step = ofw/w_block;
   long r_step = R;
   long s_step = S;
