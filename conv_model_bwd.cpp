@@ -220,6 +220,11 @@ int conv_benchmark(int argc, char** argv) {
     avoid_rim_fmas = 1;
   }
 
+  if ( avoid_rim_fmas && h_in_gemm > 1 ) {
+    printf("Invalid input GEMM config: When multiple H pixels are handled in the gemm, avoid_rim_fmas must be 0...\n");
+    return 0;
+  }
+
   if ((R != 1 && stride_h != 1) ||
       (S != 1 && stride_w != 1)) {
     non_1x1_with_strides = 1;
@@ -285,7 +290,7 @@ int conv_benchmark(int argc, char** argv) {
       }
     }
   }
-  
+
   // Compute reference if requested
   if (check_correctness) {
     naive_conv_t naive_param;
@@ -311,7 +316,7 @@ int conv_benchmark(int argc, char** argv) {
     naive_param.stride_h = stride_h;
     naive_param.stride_w = stride_w;
     zero_buf(naive_input,    N*C*ifhp*ifwp);
-    naive_conv_bp(&naive_param, naive_input, naive_output, naive_filter, NULL); 
+    naive_conv_bp(&naive_param, naive_input, naive_output, naive_filter, NULL);
   }
 
   // JIT requested nested loop specs
