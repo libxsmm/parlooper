@@ -68,6 +68,7 @@ void find_prime_factors(long num, std::vector<long>& res) {
 
 template<typename DType>
 int conv_benchmark(int argc, char** argv) {
+  int error = 0;
   // Setup default GEMM sizes
   int check_correctness = 1;
   char loop_specs_str[256] = "aBC";  
@@ -115,6 +116,9 @@ int conv_benchmark(int argc, char** argv) {
       }
     }
   }
+
+  printf("Test parameters: N H W C K R S stride_h stride_w pad_h pad_w bc bk: %d %d %d %d %d %d %d %d %d %d %d %d %d \n", N, H, W, C, K, R, S, stride_h, stride_w, pad_h, pad_w, bc, bk);
+  printf("Tuning parameters: h_block w_block c_block k_block h_in_gemm: %d %d %d %d %d \n", h_block, w_block, c_block, k_block, h_in_gemm);
 
   if ( (h_in_gemm > 1) && (w_block != 1) ) {
     printf("Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...\n");
@@ -220,6 +224,8 @@ int conv_benchmark(int argc, char** argv) {
       (S != 1 && stride_w != 1)) {
     non_1x1_with_strides = 1;
   }
+
+  printf("Algorithm decisions: avoid_rim_fmas non_1x1_with-strides: %d %d \n", avoid_rim_fmas, non_1x1_with_strides);
 
   if ((R == 1 && S == 1) ||
       (avoid_rim_fmas == 1) ||
@@ -474,6 +480,15 @@ int conv_benchmark(int argc, char** argv) {
     printf("Linf rel.error: %.24f\n", norms.linf_rel);
     printf("Check-norm    : %.24f\n", norms.normf_rel);
     libxsmm_matdiff_reduce(&diff, &norms);
+
+    /* "Random" tolerance is set */
+    double tolerance = (sizeof(DType) == 2 ? 0.05 : 0.0001);
+
+    if(norms.normf_rel > tolerance) {
+      printf("Validation FAILED\n");
+      error = -1;
+    } else
+      printf("Validation PASSED\n");
   }
 
   // Print performance/model numbers
@@ -495,7 +510,7 @@ int conv_benchmark(int argc, char** argv) {
   libxsmm_free(tr_filter_libxsmm);
   libxsmm_free(A_offsets);
   libxsmm_free(B_offsets);
-  return 0;
+  return error;
 }
 
 int main(int argc, char** argv) {
