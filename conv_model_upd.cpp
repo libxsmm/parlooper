@@ -215,6 +215,7 @@ int conv_benchmark(int argc, char** argv) {
   // TPP kernels that may be used
   libxsmm_meltwfunction_unary zero_kernel;
   libxsmm_meltwfunction_unary zero_kernel_bf16;
+  libxsmm_meltwfunction_unary zero_input_pad_kernel_bf16;
   libxsmm_meltwfunction_unary wt_reduce_kernel0_f32;
   libxsmm_meltwfunction_unary wt_reduce_kernel1_f32;
   libxsmm_meltwfunction_unary wt_reduce_kernel0_f32bf16;
@@ -348,6 +349,13 @@ int conv_benchmark(int argc, char** argv) {
 
       use_intermediate_f32_wt_tensor = (pixel_blocking == n_used_pixels) ? 0 : 1;
       float beta = (use_intermediate_f32_wt_tensor) ? (float)1.0 : (float)0.0;
+
+      if (pack_input_upfront)
+        l_unary_shape = libxsmm_create_meltw_unary_shape(remainder_pixels, bc, input_pixels, input_pixels, LIBXSMM_DATATYPE_BF16, LIBXSMM_DATATYPE_BF16, LIBXSMM_DATATYPE_BF16);
+      else
+        l_unary_shape = libxsmm_create_meltw_unary_shape(input_compute_pad, bc, input_pixels, input_pixels, LIBXSMM_DATATYPE_BF16, LIBXSMM_DATATYPE_BF16, LIBXSMM_DATATYPE_BF16);
+      zero_input_pad_kernel_bf16 = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
+
       if (use_hybrid_imgfm_parallelization == 0) {
         auto new_shape = libxsmm_create_gemm_shape( bk, bc, pixel_blocking, bk, input_pixels, bk, dtype, dtype, LIBXSMM_DATATYPE_F32, dtype);
         auto new_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
@@ -587,8 +595,8 @@ int conv_benchmark(int argc, char** argv) {
             if (i_n < reduce_work_tripcount - 1) {
               wt_reduce_kernel0_f32( &reduce_param );
             } else {
-              wt_reduce_kernel1_f32( &reduce_param );  
-            } 
+              wt_reduce_kernel1_f32( &reduce_param );
+            }
           },
           [&]() {},
           [&]() {});
@@ -601,11 +609,16 @@ int conv_benchmark(int argc, char** argv) {
           tr_input_nchw_loop(
             [&](int* ind) {
               int i_n = ind[0], i_c = ind[1];
-              libxsmm_meltw_unary_param unary_param; 
+              libxsmm_meltw_unary_param unary_param;
               for (int ij = 0; ij < ofh; ij++) {
                 unary_param.in.primary = (void*) LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm,           i_n, i_c, ij*stride_h, 0, 0, Cb, ifhp, ifwp, bc);
                 unary_param.out.primary= (void*) LIBXSMM_ACCESS_RAW(4, sizeof(DType), input_linearized_pixels, i_n, i_c, 0, ij*(ifwp/stride_w), Cb, bc, input_pixels);
                 transposeNpack_input_pixels_bf16( &unary_param );
+              }
+              if (remainder_pixels > 0) {
+                libxsmm_meltw_unary_param zero_param;
+                zero_param.out.primary = (void*) LIBXSMM_ACCESS_RAW(4, sizeof(DType), input_linearized_pixels, i_n, i_c, 0, ofh*(ifwp/stride_w), Cb, bc, input_pixels);
+                zero_input_pad_kernel_bf16( &zero_param );
               }
             },
             [&]() {},
@@ -614,17 +627,22 @@ int conv_benchmark(int argc, char** argv) {
           tr_input_nchw_loop(
             [&](int* ind) {
               int i_n = ind[0], i_c = ind[1];
-              libxsmm_meltw_unary_param unary_param; 
+              libxsmm_meltw_unary_param unary_param;
               for (int ij = 0; ij < ifhp; ij++) {
                 unary_param.in.primary = (void*) LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm,           i_n, i_c, ij, 0, 0, Cb, ifhp, ifwp, bc);
                 unary_param.out.primary= (void*) LIBXSMM_ACCESS_RAW(4, sizeof(DType), input_linearized_pixels, i_n, i_c, 0, ij*ifwp, Cb, bc, input_pixels);
                 transpose_input_pixels_bf16( &unary_param );
               }
+              if (input_compute_pad > 0) {
+                libxsmm_meltw_unary_param zero_param;
+                zero_param.out.primary = (void*) LIBXSMM_ACCESS_RAW(4, sizeof(DType), input_linearized_pixels, i_n, i_c, 0, ifhp*ifwp, Cb, bc, input_pixels);
+                zero_input_pad_kernel_bf16( &zero_param );
+              }
             },
             [&]() {},
             [&]() {});
         }
- 
+
         tr_output_nchw_loop(
           [&](int* ind) {
             int i_n = ind[0], i_k = ind[1];
@@ -635,7 +653,7 @@ int conv_benchmark(int argc, char** argv) {
             if (upd_remaining_pixels > 0) {
               unary_param.out.primary= LIBXSMM_ACCESS_RAW(4, sizeof(DType), output_linearized_pixels, i_n, i_k, (compute_pixels+1)/2, 0, Kb, output_pixels, bk);
               vnni_output_zero_remaining_pixels_bf16( &unary_param );
-            } 
+            }
           },
           [&]() {},
           [&]() {});
@@ -664,6 +682,11 @@ int conv_benchmark(int argc, char** argv) {
                 unary_param.in.primary = (void*) LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm,           i_n, i_c, ij, 0, 0, Cb, ifhp, ifwp, bc);
                 unary_param.out.primary= (void*) LIBXSMM_ACCESS_RAW(4, sizeof(DType), input_linearized_pixels, i_n, i_c, 0, ij*ifwp, Cb, bc, input_pixels);
                 transpose_input_pixels_bf16( &unary_param );
+              }
+              if (input_compute_pad > 0) {
+                libxsmm_meltw_unary_param zero_param;
+                zero_param.out.primary = (void*) LIBXSMM_ACCESS_RAW(4, sizeof(DType), input_linearized_pixels, i_n, i_c, 0, ifhp*ifwp, Cb, bc, input_pixels);
+                zero_input_pad_kernel_bf16( &zero_param );
               }
             }
        
