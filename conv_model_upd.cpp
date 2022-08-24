@@ -633,7 +633,7 @@ int conv_benchmark(int argc, char** argv) {
             unary_param.out.primary= LIBXSMM_ACCESS_RAW(4, sizeof(DType), output_linearized_pixels, i_n, i_k, 0, 0, Kb, output_pixels, bk);
             vnni_output_compute_pixels_bf16( &unary_param );
             if (upd_remaining_pixels > 0) {
-              unary_param.out.primary= LIBXSMM_ACCESS_RAW(4, sizeof(DType), output_linearized_pixels, i_n, i_k, (compute_pixels+1)/2, 0, Kb, output_pixels, bk);
+              unary_param.out.primary= LIBXSMM_ACCESS_RAW(4, sizeof(DType), output_linearized_pixels, i_n, i_k, ((compute_pixels+1)/2)*2, 0, Kb, output_pixels, bk);
               vnni_output_zero_remaining_pixels_bf16( &unary_param );
             } 
           },
@@ -654,7 +654,7 @@ int conv_benchmark(int argc, char** argv) {
               unary_param.out.primary= LIBXSMM_ACCESS_RAW(4, sizeof(DType), output_linearized_pixels, i_n, i_k, 0, 0, Kb, output_pixels, bk);
               vnni_output_compute_pixels_bf16( &unary_param );
               if (upd_remaining_pixels > 0) {
-                unary_param.out.primary= LIBXSMM_ACCESS_RAW(4, sizeof(DType), output_linearized_pixels, i_n, i_k, (compute_pixels+1)/2, 0, Kb, output_pixels, bk);
+                unary_param.out.primary= LIBXSMM_ACCESS_RAW(4, sizeof(DType), output_linearized_pixels, i_n, i_k, ((compute_pixels+1)/2)*2, 0, Kb, output_pixels, bk);
                 vnni_output_zero_remaining_pixels_bf16( &unary_param );
               }
             }
