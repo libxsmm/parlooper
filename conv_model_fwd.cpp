@@ -128,8 +128,33 @@ int conv_benchmark(int argc, char** argv) {
     tensor_copy_KCRS_to_KCRSck(naive_filter, (float*)filter_libxsmm, K, C, R, S, bc, bk);
   }
   
+  long avoid_rim_fmas = 0;
+  if (ofh <= 7 && ofw <=7 && R == 3 && S == 3 && stride_w == 1 && stride_h == 1 && h_in_gemm == 1) {
+    avoid_rim_fmas = 1;
+  }
+
+  if (R != 1 || S != 1) {
+    pack_input = 0;
+  }
+
+  long Cb_step = Cb/c_block;
+  long n_step = 1;
+  long c_step = Cb_step;
+  long k_step = 1;
+  long h_step = h_in_gemm;
+  long w_step = ofw/w_block;
+  long r_step = R;
+  long s_step = S;
+
+  if (avoid_rim_fmas == 1) {
+    r_step = 1;
+    s_step = 1;
+  }
+
   // Setup TPP kernels
   auto l_flags    = (sizeof(DType) == 2) ? ( LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG ) : LIBXSMM_GEMM_FLAGS('N', 'N');
+  if (Cb_step == Cb && r_step == R && s_step == S)
+    l_flags |= LIBXSMM_GEMM_FLAG_BETA_0;
   auto l_tc_flags = (sizeof(DType) == 2) ? ( LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') ) : LIBXSMM_GEMM_FLAGS('N', 'N');
   auto l_tr_flags = (sizeof(DType) == 2) ? ( LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') ) : LIBXSMM_GEMM_FLAGS('N', 'N');
   auto dtype      = (sizeof(DType) == 2) ? LIBXSMM_DATATYPE_BF16 : LIBXSMM_DATATYPE_F32;
@@ -141,15 +166,6 @@ int conv_benchmark(int argc, char** argv) {
   libxsmm_meltwfunction_unary zero_kernel;
   libxsmm_meltwfunction_unary input_pack_kernel;
 
-  long Cb_step = Cb/c_block;
-  long avoid_rim_fmas = 0;
-  if (ofh <= 7 && ofw <=7 && R == 3 && S == 3 && stride_w == 1 && stride_h == 1 && h_in_gemm == 1) {
-    avoid_rim_fmas = 1;
-  }
-
-  if (R != 1 || S != 1) {
-    pack_input = 0;
-  }
 
   if ((R == 1 && S == 1) ||
       (avoid_rim_fmas == 1)) {
@@ -234,18 +250,7 @@ int conv_benchmark(int argc, char** argv) {
   }
 
   // JIT requested nested loop specs
-  long n_step = 1;
-  long c_step = Cb_step;
-  long k_step = 1;
-  long h_step = h_in_gemm;
-  long w_step = ofw/w_block;
-  long r_step = R;
-  long s_step = S;
 
-  if (avoid_rim_fmas == 1) {
-    r_step = 1;
-    s_step = 1;
-  }
 
   auto t0 = getTime();
   auto conv_loop = ThreadedLoop<7>({
@@ -292,11 +297,14 @@ int conv_benchmark(int argc, char** argv) {
             }
           } 
 
-          if (i_c == 0 && i_r == 0 && i_s == 0) {
-            libxsmm_meltw_unary_param zero_param;
-            zero_param.out.primary = (void*)gemm_param.c.primary;
-            zero_kernel( &zero_param );
+          if (Cb_step != Cb || r_step != R || s_step != S) {
+            if (i_c == 0 && i_r == 0 && i_s == 0) {
+              libxsmm_meltw_unary_param zero_param;
+              zero_param.out.primary = (void*)gemm_param.c.primary;
+              zero_kernel( &zero_param );
+            }
           }
+
           brgemm_kernel.gemm( &gemm_param );
         } else {
           unsigned long long brcount = Cb_step;
@@ -362,6 +370,9 @@ int conv_benchmark(int argc, char** argv) {
   double gflop = (2.0*(double)n_iters*(double)N*(double)C*(double)K*(double)R*(double)S*(double)ofh*(double)ofw)/(1000*1000*1000);
   //printf("Compilation time is %.5g s\n", t1-t0);
   printf("GFLOPS %.6g %s_hb=%d_wb=%d_cb=%d_kb=%d\n", gflop/((double)(t_end-t_start)), loop_specs_str, h_block, w_block, c_block, k_block);
+  printf("PERFDUMP,FP,%s,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%.5g,%.5g,%f,%f,%f,%f,%f,%f,%f\n", LIBXSMM_VERSION, omp_get_max_threads(), N, C, K,
+        H, W, R, S, stride_h, pad_h, pad_w, ((double)((t_end - t_start)/n_iters)), (gflop)/(t_end - t_start), norms.l1_ref, norms.l1_tst,
+        norms.l2_abs, norms.l2_rel, norms.linf_abs, norms.linf_rel, norms.normf_rel);
 
   // Free buffers
   libxsmm_free(naive_input);
