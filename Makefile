@@ -7,10 +7,11 @@
 # SPDX-License-Identifier: BSD-3-Clause                                       #
 ###############################################################################
 LIBXSMM_ROOT := $(if $(LIBXSMM_ROOT),$(LIBXSMM_ROOT),./libxsmm/)
+LIBXSMM_DNN_ROOT := $(if $(LIBXSMM_DNN_ROOT),$(LIBXSMM_DNN_ROOT),./libxsmm_dnn/)
 
 CXXFLAGS = -fopenmp -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14 -O2 
 LDFLAGS = -ldl -lxsmm -lxsmmnoblas
-IFLAGS = -I$(LIBXSMM_ROOT)/include -I$(LIBXSMM_ROOT)/samples/deeplearning/libxsmm_dnn/include/
+IFLAGS = -I$(LIBXSMM_ROOT)/include -I$(LIBXSMM_DNN_ROOT)/include -I$(LIBXSMM_ROOT)/samples/deeplearning/libxsmm_dnn/include/
 LFLAGS = -L$(LIBXSMM_ROOT)/lib/
 SRCFILES = common_loops.cpp par_loop_cost_estimator.cpp par_loop_generator.cpp jit_compile.cpp
 

@@ -25,14 +25,23 @@
 #include <unistd.h>
 #include <libxsmm.h>
 #include <dnn_common.h>
+//#define AARCH64_RDTSC
 
 double ifreq;
 
+#ifdef AARCH64_RDTSC
+static __inline__ unsigned long long rdtsc(void) {
+  unsigned long long virtual_timer_value;
+  asm volatile("mrs %0, cntvct_el0" : "=r"(virtual_timer_value));
+  return virtual_timer_value;
+}
+#else
 static __inline__ unsigned long long rdtsc(void) {
   unsigned hi, lo;
   __asm__ __volatile__("rdtsc" : "=a"(lo), "=d"(hi));
   return ((unsigned long long)lo) | (((unsigned long long)hi) << 32);
 }
+#endif
 
 inline double getFreq() {
   long long int s = rdtsc();
