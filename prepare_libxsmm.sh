@@ -23,3 +23,18 @@ make realclean && make CC=gcc CXX=g++ FC= -j16
 echo "done building LIBXSMM"
 cd ..
 
+#clone LIBXSMM_DNN
+if [ ! -d "libxsmm_dnn" ]; then
+  echo "libxsmm_dnn not exist, clone one from remote repo ..."
+  git clone https://github.com/libxsmm/libxsmm_dnn.git  libxsmm_dnn
+  cd libxsmm_dnn
+else
+  echo "libxsmm_dnn exists, just updating ..."
+  cd libxsmm_dnn
+  git pull
+fi
+echo "building LIBXSMM_DNN..."
+export LIBXSMMROOT=../libxsmm
+make realclean && make CC=gcc CXX=g++ FC= -j16
+echo "done building LIBXSMM_DNN"
+cd ..
