@@ -25,7 +25,7 @@
 #include <unistd.h>
 #include <libxsmm.h>
 #include <dnn_common.h>
-//#define AARCH64_RDTSC
+#define AARCH64_RDTSC
 
 double ifreq;
 

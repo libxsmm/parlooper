@@ -9,7 +9,8 @@
 LIBXSMM_ROOT := $(if $(LIBXSMM_ROOT),$(LIBXSMM_ROOT),./libxsmm/)
 LIBXSMM_DNN_ROOT := $(if $(LIBXSMM_DNN_ROOT),$(LIBXSMM_DNN_ROOT),./libxsmm_dnn/)
 
-CXXFLAGS = -fopenmp -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14 -O2 
+CXX=clang++
+CXXFLAGS = -Wno-format -fopenmp=libomp -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14 -O2 
 LDFLAGS = -ldl -lxsmm -lxsmmnoblas
 IFLAGS = -I$(LIBXSMM_ROOT)/include -I$(LIBXSMM_DNN_ROOT)/include -I$(LIBXSMM_ROOT)/samples/deeplearning/libxsmm_dnn/include/
 LFLAGS = -L$(LIBXSMM_ROOT)/lib/
@@ -21,25 +22,25 @@ XFILES := $(OUTDIR)/conv_bwd $(OUTDIR)/conv_upd $(OUTDIR)/gemm $(OUTDIR)/gemm_bw
 all: $(XFILES)
 
 $(OUTDIR)/gemm_upd:
-	g++  gemm_model_upd.cpp $(SRCFILES) $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -o gemm_upd
+	${CXX}  gemm_model_upd.cpp $(SRCFILES) $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -o gemm_upd
 
 $(OUTDIR)/gemm_bwd:
-	g++  gemm_model_bwd.cpp $(SRCFILES) $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -o gemm_bwd
+	${CXX}  gemm_model_bwd.cpp $(SRCFILES) $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -o gemm_bwd
 
 $(OUTDIR)/gemm:
-	g++  gemm_model_fwd.cpp $(SRCFILES) $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -o gemm
+	${CXX}  gemm_model_fwd.cpp $(SRCFILES) $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -o gemm
 
 $(OUTDIR)/conv_fwd:
-	g++ conv_model_fwd.cpp $(SRCFILES) $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -o conv_fwd
+	${CXX} conv_model_fwd.cpp $(SRCFILES) $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -o conv_fwd
 
 $(OUTDIR)/conv_bwd:
-	g++ conv_model_bwd.cpp $(SRCFILES) $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -o conv_bwd
+	${CXX} conv_model_bwd.cpp $(SRCFILES) $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -o conv_bwd
 
 $(OUTDIR)/conv_upd:
-	g++ conv_model_upd.cpp $(SRCFILES) $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -o conv_upd
+	${CXX} conv_model_upd.cpp $(SRCFILES) $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -o conv_upd
 
 $(OUTDIR)/loop_permute_generator:
-	g++ $(CXXFLAGS) spec_loop_generator.cpp -o loop_permute_generator
+	${CXX} $(CXXFLAGS) spec_loop_generator.cpp -o loop_permute_generator
 
 .PHONY: clean
 clean:

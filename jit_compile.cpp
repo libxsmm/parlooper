@@ -21,7 +21,7 @@ void* jit_compile_and_load(
   unlink(libname);
   char fdname[50];
   sprintf(fdname, "/proc/self/fd/%d", fd);
-  auto cmd = std::string("g++ -shared -fPIC -x c++ ") + flags;
+  auto cmd = std::string("clang++ -shared -fPIC -x c++ ") + flags;
   cmd = cmd + " -o " + libname + " " + filename;
   printf("JIT COMPILE: %s\n", cmd.c_str());
   int ret = system(cmd.c_str());

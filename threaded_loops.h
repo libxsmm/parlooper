@@ -221,7 +221,7 @@ class LoopingScheme {
       std::cout << "Generated code:" << std::endl << gen_code;
 
       test_kernel = (par_loop_kernel)jit_from_str(
-          code_str + gen_code, " -fopenmp ", "par_nested_loops");
+          code_str + gen_code, " -fopenmp=libomp ", "par_nested_loops");
     }
   }
 
