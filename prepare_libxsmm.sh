@@ -28,10 +28,12 @@ if [ ! -d "libxsmm_dnn" ]; then
   echo "libxsmm_dnn not exist, clone one from remote repo ..."
   git clone https://github.com/libxsmm/libxsmm_dnn.git  libxsmm_dnn
   cd libxsmm_dnn
+  git checkout f309a040e46a968d86e24cc7da16325e756b303b
 else
   echo "libxsmm_dnn exists, just updating ..."
   cd libxsmm_dnn
   git pull
+  git checkout f309a040e46a968d86e24cc7da16325e756b303b
 fi
 echo "building LIBXSMM_DNN..."
 export LIBXSMMROOT=../libxsmm

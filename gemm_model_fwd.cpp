@@ -11,7 +11,7 @@
 template<typename DType>
 int gemm_benchmark(int argc, char** argv) {
   // Setup default GEMM sizes
-  int check_correctness = 1;
+  int check_correctness = 0;
   char loop_specs_str[256] = "aBC";  
   long M = 1024*4, N = 1024*4, K = 1024*4;
   long bm = 32, bn = 32, bk = 32;
