@@ -9,8 +9,8 @@
 LIBXSMM_ROOT := $(if $(LIBXSMM_ROOT),$(LIBXSMM_ROOT),./libxsmm/)
 LIBXSMM_DNN_ROOT := $(if $(LIBXSMM_DNN_ROOT),$(LIBXSMM_DNN_ROOT),./libxsmm_dnn/)
 
-CXX=clang++
-CXXFLAGS = -Wno-format -fopenmp=libomp -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14 -O2 
+CXX=icpc
+CXXFLAGS = -Wno-format -fopenmp -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14 -O2 
 LDFLAGS = -ldl -lxsmm -lxsmmnoblas
 IFLAGS = -I$(LIBXSMM_ROOT)/include -I$(LIBXSMM_DNN_ROOT)/include -I$(LIBXSMM_ROOT)/samples/deeplearning/libxsmm_dnn/include/
 LFLAGS = -L$(LIBXSMM_ROOT)/lib/

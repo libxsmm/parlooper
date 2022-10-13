@@ -19,7 +19,7 @@ else
   git pull
 fi
 echo "building LIBXSMM..."
-make realclean && make CC=clang CXX=clang++ FC= -j16
+make realclean && make CC=icc CXX=icpc FC= -j16
 echo "done building LIBXSMM"
 cd ..
 
@@ -37,6 +37,6 @@ else
 fi
 echo "building LIBXSMM_DNN..."
 export LIBXSMMROOT=../libxsmm
-make realclean && make CC=clang CXX=clang++ FC= -j16
+make realclean && make CC=icc CXX=icpc FC= -j16
 echo "done building LIBXSMM_DNN"
 cd ..
