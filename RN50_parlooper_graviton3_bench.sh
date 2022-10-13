@@ -1,0 +1,124 @@
+#!/bin/bash
+T=$1
+MB=$2
+cols=$3
+rows=$4
+
+if [[ "$MB" -eq 1 ]]; then
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg  ${MB} 56 56 64 64 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 56 56 64 64 3 3 1 1 1 1 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 56 56 64 256 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 56 56 64 256 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 56 56 256 64 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 56 56 64 64 3 3 1 1 1 1 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 56 56 64 256 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 56 56 256 64 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 56 56 64 64 3 3 1 1 1 1 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 56 56 64 256 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 56 56 256 128 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 56 56 128 128 3 3 2 2 1 1 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 56 56 256 512 1 1 2 2 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 28 28 128 512 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 28 28 512 128 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 28 28 128 128 3 3 1 1 1 1 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 28 28 128 512 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 28 28 512 128 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 28 28 128 128 3 3 1 1 1 1 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 28 28 128 512 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 28 28 512 128 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 28 28 128 128 3 3 1 1 1 1 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 28 28 128 512 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 28 28 512 256 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 28 28 256 256 3 3 2 2 1 1 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 28 28 512 1024 1 1 2 2 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 14 14 256 1024 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 14 14 1024 256 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 14 14 256 1024 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 14 14 1024 256 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 14 14 256 1024 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 14 14 1024 256 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 14 14 256 1024 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 14 14 1024 256 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 14 14 256 1024 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 14 14 1024 256 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 14 14 256 1024 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 14 16 512 512 3 3 2 2 1 1 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 14 16 1024 2048 1 1 2 2 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 7 7 512 2048 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 7 7 2048 512 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 7 7 512 512 3 3 1 1 1 1 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 7 7 512 2048 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 7 7 2048 512 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 7 7 512 512 3 3 1 1 1 1 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd CDabefg ${MB} 7 7 512 2048 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+else
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbdced ${MB} 56 56 64 64 1 1 1 1 0 0 32 32 4 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbdced ${MB} 56 56 64 64 3 3 1 1 1 1 32 32 4 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbdced ${MB} 56 56 64 256 1 1 1 1 0 0 32 32 4 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbdced ${MB} 56 56 64 256 1 1 1 1 0 0 32 32 4 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbdced ${MB} 56 56 256 64 1 1 1 1 0 0 32 32 4 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbdced ${MB} 56 56 64 64 3 3 1 1 1 1 32 32 4 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbdced ${MB} 56 56 64 256 1 1 1 1 0 0 32 32 4 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbdced ${MB} 56 56 256 64 1 1 1 1 0 0 32 32 4 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbdced ${MB} 56 56 64 64 3 3 1 1 1 1 32 32 4 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbdced ${MB} 56 56 64 256 1 1 1 1 0 0 32 32 4 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbedc ${MB} 56 56 256 128 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbedc ${MB} 56 56 128 128 3 3 2 2 1 1 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbedc ${MB} 56 56 256 512 1 1 2 2 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbedc ${MB} 28 28 128 512 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbdecd ${MB} 28 28 512 128 1 1 1 1 0 0 32 32 7 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbdecd ${MB} 28 28 128 128 3 3 1 1 1 1 32 32 7 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbdecd ${MB} 28 28 128 512 1 1 1 1 0 0 32 32 7 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbdecd ${MB} 28 28 512 128 1 1 1 1 0 0 32 32 7 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbdecd ${MB} 28 28 128 128 3 3 1 1 1 1 32 32 7 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbdecd ${MB} 28 28 128 512 1 1 1 1 0 0 32 32 7 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbdecd ${MB} 28 28 512 128 1 1 1 1 0 0 32 32 7 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbdecd ${MB} 28 28 128 128 3 3 1 1 1 1 32 32 7 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbdecd ${MB} 28 28 128 512 1 1 1 1 0 0 32 32 7 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbcdce ${MB} 28 28 512 256 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbcdce ${MB} 28 28 256 256 3 3 2 2 1 1 32 32 1 1 1 1 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbcdce ${MB} 28 28 512 1024 1 1 2 2 0 0 32 32 1 1 1 8 2 1 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbcdce ${MB} 14 14 256 1024 1 1 1 1 0 0 32 32 1 1 1 8 2 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbcecd ${MB} 14 14 1024 256 1 1 1 1 0 0 32 32 1 1 1 2 2 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbcecd ${MB} 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 2 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbcecd ${MB} 14 14 256 1024 1 1 1 1 0 0 32 32 1 1 1 2 2 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbcecd ${MB} 14 14 1024 256 1 1 1 1 0 0 32 32 1 1 1 2 2 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbcecd ${MB} 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 2 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbcecd ${MB} 14 14 256 1024 1 1 1 1 0 0 32 32 1 1 1 2 2 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbcecd ${MB} 14 14 1024 256 1 1 1 1 0 0 32 32 1 1 1 2 2 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbcecd ${MB} 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 2 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbcecd ${MB} 14 14 256 1024 1 1 1 1 0 0 32 32 1 1 1 2 2 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbcecd ${MB} 14 14 1024 256 1 1 1 1 0 0 32 32 1 1 1 2 2 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbcecd ${MB} 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 2 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbcecd ${MB} 14 14 256 1024 1 1 1 1 0 0 32 32 1 1 1 2 2 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbcecd ${MB} 14 14 1024 256 1 1 1 1 0 0 32 32 1 1 1 2 2 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbcecd ${MB} 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 2 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbcecd ${MB} 14 14 256 1024 1 1 1 1 0 0 32 32 1 1 1 2 2 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbcecd ${MB} 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 8 2 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbcecd ${MB} 14 16 512 512 3 3 2 2 1 1 32 32 1 1 1 4 1 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbcecd ${MB} 14 16 1024 2048 1 1 2 2 0 0 32 32 1 1 1 4 7 1 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd Afgbcecd ${MB} 7 7 512 2048 1 1 1 1 0 0 32 32 1 1 1 8 7 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd ACfgbdec ${MB} 7 7 2048 512 1 1 1 1 0 0 32 32 1 1 1 1 7 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd ACfgbdec ${MB} 7 7 512 512 3 3 1 1 1 1 32 32 1 1 1 1 7 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd ACfgbdec ${MB} 7 7 512 2048 1 1 1 1 0 0 32 32 1 1 1 1 7 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd ACfgbdec ${MB} 7 7 2048 512 1 1 1 1 0 0 32 32 1 1 1 1 7 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd ACfgbdec ${MB} 7 7 512 512 3 3 1 1 1 1 32 32 1 1 1 1 7 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd ACfgbdec ${MB} 7 7 512 2048 1 1 1 1 0 0 32 32 1 1 1 1 7 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd "A{C:$cols}fgbC{R:$rows}ed" ${MB} 7 7 512 2048 1 1 1 1 0 0 32 32 1 1 1 8 7 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd "A{C:$cols}C{R:$rows}fgbde" ${MB} 7 7 2048 512 1 1 1 1 0 0 32 32 1 1 1 1 7 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd "A{C:$cols}C{R:$rows}fgbde" ${MB} 7 7 512 512 3 3 1 1 1 1 32 32 1 1 1 1 7 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd "A{C:$cols}C{R:$rows}fgbde" ${MB} 7 7 512 2048 1 1 1 1 0 0 32 32 1 1 1 1 7 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd "A{C:$cols}C{R:$rows}fgbde" ${MB} 7 7 2048 512 1 1 1 1 0 0 32 32 1 1 1 1 7 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd "A{C:$cols}C{R:$rows}fgbde" ${MB} 7 7 512 512 3 3 1 1 1 1 32 32 1 1 1 1 7 0 1000
+  OMP_NUM_THREADS=${T} USE_BF16=1 ./conv_fwd "A{C:$cols}C{R:$rows}fgbde" ${MB} 7 7 512 2048 1 1 1 1 0 0 32 32 1 1 1 1 7 0 1000
+fi
+
+
+
+
