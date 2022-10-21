@@ -172,7 +172,7 @@ int conv_benchmark(int argc, char** argv) {
     non_1x1_with_strides = 1;
   }
 
-  printf("Algorithm decisions: avoid_rim_fmas non_1x1_with-strides: %d %d \n", avoid_rim_fmas, non_1x1_with_strides);
+  printf("Algorithm decisions: avoid_rim_fmas non_1x1_with_strides: %d %d \n", avoid_rim_fmas, non_1x1_with_strides);
 
   if ((R == 1 && S == 1) ||
       (avoid_rim_fmas == 1) ||
@@ -414,6 +414,10 @@ int conv_benchmark(int argc, char** argv) {
       tensor_copy_NCHWc_to_NCHW (naive_input_nchwc, naive_input_opt, N, C, ifhp, ifwp, bc);
     } else {
       tensor_copy_NCHWc_to_NCHW ((float*)input_libxsmm, naive_input_opt, N, C, ifhp, ifwp, bc);
+    }
+    /* If non 1x1 and multiple h in gemm, then make sure that we zero out the rims... */
+    if ((R != 1 || S != 1) && (h_in_gemm > 1)) {
+      set_zeropad_nchw(naive_input_opt, N, C, ifhp, ifwp, pad_h_in, pad_w_in);
     }
     printf("##########################################\n");
     printf("#           Correctness - BWD            #\n");
