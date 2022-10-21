@@ -445,7 +445,7 @@ int conv_benchmark(int argc, char** argv) {
   // Print performance/model numbers
   double gflop = (2.0*(double)n_iters*(double)N*(double)C*(double)K*(double)R*(double)S*(double)ofh*(double)ofw)/(1000*1000*1000);
   //printf("Compilation time is %.5g s\n", t1-t0);
-  printf("GFLOPS %.6g %s_hb=%d_wb=%d_cb=%d_kb=%d\n", gflop/(t_end-t_start), loop_specs_str, h_block, w_block, c_block, k_block);
+  printf("GFLOPS %.6g %s_hb=%d_wb=%d_cb=%d_kb=%d_hg=%d\n", gflop/(t_end-t_start), loop_specs_str, h_block, w_block, c_block, k_block, h_in_gemm);
 
   // Free buffers
   libxsmm_free(naive_input);

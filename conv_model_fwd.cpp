@@ -60,6 +60,9 @@ int conv_benchmark(int argc, char** argv) {
     }
   }
   
+  printf("Test parameters: N H W C K R S stride_h stride_w pad_h pad_w bc bk: %d %d %d %d %d %d %d %d %d %d %d %d %d \n", N, H, W, C, K, R, S, stride_h, stride_w, pad_h, pad_w, bc, bk);
+  printf("Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input: %d %d %d %d %d %d\n", h_block, w_block, c_block, k_block, h_in_gemm, pack_input);
+
   if (c_block == 1 && loop_specs_str[3] != 'b' ) {
     //return 0;
   }
@@ -369,7 +372,7 @@ int conv_benchmark(int argc, char** argv) {
   // Print performance/model numbers
   double gflop = (2.0*(double)n_iters*(double)N*(double)C*(double)K*(double)R*(double)S*(double)ofh*(double)ofw)/(1000*1000*1000);
   //printf("Compilation time is %.5g s\n", t1-t0);
-  printf("GFLOPS %.6g %s_hb=%d_wb=%d_cb=%d_kb=%d\n", gflop/((double)(t_end-t_start)), loop_specs_str, h_block, w_block, c_block, k_block);
+  printf("GFLOPS %.6g %s_hb=%d_wb=%d_cb=%d_kb=%d_hg=%d_pu=%d\n", gflop/((double)(t_end-t_start)), loop_specs_str, h_block, w_block, c_block, k_block, h_in_gemm, pack_input);
   printf("PERFDUMP,FP,%s,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%.5g,%.5g,%f,%f,%f,%f,%f,%f,%f\n", LIBXSMM_VERSION, omp_get_max_threads(), N, C, K,
         H, W, R, S, stride_h, pad_h, pad_w, ((double)((t_end - t_start)/n_iters)), (gflop)/(t_end - t_start), norms.l1_ref, norms.l1_tst,
         norms.l2_abs, norms.l2_rel, norms.linf_abs, norms.linf_rel, norms.normf_rel);
