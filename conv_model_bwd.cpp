@@ -22,6 +22,7 @@ int conv_benchmark(int argc, char** argv) {
   long h_block = 1;
   long h_in_gemm = 1;
   long n_iters = 1;
+  const long avoid_rim_pollution = 0; /* if 0, rims can be polluted after the main loop and will be cleaned in validation */
   long i;
   // Setup model and trace
   ifreq = 1.0 / getFreq();
@@ -212,6 +213,8 @@ int conv_benchmark(int argc, char** argv) {
     auto l_unary_shape = libxsmm_create_meltw_unary_shape(bc*zero_n, 1, bc*zero_n, bc*zero_n, dtype, dtype, dtype);
     zero_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
     l_unary_shape = libxsmm_create_meltw_unary_shape(bc*ifwp*ifhp, 1, bc*ifwp*ifhp, bc*ifwp*ifhp, dtype, dtype, dtype);
+    l_unary_shape = libxsmm_create_meltw_unary_shape(bc, 1, bc, bc, dtype, dtype, dtype);
+    zero_kernel_bc = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);  
     zero_kernel_all_pixels = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);   
     tileconfig_kernel.gemm  = libxsmm_dispatch_gemm_v2( l_shape, l_tc_flags, l_prefetch_flags );
     tilerelease_kernel.gemm = libxsmm_dispatch_gemm_v2( l_shape, l_tr_flags, l_prefetch_flags );
@@ -336,6 +339,22 @@ int conv_benchmark(int argc, char** argv) {
               }
             }
             brgemm_kernel.gemm( &gemm_param );
+
+            /* Zero Rim..  */
+            if (avoid_rim_pollution && h_in_gemm > 1 && i_r == R-r_step && i_s == S-s_step && i_h == ofh-h_step && i_w == ofw-w_step && i_k == Kb - Kb_step) {
+              for (int ij = 0; ij < ifhp; ij++) {
+                for (int ii = 0; ii < ifwp; ii++) {
+                  if ((ij < pad_h_in || ij >= ifh + pad_h_in) || 
+                      (ii < pad_w_in || ii >= ifw + pad_w_in)) {
+                    libxsmm_meltw_unary_param zero_param;
+                    zero_param.out.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, ij, ii, 0, Cb, ifhp, ifwp, bc);
+                    //for (int k = 0; k < bc; k++)
+                    //  ((libxsmm_bfloat16*)zero_param.out.primary)[k] = 0;
+                    zero_kernel_bc( &zero_param );
+                  }
+                }
+              } 
+            } 
           } else {
             unsigned long long brcount = Kb_step * r_step * s_step;
             libxsmm_gemm_param gemm_param;
@@ -415,8 +434,8 @@ int conv_benchmark(int argc, char** argv) {
     } else {
       tensor_copy_NCHWc_to_NCHW ((float*)input_libxsmm, naive_input_opt, N, C, ifhp, ifwp, bc);
     }
-    /* If non 1x1 and multiple h in gemm, then make sure that we zero out the rims... */
-    if ((R != 1 || S != 1) && (h_in_gemm > 1)) {
+    /* If non 1x1 and multiple h in gemm, then make sure that we zero out the rims (provided we do not zero them explicitly) */
+    if (avoid_rim_pollution == 0 && (R != 1 || S != 1) && (h_in_gemm > 1)) {
       set_zeropad_nchw(naive_input_opt, N, C, ifhp, ifwp, pad_h_in, pad_w_in);
     }
     printf("##########################################\n");
