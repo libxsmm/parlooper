@@ -18,7 +18,6 @@ k_block=1
 h_in_gemm=1
 
 # 52 convolutions from Resnet50-v1.5
-: '
 ./conv_bwd "${loop_string}" $N 56 56 64 64      1 1 1 1 0 0 $bc $bk $h_block $w_block $c_block $k_block $h_in_gemm $niters
 ./conv_bwd "${loop_string}" $N 56 56 64 256     1 1 1 1 0 0 $bc $bk $h_block $w_block $c_block $k_block $h_in_gemm $niters
 ./conv_bwd "${loop_string}" $N 56 56 64 256     1 1 1 1 0 0 $bc $bk $h_block $w_block $c_block $k_block $h_in_gemm $niters
@@ -132,7 +131,7 @@ h_in_gemm=2
 # These two should early exit as strided convs do not support h_in_gemm != 1
 ./conv_bwd "${loop_string}" $N  14 14 1024 2048 1 1 2 2 0 0 $bc $bk $h_block $w_block $c_block $k_block $h_in_gemm $niters
 ./conv_bwd "${loop_string}" $N  14 14 512 512   3 3 2 2 1 1 $bc $bk $h_block $w_block $c_block $k_block $h_in_gemm $niters
-'
+
 h_block=1
 w_block=1
 c_block=1
@@ -147,6 +146,13 @@ k_block=1
 h_in_gemm=1
 ./conv_bwd "${loop_string}" $N  14 14 1024 2048 1 1 2 2 0 0 $bc $bk $h_block $w_block $c_block $k_block $h_in_gemm $niters
 ./conv_bwd "${loop_string}" $N  14 14 512 512   3 3 2 2 1 1 $bc $bk $h_block $w_block $c_block $k_block $h_in_gemm $niters
+
+h_block=1
+w_block=1
+c_block=1
+k_block=1
+h_in_gemm=2
+./conv_bwd "${loop_string}" $N 14 14 256 256  3 3  1 1  1 1 $bc $bk $h_block $w_block $c_block $k_block $h_in_gemm $niters
 
 #./conv_bwd $@
 #export OMP_NUM_THREADS=28
