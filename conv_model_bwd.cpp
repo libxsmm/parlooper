@@ -348,8 +348,6 @@ int conv_benchmark(int argc, char** argv) {
                       (ii < pad_w_in || ii >= ifw + pad_w_in)) {
                     libxsmm_meltw_unary_param zero_param;
                     zero_param.out.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, ij, ii, 0, Cb, ifhp, ifwp, bc);
-                    //for (int k = 0; k < bc; k++)
-                    //  ((libxsmm_bfloat16*)zero_param.out.primary)[k] = 0;
                     zero_kernel_bc( &zero_param );
                   }
                 }
