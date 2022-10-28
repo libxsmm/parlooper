@@ -14,6 +14,9 @@
 #include <functional>
 #include <string>
 
+/* for the definition of threaded_loop_par_type enum values */
+#include "threaded_loops.h"
+
 #define MAX_CODE_SIZE 1048576
 //#define STAND_ALONE
 
@@ -393,7 +396,7 @@ void emit_loop_body(loop_code* i_code, char* body_func_name) {
     sprintf(tmp_buf, "idx[%d] = tid;\n", 0 + 3*i_code->n_logical_loops);
     add_buf_to_code(i_code, tmp_buf);
     for (i = 0; i < i_code->n_logical_loops; i++) {
-      if (i_code->logical_loop_partype[i] == 2) {
+      if (i_code->logical_loop_partype[i] == (int)THREADED_LOOP_PARALLEL_THREAD_ROWS) {
         align_line(i_code);
         sprintf(tmp_buf, "idx[%d] = 2;\n", i + i_code->n_logical_loops);
         add_buf_to_code(i_code, tmp_buf);
@@ -403,7 +406,7 @@ void emit_loop_body(loop_code* i_code, char* body_func_name) {
         align_line(i_code);
         sprintf(tmp_buf, "idx[%d] = row_id;\n", 1 + 3*i_code->n_logical_loops);
         add_buf_to_code(i_code, tmp_buf);
-      } else if (i_code->logical_loop_partype[i] == 3) {
+      } else if (i_code->logical_loop_partype[i] == (int)THREADED_LOOP_PARALLEL_THREAD_COLS) {
         align_line(i_code);
         sprintf(tmp_buf, "idx[%d] = 3;\n", i + i_code->n_logical_loops);
         add_buf_to_code(i_code, tmp_buf);
@@ -412,8 +415,8 @@ void emit_loop_body(loop_code* i_code, char* body_func_name) {
         add_buf_to_code(i_code, tmp_buf);
         align_line(i_code);
         sprintf(tmp_buf, "idx[%d] = col_id;\n", 2 + 3*i_code->n_logical_loops);
-        add_buf_to_code(i_code, tmp_buf);        
-      } else if (i_code->logical_loop_partype[i] == 4) {
+        add_buf_to_code(i_code, tmp_buf);
+      } else if (i_code->logical_loop_partype[i] == (int)THREADED_LOOP_PARALLEL_THREAD_LAYERS) {
         align_line(i_code);
         sprintf(tmp_buf, "idx[%d] = 4;\n", i + i_code->n_logical_loops);
         add_buf_to_code(i_code, tmp_buf);
@@ -422,7 +425,7 @@ void emit_loop_body(loop_code* i_code, char* body_func_name) {
         add_buf_to_code(i_code, tmp_buf);
         align_line(i_code);
         sprintf(tmp_buf, "idx[%d] = layer_id;\n", 3 + 3*i_code->n_logical_loops);
-        add_buf_to_code(i_code, tmp_buf);        
+        add_buf_to_code(i_code, tmp_buf);
       } else {
         align_line(i_code);
         sprintf(tmp_buf, "idx[%d] = 0;\n", i + i_code->n_logical_loops);
@@ -430,11 +433,13 @@ void emit_loop_body(loop_code* i_code, char* body_func_name) {
       }
     }
   } else {
-    align_line(i_code);
-    sprintf(tmp_buf, "idx[%d] = tid;\n", 0 + 3*i_code->n_logical_loops);
-    add_buf_to_code(i_code, tmp_buf); 
+    if (i_code->logical_loop_partype[i] != (int)THREADED_LOOP_NO_PARALLEL) {
+      align_line(i_code);
+      sprintf(tmp_buf, "idx[%d] = tid;\n", 0 + 3*i_code->n_logical_loops);
+      add_buf_to_code(i_code, tmp_buf); 
+    }
     for (i = 0; i < i_code->n_logical_loops; i++) {
-      if (i_code->logical_loop_partype[i] == 1) {
+      if (i_code->logical_loop_partype[i] == (int)THREADED_LOOP_PARALLEL_COLLAPSE) {
         align_line(i_code);
         sprintf(tmp_buf, "idx[%d] = 1;\n", i + i_code->n_logical_loops);
         add_buf_to_code(i_code, tmp_buf);     
@@ -705,17 +710,17 @@ void extract_2d_par_info(
         loop_params[loop_id - 1].is_par_across_row_teams = 1;
         loop_params[loop_id - 1].is_par_across_col_teams = 0;
         loop_params[loop_id - 1].is_par_across_layer_teams = 0;
-        i_code->logical_loop_partype[tolower(in_desc[i-2])-'a'] = 2;
+        i_code->logical_loop_partype[tolower(in_desc[i-2])-'a'] = THREADED_LOOP_PARALLEL_THREAD_ROWS;
       } else if (cur == 'C' || cur == 'c') {
         loop_params[loop_id - 1].is_par_across_col_teams = 1;
         loop_params[loop_id - 1].is_par_across_row_teams = 0;
         loop_params[loop_id - 1].is_par_across_layer_teams = 0;
-        i_code->logical_loop_partype[tolower(in_desc[i-2])-'a'] = 3;  
+        i_code->logical_loop_partype[tolower(in_desc[i-2])-'a'] = THREADED_LOOP_PARALLEL_THREAD_COLS;
       } else if (cur == 'L' || cur == 'l') {
         loop_params[loop_id - 1].is_par_across_layer_teams = 1;
         loop_params[loop_id - 1].is_par_across_col_teams = 0;
         loop_params[loop_id - 1].is_par_across_row_teams = 0;
-        i_code->logical_loop_partype[tolower(in_desc[i-2])-'a'] = 4;        
+        i_code->logical_loop_partype[tolower(in_desc[i-2])-'a'] = THREADED_LOOP_PARALLEL_THREAD_LAYERS;
       }
       /* Consume :  */
       i += 2;
@@ -885,7 +890,7 @@ std::string loop_generator(const char* ____loop_nest_desc_extended) {
         (loop_params[i].is_par_across_col_teams == 0) &&
         (loop_params[i].is_par_across_row_teams == 0) &&
         (loop_params[i].is_par_across_layer_teams == 0)) {
-      l_code.logical_loop_partype[loop_abs_index] = 1;
+      l_code.logical_loop_partype[loop_abs_index] = THREADED_LOOP_PARALLEL_COLLAPSE;
     }
 
     occurence_id = occurence_map[tolower(loop_nest_desc[i])];
