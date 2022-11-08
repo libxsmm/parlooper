@@ -25,7 +25,7 @@ int conv_benchmark(int argc, char** argv) {
 #endif
   /* Some algorithmic knobs  */
   /* Uses parallelism in the MB dimension for f32 precision */
-  long use_mb_par_f32 = 0;//1;
+  long use_mb_par_f32 = 1;
 
   /* Fuse bf16 necessary transposes */ 
   long bf16_use_nchw_format = 1;
@@ -54,7 +54,7 @@ int conv_benchmark(int argc, char** argv) {
   long n_img_teams = 7;
   long n_ofm_teams = 4;
   long weight_copies = 0;
-  long multiple_target = 32;//2;
+  long multiple_target = 2;
   long max_compute_offset_input = 0;
   long use_f32_wt_reduction_and_external_wt_vnni = 0;
   long compute_full_wt_output_block = 0;
@@ -114,13 +114,6 @@ int conv_benchmark(int argc, char** argv) {
 
   bf16_use_chwn_format = (bf16_use_nchw_format > 0) ? 0 : 1;
   use_private_trans = bf16_fuse_upd_transposes;
-
-  printf("Test parameters: N H W C K R S stride_h stride_w pad_h pad_w bc bk logical_padding: %d %d %d %d %d %d %d %d %d %d %d %d %d %d \n", N, H, W, C, K, R, S, stride_h, stride_w, pad_h, pad_w, bc, bk, logical_padding);
-  printf("Tuning parameters: bf16_use_nchw_format bf16_fuse_upd_transposes bf16_acc_nw: %d %d %d \n", bf16_use_nchw_format, bf16_fuse_upd_transposes, bf16_acc_nw);
-  printf("Tuning parameters: par_over_h_pixels pack_input_upfront use_intermediate_f32_wt_tensor: %d %d %d \n", par_over_h_pixels, pack_input_upfront, use_intermediate_f32_wt_tensor);
-  printf("Tuning parameters: use_hybrid n_img_teams n_ofm_teams: %d %d %d \n", use_hybrid_imgfm_parallelization, n_img_teams, n_ofm_teams);
-  printf("Tuning parameters: use_f32_wt_reduction_and_external_wt_vnni compute_full_wt_output_block pblock: %d %d %d \n", use_f32_wt_reduction_and_external_wt_vnni, compute_full_wt_output_block, pixels_blocking_factor);
-  printf("Tuning parameters: use_mb_par_f32: %d \n", use_mb_par_f32);
 
   if (logical_padding && ((sizeof(DType) != 2) || (bf16_use_chwn_format == 0) || (use_private_trans != 0)) ) {
     printf("Error: logical padding is only supported for bf16 and chwn format and use_private_trans == 0 \n");
@@ -391,12 +384,7 @@ int conv_benchmark(int argc, char** argv) {
         pixels_blocking_factor--;
       }
       pixel_blocking = accum_length_pixels/pixels_blocking_factor;
-      printf("Extra computed parameters: accum_length_pixels pixels_blocking_factor (final) pixel_blocking: %d %d %d \n", accum_length_pixels, pixels_blocking_factor, pixel_blocking);
-
       use_intermediate_f32_wt_tensor = (pixel_blocking == n_used_pixels) ? 0 : 1;
-
-      printf("Extra dbg: pixel_blocking = %d, n_used_pixels = %d use_intermediate_f32_wt_tensor = %d \n", pixel_blocking, n_used_pixels, use_intermediate_f32_wt_tensor);
-
       float beta = (use_intermediate_f32_wt_tensor) ? (float)1.0 : (float)0.0;
 
       if (pack_input_upfront)
@@ -422,7 +410,6 @@ int conv_benchmark(int argc, char** argv) {
       } else {
         long stride_a = K * output_pixels * sizeof(DType);
         long stride_b = C * input_pixels * sizeof(DType);
-        printf("Extra computed parameters: output_pixels stride_a input_pixels stride_b: %d %d %d %d\n", output_pixels, stride_a, input_pixels, stride_b);
         auto new_shape = libxsmm_create_gemm_shape( bk, bc, pixel_blocking, bk, input_pixels, bk, dtype, dtype, LIBXSMM_DATATYPE_F32, dtype);
         auto new_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
         auto new_flags = (sizeof(DType) == 2) ? ( LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG ) : LIBXSMM_GEMM_FLAGS('N', 'T');
@@ -474,7 +461,6 @@ int conv_benchmark(int argc, char** argv) {
       zero_kernel_khwn = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
     }
   }
-  printf("Extra computed parameters: upd_remaining_pixels: %d\n", upd_remaining_pixels);
   
   // JIT nested loop specs for various algorithms
   long n_step = 1;
@@ -493,7 +479,7 @@ int conv_benchmark(int argc, char** argv) {
   long _r_step = 1;
   long _s_step = 1;
 
-  printf("AFTERWARDS Test parameters: N H W C K R S stride_h stride_w pad_h pad_w bc bk logical_padding: %d %d %d %d %d %d %d %d %d %d %d %d %d %d \n", N, H, W, C, K, R, S, stride_h, stride_w, pad_h, pad_w, bc, bk, logical_padding);
+  printf("Test parameters: N H W C K R S stride_h stride_w pad_h pad_w bc bk logical_padding: %d %d %d %d %d %d %d %d %d %d %d %d %d %d \n", N, H, W, C, K, R, S, stride_h, stride_w, pad_h, pad_w, bc, bk, logical_padding);
   printf("Tuning parameters: bf16_use_nchw_format bf16_fuse_upd_transposes bf16_acc_nw: %d %d %d \n", bf16_use_nchw_format, bf16_fuse_upd_transposes, bf16_acc_nw);
   printf("Tuning parameters: par_over_h_pixels pack_input_upfront use_intermediate_f32_wt_tensor: %d %d %d \n", par_over_h_pixels, pack_input_upfront, use_intermediate_f32_wt_tensor);
   printf("Tuning parameters: use_hybrid n_img_teams n_ofm_teams: %d %d %d \n", use_hybrid_imgfm_parallelization, n_img_teams, n_ofm_teams);
@@ -668,7 +654,6 @@ int conv_benchmark(int argc, char** argv) {
     }
 
     if ( (sizeof(DType) == 2) && (bf16_use_nchw_format > 0)) {
-#if 1
       if (bf16_fuse_upd_transposes == 0) {
         if (pack_input_upfront > 0) {
           tr_input_nchw_loop(
@@ -723,7 +708,6 @@ int conv_benchmark(int argc, char** argv) {
           [&]() {},
           [&]() {});
       }
-#endif
       if (use_hybrid_imgfm_parallelization == 0) {
         conv_loop_bf16_nchw(
           [&](int* ind) {
@@ -776,7 +760,6 @@ int conv_benchmark(int argc, char** argv) {
           [&]() {if (sizeof(DType) == 2) tileconfig_kernel.gemm(NULL);},
           [&]() {if (sizeof(DType) == 2) tilerelease_kernel.gemm(NULL);});
         
-#if 1
         if (use_f32_wt_reduction_and_external_wt_vnni > 0) { 
           reduce_wt_loop(
             [&](int* ind) {
@@ -819,7 +802,6 @@ int conv_benchmark(int argc, char** argv) {
             [&]() {},
             [&]() {});
         }
-#endif
       } else {
         conv_loop_bf16_nchw(
           [&](int* ind) {
@@ -859,7 +841,6 @@ int conv_benchmark(int argc, char** argv) {
           },
           [&]() {if (sizeof(DType) == 2) tileconfig_kernel.gemm(NULL);},
           [&]() {if (sizeof(DType) == 2) tilerelease_kernel.gemm(NULL);});
-#if 1
         if (use_f32_wt_reduction_and_external_wt_vnni > 0) { 
           reduce_wt_loop(
             [&](int* ind) {
@@ -902,7 +883,6 @@ int conv_benchmark(int argc, char** argv) {
             [&]() {},
             [&]() {});
         }
-#endif
       }
     }
     
