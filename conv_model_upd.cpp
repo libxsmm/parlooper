@@ -10,6 +10,7 @@
 
 template<typename DType>
 int conv_benchmark(int argc, char** argv) {
+  int error = 0;
   // Setup default GEMM sizes
   int check_correctness = 1;
   char loop_specs_str[256] = "aBC";  
@@ -24,7 +25,7 @@ int conv_benchmark(int argc, char** argv) {
 #endif
   /* Some algorithmic knobs  */
   /* Uses parallelism in the MB dimension for f32 precision */
-  long use_mb_par_f32 = 1;
+  long use_mb_par_f32 = 0;//1;
 
   /* Fuse bf16 necessary transposes */ 
   long bf16_use_nchw_format = 1;
@@ -53,11 +54,12 @@ int conv_benchmark(int argc, char** argv) {
   long n_img_teams = 7;
   long n_ofm_teams = 4;
   long weight_copies = 0;
-  long multiple_target = 2;
+  long multiple_target = 32;//2;
   long max_compute_offset_input = 0;
   long use_f32_wt_reduction_and_external_wt_vnni = 0;
   long compute_full_wt_output_block = 0;
   long pixels_blocking_factor = 1;
+  long logical_padding = 0;
 
   // Setup model and trace
   ifreq = 1.0 / getFreq();
@@ -102,6 +104,9 @@ int conv_benchmark(int argc, char** argv) {
       if (argc > 27) {
         pixels_blocking_factor = atoi(argv[27]);
       }
+      if (argc > 28) {
+        logical_padding = atoi(argv[28]);
+      }
     } else {
       use_mb_par_f32 = atoi(argv[16]);    
     }
@@ -109,6 +114,18 @@ int conv_benchmark(int argc, char** argv) {
 
   bf16_use_chwn_format = (bf16_use_nchw_format > 0) ? 0 : 1;
   use_private_trans = bf16_fuse_upd_transposes;
+
+  printf("Test parameters: N H W C K R S stride_h stride_w pad_h pad_w bc bk logical_padding: %d %d %d %d %d %d %d %d %d %d %d %d %d %d \n", N, H, W, C, K, R, S, stride_h, stride_w, pad_h, pad_w, bc, bk, logical_padding);
+  printf("Tuning parameters: bf16_use_nchw_format bf16_fuse_upd_transposes bf16_acc_nw: %d %d %d \n", bf16_use_nchw_format, bf16_fuse_upd_transposes, bf16_acc_nw);
+  printf("Tuning parameters: par_over_h_pixels pack_input_upfront use_intermediate_f32_wt_tensor: %d %d %d \n", par_over_h_pixels, pack_input_upfront, use_intermediate_f32_wt_tensor);
+  printf("Tuning parameters: use_hybrid n_img_teams n_ofm_teams: %d %d %d \n", use_hybrid_imgfm_parallelization, n_img_teams, n_ofm_teams);
+  printf("Tuning parameters: use_f32_wt_reduction_and_external_wt_vnni compute_full_wt_output_block pblock: %d %d %d \n", use_f32_wt_reduction_and_external_wt_vnni, compute_full_wt_output_block, pixels_blocking_factor);
+  printf("Tuning parameters: use_mb_par_f32: %d \n", use_mb_par_f32);
+
+  if (logical_padding && ((sizeof(DType) != 2) || (bf16_use_chwn_format == 0) || (use_private_trans != 0)) ) {
+    printf("Error: logical padding is only supported for bf16 and chwn format and use_private_trans == 0 \n");
+    exit(-1);
+  }
 
   long Kb = K/bk, Cb = C/bc;
   // For now only physical padding
@@ -131,14 +148,20 @@ int conv_benchmark(int argc, char** argv) {
   // Allocate buffers
   float *naive_input  = (float*)libxsmm_aligned_malloc( N*ifhp*ifwp*C*sizeof(float), 2097152);
   float *naive_input_nchwc  = (float*)libxsmm_aligned_malloc( N*ifhp*ifwp*C*sizeof(float), 2097152);
+  float *naive_input_unpad  = (float*)libxsmm_aligned_malloc( N*ifh*ifw*C*sizeof(float), 2097152);
+  float *naive_input_unpad_nchwc  = (float*)libxsmm_aligned_malloc( N*ifh*ifw*C*sizeof(float), 2097152);
   float *naive_output = (float*)libxsmm_aligned_malloc( N*ofhp*ofwp*K*sizeof(float), 2097152);
   float *naive_output_nchwc = (float*)libxsmm_aligned_malloc( N*ofhp*ofwp*K*sizeof(float), 2097152);
+  float *naive_output_unpad = (float*)libxsmm_aligned_malloc( N*ofh*ofw*K*sizeof(float), 2097152);
+  float *naive_output_unpad_nchwc = (float*)libxsmm_aligned_malloc( N*ofh*ofw*K*sizeof(float), 2097152);
   float *naive_output_opt = (float*)libxsmm_aligned_malloc( N*ofhp*ofwp*K*sizeof(float), 2097152);
   float *naive_filter = (float*)libxsmm_aligned_malloc( C*K*R*S*sizeof(float), 2097152);
   float *naive_filter_opt = (float*)libxsmm_aligned_malloc( C*K*R*S*sizeof(float), 2097152);
   float *naive_filter_kcrsck = (float*)libxsmm_aligned_malloc( C*K*R*S*sizeof(float), 2097152);
   DType *input_libxsmm  = (DType*)libxsmm_aligned_malloc( N*ifhp*ifwp*C*sizeof(DType), 2097152);
+  DType *input_unpad_libxsmm  = (DType*)libxsmm_aligned_malloc( N*ifh*ifw*C*sizeof(DType), 2097152);
   DType *output_libxsmm = (DType*)libxsmm_aligned_malloc( N*ofhp*ofwp*K*sizeof(DType), 2097152);
+  DType *output_unpad_libxsmm = (DType*)libxsmm_aligned_malloc( N*ofh*ofw*K*sizeof(DType), 2097152);
   DType *tr_input_libxsmm  = (DType*)libxsmm_aligned_malloc( N*ifhp*ifwp*C*sizeof(DType), 2097152);
   DType *tr_output_libxsmm = (DType*)libxsmm_aligned_malloc( N*ofhp*ofwp*K*sizeof(DType), 2097152);
   DType **private_tr_input_libxsmm  = (DType**)libxsmm_aligned_malloc( nThreads*sizeof(DType*), 2097152);
@@ -165,19 +188,33 @@ int conv_benchmark(int argc, char** argv) {
   // Init buffers
   float *naive_input_tmp = (float*)libxsmm_aligned_malloc( (size_t)N*C*ifhp*ifwp*sizeof(float), 2097152);
   init_buf(naive_input_tmp,          N*C*ifh*ifw, 0, 0);
+  copy_internal_nchw( naive_input_unpad, naive_input_tmp, N, C, ifh, ifw, 0, 0);
   copy_internal_nchw( naive_input , naive_input_tmp, N, C, ifh, ifw, pad_h, pad_w);
   libxsmm_free(naive_input_tmp);
   set_zeropad_nchw(naive_input, N, C, ifhp, ifwp, pad_h_in, pad_w_in);
-  init_buf(naive_output,         N*K*ofwp*ofhp, 0, 0);
+
+  float *naive_output_tmp = (float*)libxsmm_aligned_malloc( (size_t)N*K*ofhp*ofwp*sizeof(float), 2097152);
+  init_buf(naive_output_tmp,          N*K*ofh*ofw, 0, 0);
+  copy_internal_nchw( naive_output_unpad, naive_output_tmp, N, K, ofh, ofw, 0, 0);
+  copy_internal_nchw( naive_output , naive_output_tmp, N, K, ofh, ofw, pad_h, pad_w);
+  libxsmm_free(naive_output_tmp);
   set_zeropad_nchw(naive_output, N, K, ofhp, ofwp, pad_h_out, pad_w_out);
+
+  //init_buf(naive_output,         N*K*ofwp*ofhp, 0, 0);
+  //set_zeropad_nchw(naive_output, N, K, ofhp, ofwp, pad_h_out, pad_w_out);
+
   init_buf(naive_filter,         K*C*R*S, 0, 0);
   
   if (sizeof(DType) == 2) {
     tensor_copy_NCHW_to_NCHWc (naive_input , naive_input_nchwc,  N, C, ifhp, ifwp, bc);
+    tensor_copy_NCHW_to_NCHWc (naive_input_unpad, naive_input_unpad_nchwc,  N, C, ifh, ifw, bc);
     tensor_copy_NCHW_to_NCHWc (naive_output, naive_output_nchwc, N, K, ofhp, ofwp, bk);
+    tensor_copy_NCHW_to_NCHWc (naive_output_unpad, naive_output_unpad_nchwc,  N, K, ofh, ofw, bk);
     tensor_copy_KCRS_to_KCRSck_bf16(naive_filter, (libxsmm_bfloat16*)filter_libxsmm, K, C, R, S, bc, bk);
     libxsmm_rne_convert_fp32_bf16( naive_input_nchwc,     (libxsmm_bfloat16*)input_libxsmm,     N*C*ifhp*ifwp );
     libxsmm_rne_convert_fp32_bf16( naive_output_nchwc,    (libxsmm_bfloat16*)output_libxsmm,    N*K*ofhp*ofwp );
+    libxsmm_rne_convert_fp32_bf16( naive_input_unpad_nchwc,     (libxsmm_bfloat16*)input_unpad_libxsmm,     N*C*ifh*ifw );
+    libxsmm_rne_convert_fp32_bf16( naive_output_unpad_nchwc,    (libxsmm_bfloat16*)output_unpad_libxsmm,    N*K*ofh*ofw );
   } else {
     tensor_copy_NCHW_to_NCHWc (naive_input , (float*)input_libxsmm,  N, C, ifhp, ifwp, bc);
     tensor_copy_NCHW_to_NCHWc (naive_output, (float*)output_libxsmm, N, K, ofhp, ofwp, bk);
@@ -214,6 +251,8 @@ int conv_benchmark(int argc, char** argv) {
 
   // TPP kernels that may be used
   libxsmm_meltwfunction_unary zero_kernel;
+  libxsmm_meltwfunction_unary zero_kernel_chwn;
+  libxsmm_meltwfunction_unary zero_kernel_khwn;
   libxsmm_meltwfunction_unary zero_kernel_bf16;
   libxsmm_meltwfunction_unary zero_input_pad_kernel_bf16;
   libxsmm_meltwfunction_unary wt_reduce_kernel0_f32;
@@ -300,14 +339,20 @@ int conv_benchmark(int argc, char** argv) {
   zero_kernel_bf16 = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
 
   // Generate XForm TPP kernels
-  auto tr_unary_shape = libxsmm_create_meltw_unary_shape(bc, bn, C*ifhp*ifwp, bn, dtype, dtype, dtype);
-  trans_xform_kernel = libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_NORMT, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
-  
-  tr_unary_shape = libxsmm_create_meltw_unary_shape(bk, bn, K*ofhp*ofwp, bk, dtype, dtype, dtype);
-  vnni_xform_kernel =  libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI2, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
-  
-  tr_unary_shape = libxsmm_create_meltw_unary_shape(bk, bc, bk, bk, dtype, dtype, dtype);
+  auto tr_unary_shape = libxsmm_create_meltw_unary_shape(bk, bc, bk, bk, dtype, dtype, dtype);
   wt_vnni_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI2, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
+
+  if (logical_padding)
+    tr_unary_shape = libxsmm_create_meltw_unary_shape(bk, bn, K*ofh*ofw, bk, dtype, dtype, dtype);
+  else
+    tr_unary_shape = libxsmm_create_meltw_unary_shape(bk, bn, K*ofhp*ofwp, bk, dtype, dtype, dtype);
+  vnni_xform_kernel =  libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI2, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
+
+  if (logical_padding)
+    tr_unary_shape = libxsmm_create_meltw_unary_shape(bc, bn, C*ifh*ifw, bn, dtype, dtype, dtype);
+  else
+    tr_unary_shape = libxsmm_create_meltw_unary_shape(bc, bn, C*ifhp*ifwp, bn, dtype, dtype, dtype);
+  trans_xform_kernel = libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_NORMT, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
 
   // Generate f32->bf16 cvt TPP kernel
   l_unary_shape = libxsmm_create_meltw_unary_shape(bk, bc, bk, bk, LIBXSMM_DATATYPE_F32, dtype, LIBXSMM_DATATYPE_F32);
@@ -346,8 +391,12 @@ int conv_benchmark(int argc, char** argv) {
         pixels_blocking_factor--;
       }
       pixel_blocking = accum_length_pixels/pixels_blocking_factor;
+      printf("Extra computed parameters: accum_length_pixels pixels_blocking_factor (final) pixel_blocking: %d %d %d \n", accum_length_pixels, pixels_blocking_factor, pixel_blocking);
 
       use_intermediate_f32_wt_tensor = (pixel_blocking == n_used_pixels) ? 0 : 1;
+
+      printf("Extra dbg: pixel_blocking = %d, n_used_pixels = %d use_intermediate_f32_wt_tensor = %d \n", pixel_blocking, n_used_pixels, use_intermediate_f32_wt_tensor);
+
       float beta = (use_intermediate_f32_wt_tensor) ? (float)1.0 : (float)0.0;
 
       if (pack_input_upfront)
@@ -373,6 +422,7 @@ int conv_benchmark(int argc, char** argv) {
       } else {
         long stride_a = K * output_pixels * sizeof(DType);
         long stride_b = C * input_pixels * sizeof(DType);
+        printf("Extra computed parameters: output_pixels stride_a input_pixels stride_b: %d %d %d %d\n", output_pixels, stride_a, input_pixels, stride_b);
         auto new_shape = libxsmm_create_gemm_shape( bk, bc, pixel_blocking, bk, input_pixels, bk, dtype, dtype, LIBXSMM_DATATYPE_F32, dtype);
         auto new_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
         auto new_flags = (sizeof(DType) == 2) ? ( LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG ) : LIBXSMM_GEMM_FLAGS('N', 'T');
@@ -416,8 +466,15 @@ int conv_benchmark(int argc, char** argv) {
       l_flags  |=  LIBXSMM_GEMM_FLAG_BETA_0  | LIBXSMM_GEMM_FLAG_VNNI_C;
       l_shape = libxsmm_create_gemm_shape( gemm_m, gemm_n, gemm_k, bk, bn, bk, dtype, dtype, dtype, dtype);
       brgemm_kernel_acc_pixel_zerobeta_cvnni.gemm  = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
+
+      l_unary_shape = libxsmm_create_meltw_unary_shape(bc*bn, 1, bc*bn, bc*bn, LIBXSMM_DATATYPE_BF16, LIBXSMM_DATATYPE_BF16, LIBXSMM_DATATYPE_BF16);
+      zero_kernel_chwn = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
+
+      l_unary_shape = libxsmm_create_meltw_unary_shape(bk*bn, 1, bk*bn, bk*bn, LIBXSMM_DATATYPE_BF16, LIBXSMM_DATATYPE_BF16, LIBXSMM_DATATYPE_BF16);
+      zero_kernel_khwn = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
     }
   }
+  printf("Extra computed parameters: upd_remaining_pixels: %d\n", upd_remaining_pixels);
   
   // JIT nested loop specs for various algorithms
   long n_step = 1;
@@ -435,6 +492,13 @@ int conv_benchmark(int argc, char** argv) {
   long _c_step = 1;
   long _r_step = 1;
   long _s_step = 1;
+
+  printf("AFTERWARDS Test parameters: N H W C K R S stride_h stride_w pad_h pad_w bc bk logical_padding: %d %d %d %d %d %d %d %d %d %d %d %d %d %d \n", N, H, W, C, K, R, S, stride_h, stride_w, pad_h, pad_w, bc, bk, logical_padding);
+  printf("Tuning parameters: bf16_use_nchw_format bf16_fuse_upd_transposes bf16_acc_nw: %d %d %d \n", bf16_use_nchw_format, bf16_fuse_upd_transposes, bf16_acc_nw);
+  printf("Tuning parameters: par_over_h_pixels pack_input_upfront use_intermediate_f32_wt_tensor: %d %d %d \n", par_over_h_pixels, pack_input_upfront, use_intermediate_f32_wt_tensor);
+  printf("Tuning parameters: use_hybrid n_img_teams n_ofm_teams: %d %d %d \n", use_hybrid_imgfm_parallelization, n_img_teams, n_ofm_teams);
+  printf("Tuning parameters: use_f32_wt_reduction_and_external_wt_vnni compute_full_wt_output_block pblock: %d %d %d \n", use_f32_wt_reduction_and_external_wt_vnni, compute_full_wt_output_block, pixels_blocking_factor);
+  printf("Tuning parameters: use_mb_par_f32: %d \n", use_mb_par_f32);
 
 
   auto t0 = getTime();
@@ -604,6 +668,7 @@ int conv_benchmark(int argc, char** argv) {
     }
 
     if ( (sizeof(DType) == 2) && (bf16_use_nchw_format > 0)) {
+#if 1
       if (bf16_fuse_upd_transposes == 0) {
         if (pack_input_upfront > 0) {
           tr_input_nchw_loop(
@@ -658,7 +723,7 @@ int conv_benchmark(int argc, char** argv) {
           [&]() {},
           [&]() {});
       }
-
+#endif
       if (use_hybrid_imgfm_parallelization == 0) {
         conv_loop_bf16_nchw(
           [&](int* ind) {
@@ -711,6 +776,7 @@ int conv_benchmark(int argc, char** argv) {
           [&]() {if (sizeof(DType) == 2) tileconfig_kernel.gemm(NULL);},
           [&]() {if (sizeof(DType) == 2) tilerelease_kernel.gemm(NULL);});
         
+#if 1
         if (use_f32_wt_reduction_and_external_wt_vnni > 0) { 
           reduce_wt_loop(
             [&](int* ind) {
@@ -753,6 +819,7 @@ int conv_benchmark(int argc, char** argv) {
             [&]() {},
             [&]() {});
         }
+#endif
       } else {
         conv_loop_bf16_nchw(
           [&](int* ind) {
@@ -792,7 +859,7 @@ int conv_benchmark(int argc, char** argv) {
           },
           [&]() {if (sizeof(DType) == 2) tileconfig_kernel.gemm(NULL);},
           [&]() {if (sizeof(DType) == 2) tilerelease_kernel.gemm(NULL);});
-
+#if 1
         if (use_f32_wt_reduction_and_external_wt_vnni > 0) { 
           reduce_wt_loop(
             [&](int* ind) {
@@ -835,32 +902,72 @@ int conv_benchmark(int argc, char** argv) {
             [&]() {},
             [&]() {});
         }
+#endif
       }
     }
     
     if ( (sizeof(DType) == 2) && (bf16_use_chwn_format > 0)) {
       if (use_private_trans == 0) {
-        tr_input_loop(
-          [&](int* ind) {
-            int i_c = ind[0], i_h = ind[1], i_w = ind[2];
-            libxsmm_meltw_unary_param trans_param;
-            trans_param.in.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, 0, i_c, i_h, i_w, 0, Cb, ifhp, ifwp, bc);
-            trans_param.out.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), tr_input_libxsmm, i_c, i_h, i_w, 0, 0, ifhp, ifwp, bc, bn);
-            trans_xform_kernel( &trans_param );
-          },
-          [&]() {},
-          [&]() {});
+        if (logical_padding) {
+          tr_input_loop(
+            [&](int* ind) {
+              int i_c = ind[0], i_h = ind[1], i_w = ind[2];
+              libxsmm_meltw_unary_param zero_param;
+              zero_param.out.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), tr_input_libxsmm, i_c, i_h, i_w, 0, 0, ifhp, ifwp, bc, bn);
+              zero_kernel_chwn( &zero_param );
 
-        tr_output_loop(
-          [&](int* ind) {
-            int i_k = ind[0], i_h = ind[1], i_w = ind[2];
-            libxsmm_meltw_unary_param trans_param;
-            trans_param.in.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm, 0, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
-            trans_param.out.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), tr_output_libxsmm, i_k, i_h, i_w, 0, 0, ofhp, ofwp, bn, bk);
-            vnni_xform_kernel( &trans_param );
-          },
-          [&]() {},
-          [&]() {});
+              if (i_h >= pad_h && i_h < ifhp - pad_h && i_w >= pad_w && i_w < ifwp - pad_w) {
+                libxsmm_meltw_unary_param trans_param;
+                trans_param.in.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_unpad_libxsmm, 0, i_c, i_h - pad_h, i_w - pad_w, 0, Cb, ifh, ifw, bc);
+                trans_param.out.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), tr_input_libxsmm, i_c, i_h, i_w, 0, 0, ifhp, ifwp, bc, bn);
+                trans_xform_kernel( &trans_param );
+              }
+            },
+            [&]() {},
+            [&]() {});
+        } else {
+          tr_input_loop(
+            [&](int* ind) {
+              int i_c = ind[0], i_h = ind[1], i_w = ind[2];
+              libxsmm_meltw_unary_param trans_param;
+              trans_param.in.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, 0, i_c, i_h, i_w, 0, Cb, ifhp, ifwp, bc);
+              trans_param.out.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), tr_input_libxsmm, i_c, i_h, i_w, 0, 0, ifhp, ifwp, bc, bn);
+              trans_xform_kernel( &trans_param );
+            },
+            [&]() {},
+            [&]() {});
+        }
+
+
+        if (logical_padding) {
+          tr_output_loop(
+            [&](int* ind) {
+              int i_k = ind[0], i_h = ind[1], i_w = ind[2];
+              libxsmm_meltw_unary_param zero_param;
+              zero_param.out.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), tr_output_libxsmm, i_k, i_h, i_w, 0, 0, ofhp, ofwp, bn, bk);
+              zero_kernel_khwn( &zero_param );
+
+              if (i_h >= pad_h && i_h < ofhp - pad_h && i_w >= pad_w && i_w < ofwp - pad_w) {
+                libxsmm_meltw_unary_param trans_param;
+                trans_param.in.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_unpad_libxsmm, 0, i_k, i_h - pad_h, i_w - pad_w, 0, Kb, ofh, ofw, bk);
+                trans_param.out.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), tr_output_libxsmm, i_k, i_h, i_w, 0, 0, ofhp, ofwp, bn, bk);
+                vnni_xform_kernel( &trans_param );
+              }
+            },
+            [&]() {},
+            [&]() {});
+        } else {
+          tr_output_loop(
+            [&](int* ind) {
+              int i_k = ind[0], i_h = ind[1], i_w = ind[2];
+              libxsmm_meltw_unary_param trans_param;
+              trans_param.in.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm, 0, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
+              trans_param.out.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), tr_output_libxsmm, i_k, i_h, i_w, 0, 0, ofhp, ofwp, bn, bk);
+              vnni_xform_kernel( &trans_param );
+            },
+            [&]() {},
+            [&]() {});
+        }
       }
 
       if (par_over_h_pixels > 0) {
@@ -1004,30 +1111,48 @@ int conv_benchmark(int argc, char** argv) {
     printf("Linf rel.error: %.24f\n", norms.linf_rel);
     printf("Check-norm    : %.24f\n", norms.normf_rel);
     libxsmm_matdiff_reduce(&diff, &norms);
+
+    /* "Random" tolerance is set */
+    double tolerance = (sizeof(DType) == 2 ? 0.05 : 0.0001);
+
+    if(norms.normf_rel > tolerance) {
+      printf("Validation FAILED\n");
+      error = -1;
+    } else
+      printf("Validation PASSED\n");
   }
 
   // Print performance/model numbers
   double gflop = (2.0*(double)n_iters*(double)N*(double)C*(double)K*(double)R*(double)S*(double)ofh*(double)ofw)/(1000*1000*1000);
   //printf("Compilation time is %.5g s\n", t1-t0);
   printf("GFLOPS %.6g %s\n", gflop/(t_end-t_start), loop_specs_str);
+  printf("PERFDUMP,WU,%s,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%.5g,%.5g,%f,%f,%f,%f,%f,%f,%f\n", LIBXSMM_VERSION, omp_get_max_threads(), N, C, K,
+        H, W, R, S, stride_h, pad_h, pad_w, ((double)((t_end - t_start)/n_iters)), (gflop)/(t_end - t_start), norms.l1_ref, norms.l1_tst,
+        norms.l2_abs, norms.l2_rel, norms.linf_abs, norms.linf_rel, norms.normf_rel);
 
   // Free buffers
   libxsmm_free(naive_input);
   libxsmm_free(naive_input_nchwc);
+  libxsmm_free(naive_input_unpad);
+  libxsmm_free(naive_input_unpad_nchwc);
   libxsmm_free(naive_output);
   libxsmm_free(naive_output_nchwc);
+  libxsmm_free(naive_output_unpad);
+  libxsmm_free(naive_output_unpad_nchwc);
   libxsmm_free(naive_output_opt);
   libxsmm_free(naive_filter);
   libxsmm_free(naive_filter_opt);
   libxsmm_free(naive_filter_kcrsck);
   libxsmm_free(input_libxsmm);
+  libxsmm_free(input_unpad_libxsmm);
   libxsmm_free(output_libxsmm);
+  libxsmm_free(output_unpad_libxsmm);
   libxsmm_free(filter_libxsmm);
   libxsmm_free(scratch_libxsmm);
   libxsmm_free(scratch_libxsmm_bf16_weights);
   libxsmm_free(A_offsets);
   libxsmm_free(B_offsets);
-  return 0;
+  return error;
 }
 
 int main(int argc, char** argv) {
