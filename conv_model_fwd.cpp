@@ -10,6 +10,7 @@
 
 template<typename DType>
 int conv_benchmark(int argc, char** argv) {
+  int error = 0;
   // Setup default GEMM sizes
   int check_correctness = 1;
   char loop_specs_str[256] = "aBC";  
@@ -60,16 +61,9 @@ int conv_benchmark(int argc, char** argv) {
     }
   }
   
-  printf("Test parameters: N H W C K R S stride_h stride_w pad_h pad_w bc bk: %d %d %d %d %d %d %d %d %d %d %d %d %d \n", N, H, W, C, K, R, S, stride_h, stride_w, pad_h, pad_w, bc, bk);
-  printf("Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input: %d %d %d %d %d %d\n", h_block, w_block, c_block, k_block, h_in_gemm, pack_input);
-
-  if (c_block == 1 && loop_specs_str[3] != 'b' ) {
-    //return 0;
-  }
-
   if ( (h_in_gemm > 1) && (w_block != 1) ) {
     printf("Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...\n");
-    return 0;
+    return -1;
   }
 
   long Kb = K/bk, Cb = C/bc;
@@ -153,6 +147,10 @@ int conv_benchmark(int argc, char** argv) {
     r_step = 1;
     s_step = 1;
   }
+
+  printf("Test parameters: N H W C K R S stride_h stride_w pad_h pad_w bc bk: %d %d %d %d %d %d %d %d %d %d %d %d %d\n", N, H, W, C, K, R, S, stride_h, stride_w, pad_h, pad_w, bc, bk);
+  printf("Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input: %d %d %d %d %d %d\n", h_block, w_block, c_block, k_block, h_in_gemm, pack_input);
+  printf("Tuning parameters: avoid_rim_fmas: %d\n", avoid_rim_fmas);
 
   // Setup TPP kernels
   auto l_flags    = (sizeof(DType) == 2) ? ( LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG ) : LIBXSMM_GEMM_FLAGS('N', 'N');
@@ -407,6 +405,15 @@ int conv_benchmark(int argc, char** argv) {
     printf("Linf rel.error: %.24f\n", norms.linf_rel);
     printf("Check-norm    : %.24f\n", norms.normf_rel);
     libxsmm_matdiff_reduce(&diff, &norms);
+
+    /* "Random" tolerance is set */
+    double tolerance = (sizeof(DType) == 2 ? 0.05 : 0.0001);
+
+    if(norms.normf_rel > tolerance) {
+      printf("Validation FAILED\n");
+      error = -1;
+    } else
+      printf("Validation PASSED\n");
   }
 
   // Print performance/model numbers
@@ -431,7 +438,7 @@ int conv_benchmark(int argc, char** argv) {
   libxsmm_free(filter_libxsmm);
   libxsmm_free(A_offsets);
   libxsmm_free(B_offsets);
-  return 0;
+  return error;
 }
 
 int main(int argc, char** argv) {
