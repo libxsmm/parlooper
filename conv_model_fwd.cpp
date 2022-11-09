@@ -165,7 +165,8 @@ int conv_benchmark(int argc, char** argv) {
   libxsmm_xmmfunction tileconfig_kernel;
   libxsmm_xmmfunction tilerelease_kernel;
   libxsmm_xmmfunction brgemm_kernel;
-  libxsmm_xmmfunction brgemm_kernel2;
+  libxsmm_xmmfunction brgemm_kernel_1less;
+  libxsmm_xmmfunction brgemm_kernel_2less;
   libxsmm_meltwfunction_unary zero_kernel;
   libxsmm_meltwfunction_unary input_pack_kernel;
 
@@ -193,7 +194,9 @@ int conv_benchmark(int argc, char** argv) {
       brgemm_kernel.gemm      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
     }
     l_shape = libxsmm_create_gemm_shape( gemm_m, gemm_n-1, gemm_k, bk, bc*stride_w, bk, dtype, dtype, dtype, dtype );
-    brgemm_kernel2.gemm      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
+    brgemm_kernel_1less.gemm      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
+    l_shape = libxsmm_create_gemm_shape( gemm_m, gemm_n-2, gemm_k, bk, bc*stride_w, bk, dtype, dtype, dtype, dtype );
+    brgemm_kernel_2less.gemm      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
   } else {
     auto w_gemm_pixels = ofw/w_block;
     auto gemm_n = (w_gemm_pixels +  2 * pad_w) * (h_in_gemm - 2) + 2 * (w_gemm_pixels + pad_w);
@@ -318,24 +321,59 @@ int conv_benchmark(int argc, char** argv) {
             zero_param.out.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
             zero_kernel( &zero_param );
           }
-          if (i_r == 0 && i_h == 0) {
-            /* Do no FLOPS  */
-          //} else if (i_r == R-1 && i_h == ofh-1 ) {
-          } else if (i_r == R-1 && (i_h + h_step - 1)*stride_h + i_r == ifh + 1 ) {
-            /* Do no FLOPS  */
-          } else if ( i_w == 0 && i_s == 0 ) {
-            //gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s + 1, 0, Cb, ifhp, ifwp, bc);
-            gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, (i_w + 1) * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
-            gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w + 1, 0, Kb, ofhp, ofwp, bk);       
-            brgemm_kernel2.gemm( &gemm_param );
-          //} else if ( i_w + w_step == ofw  && i_s == S-1) {
-          } else if ( (i_w + w_step - 1)*stride_w + i_s == ifw + 1 && i_s == S-1) {
+          if (R == 7 && S == 7) {
+            if (i_h * stride_h + i_r - R/2 < 0) {
+              /* Do no FLOPS  */
+            } else if (i_h *stride_h + i_r - R/2 >= ifh ) {
+              /* Do no FLOPS  */
+            } else if ( i_s < R/2 && i_w * stride_w + (i_s - R/2) < 0 && (i_w + 1) * stride_w + (i_s - R/2) >= 0  ) {
+              // the case when left i_s is out of input image for the first pitch only
+              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, (i_w + 1) * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
+              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w + 1, 0, Kb, ofhp, ofwp, bk);
+              brgemm_kernel_1less.gemm( &gemm_param );
+            } else if ( i_s < R/2 && i_w * stride_w + (i_s - R/2) < 0 && (i_w + 1) * stride_w + (i_s - R/2) < 0 && (i_w + 2) * stride_w + (i_s - R/2) >= 0  ) {
+              // the case when left i_s is out of input image for the first two pitches
+              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, (i_w + 2) * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
+              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w + 2, 0, Kb, ofhp, ofwp, bk);
+              brgemm_kernel_2less.gemm( &gemm_param );
+            } else if ( i_s > R/2 && (i_w + w_step - 1)*stride_w + (i_s - R/2) >= ifw && (i_w + w_step - 2)*stride_w + (i_s - R/2) < ifw ) {
+              // the case when right i_s is out of input image for the last pitch only
+              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
+              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
+              brgemm_kernel_1less.gemm( &gemm_param );
+            } else if ( i_s > R/2 && (i_w + w_step - 1)*stride_w + (i_s - R/2) >= ifw && (i_w + w_step - 2)*stride_w + (i_s - R/2) >= ifw && (i_w + w_step - 3)*stride_w + (i_s - R/2) < ifw ) {
+              // for the case when right i_s is out of input image for the last 2 pitches
+              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
+              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
+              brgemm_kernel_2less.gemm( &gemm_param );
+            } else {
+              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
+              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
+              brgemm_kernel.gemm( &gemm_param );
+            }
+          } else if (R == 3 && S == 3) { /* works for 3x3 stride-1 and stride-2 convolutions */
+            if (i_r == 0 && i_h == 0) {
+              /* Do no FLOPS  */
+            } else if (i_r == R-1 && (i_h + h_step - 1)*stride_h + i_r == ifh + 1 ) {
+              /* Do no FLOPS  */
+            } else if ( i_w == 0 && i_s == 0 ) {
+              //gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s + 1, 0, Cb, ifhp, ifwp, bc);
+              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, (i_w + 1) * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
+              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w + 1, 0, Kb, ofhp, ofwp, bk);
+              brgemm_kernel_1less.gemm( &gemm_param );
+            //} else if ( i_w + w_step == ofw  && i_s == S-1) {
+            } else if ( (i_w + w_step - 1)*stride_w + i_s == ifw + 1 && i_s == S-1) {
+              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
+              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
+              brgemm_kernel_1less.gemm( &gemm_param );
+            } else {
+              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
+              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
+              brgemm_kernel.gemm( &gemm_param );
+            }
+          } else if (R == 1 && S == 1) { /* works for 3x3 stride-1 and stride-2 convolutions */
             gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
             gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
-            brgemm_kernel2.gemm( &gemm_param );
-          } else {
-            gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
-            gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);    
             brgemm_kernel.gemm( &gemm_param );
           }
         }
