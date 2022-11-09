@@ -254,7 +254,6 @@ int conv_benchmark(int argc, char** argv) {
 
   // JIT requested nested loop specs
 
-
   auto t0 = getTime();
   auto conv_loop = ThreadedLoop<7>({
       LoopSpecs{0, N, n_step, true},
@@ -321,13 +320,16 @@ int conv_benchmark(int argc, char** argv) {
           }
           if (i_r == 0 && i_h == 0) {
             /* Do no FLOPS  */
-          } else if (i_r == R-1 && i_h == ofh-1 ) {
+          //} else if (i_r == R-1 && i_h == ofh-1 ) {
+          } else if (i_r == R-1 && (i_h + h_step - 1)*stride_h + i_r == ifh + 1 ) {
             /* Do no FLOPS  */
           } else if ( i_w == 0 && i_s == 0 ) {
-            gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s + 1, 0, Cb, ifhp, ifwp, bc);
+            //gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s + 1, 0, Cb, ifhp, ifwp, bc);
+            gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, (i_w + 1) * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
             gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w + 1, 0, Kb, ofhp, ofwp, bk);       
             brgemm_kernel2.gemm( &gemm_param );
-          } else if ( i_w + w_step == ofw  && i_s == S-1) {
+          //} else if ( i_w + w_step == ofw  && i_s == S-1) {
+          } else if ( (i_w + w_step - 1)*stride_w + i_s == ifw + 1 && i_s == S-1) {
             gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
             gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
             brgemm_kernel2.gemm( &gemm_param );
