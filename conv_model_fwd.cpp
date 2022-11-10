@@ -24,6 +24,7 @@ int conv_benchmark(int argc, char** argv) {
   long h_block = 1;
   long h_in_gemm = 1;
   long pack_input = 0;
+  long logical_padding = 0;
   // Setup model and trace
   ifreq = 1.0 / getFreq();
   std::vector<std::string> inp_trace[128];
@@ -58,6 +59,9 @@ int conv_benchmark(int argc, char** argv) {
       if (argc > 21) {
         n_iters = atoi(argv[21]);
       }
+      if (argc > 22) {
+        logical_padding = atoi(argv[22]);
+      }
     }
   }
   
@@ -66,12 +70,16 @@ int conv_benchmark(int argc, char** argv) {
     return -1;
   }
 
+  if (logical_padding && h_in_gemm > 1 ) {
+    printf("Error: logical padding is only supported for h_in_gemm = 1\n");
+    exit(-1);
+  }
+
   long Kb = K/bk, Cb = C/bc;
-  // For now only physical padding
-  long  pad_h_in = pad_h;
-  long  pad_w_in = pad_w;
-  long  pad_h_out = pad_h;
-  long  pad_w_out = pad_w;
+  long  pad_h_in = (logical_padding == 0 ? pad_h : 0);
+  long  pad_w_in = (logical_padding == 0 ? pad_w : 0);
+  long  pad_h_out = (logical_padding == 0 ? pad_h : 0);
+  long  pad_w_out = (logical_padding == 0 ? pad_w : 0);
   // Deriving some aux values
   long ofh = (H + 2 * pad_h - R) / stride_h + 1;
   long ofw = (W + 2 * pad_w - S) / stride_w + 1;
@@ -105,11 +113,16 @@ int conv_benchmark(int argc, char** argv) {
   // Init buffers
   float *naive_input_tmp = (float*)libxsmm_aligned_malloc( (size_t)N*C*ifhp*ifwp*sizeof(float), 2097152);
   init_buf(naive_input_tmp,          N*C*ifh*ifw, 0, 0);
-  copy_internal_nchw( naive_input , naive_input_tmp, N, C, ifh, ifw, pad_h, pad_w);
+  copy_internal_nchw( naive_input , naive_input_tmp, N, C, ifh, ifw, pad_h_in, pad_w_in);
   libxsmm_free(naive_input_tmp);
   set_zeropad_nchw(naive_input, N, C, ifhp, ifwp, pad_h_in, pad_w_in);
-  init_buf(naive_output,         N*K*ofwp*ofhp, 0, 0);
+
+  float *naive_output_tmp = (float*)libxsmm_aligned_malloc( (size_t)N*K*ofhp*ofwp*sizeof(float), 2097152);
+  init_buf(naive_output_tmp,          N*K*ofh*ofw, 0, 0);
+  copy_internal_nchw( naive_output , naive_output_tmp, N, K, ofh, ofw, pad_h_out, pad_w_out);
+  libxsmm_free(naive_output_tmp);
   set_zeropad_nchw(naive_output, N, K, ofhp, ofwp, pad_h_out, pad_w_out);
+
   init_buf(naive_filter,         K*C*R*S, 0, 0);
   
   if (sizeof(DType) == 2) {
@@ -128,6 +141,24 @@ int conv_benchmark(int argc, char** argv) {
   long avoid_rim_fmas = 0;
   if (ofh <= 7 && ofw <=7 && R == 3 && S == 3 && stride_w == 1 && stride_h == 1 && h_in_gemm == 1) {
     avoid_rim_fmas = 1;
+  }
+
+  if (logical_padding)
+    avoid_rim_fmas = 1;
+
+  if (avoid_rim_fmas == 1 && (R == 1 || S == 1)) {
+    printf("Error: avoid_rim_fmas does not work (and does not make sense) for 1x1 filters\n");
+    return -1;
+  }
+
+  if (avoid_rim_fmas == 1 && ((R%2) == 0 || (S%2) == 0)) {
+    printf("Error: avoid_rim_fmas does not work for even-sized filters\n");
+    return -1;
+  }
+
+  if (avoid_rim_fmas == 1 && w_block != 1) {
+    printf("Warning: w_block != 1 is not thoroughly tested with avoid_rim_fmas\n");
+    //return -1;
   }
 
   if (R != 1 || S != 1) {
@@ -149,7 +180,7 @@ int conv_benchmark(int argc, char** argv) {
   }
 
   printf("Test parameters: N H W C K R S stride_h stride_w pad_h pad_w bc bk: %d %d %d %d %d %d %d %d %d %d %d %d %d\n", N, H, W, C, K, R, S, stride_h, stride_w, pad_h, pad_w, bc, bk);
-  printf("Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input: %d %d %d %d %d %d\n", h_block, w_block, c_block, k_block, h_in_gemm, pack_input);
+  printf("Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding: %d %d %d %d %d %d %d\n", h_block, w_block, c_block, k_block, h_in_gemm, pack_input, logical_padding);
   printf("Tuning parameters: avoid_rim_fmas: %d\n", avoid_rim_fmas);
 
   // Setup TPP kernels
@@ -326,26 +357,26 @@ int conv_benchmark(int argc, char** argv) {
               /* Do no FLOPS  */
             } else if ( i_s < R/2 && i_w * stride_w + (i_s - R/2) < 0 && (i_w + 1) * stride_w + (i_s - R/2) >= 0  ) {
               // the case when left i_s is out of input image for the first pitch only
-              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, (i_w + 1) * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
+              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2) , pad_w_in + (i_w + 1) * stride_w + (i_s - S/2) , 0, Cb, ifhp, ifwp, bc);
               gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w + 1, 0, Kb, ofhp, ofwp, bk);
               brgemm_kernel_1less.gemm( &gemm_param );
             } else if ( i_s < R/2 && i_w * stride_w + (i_s - R/2) < 0 && (i_w + 1) * stride_w + (i_s - R/2) < 0 && (i_w + 2) * stride_w + (i_s - R/2) >= 0  ) {
               // the case when left i_s is out of input image for the first two pitches
-              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, (i_w + 2) * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
+              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2) , pad_w_in + (i_w + 2) * stride_w + (i_s - S/2) , 0, Cb, ifhp, ifwp, bc);
               gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w + 2, 0, Kb, ofhp, ofwp, bk);
               brgemm_kernel_2less.gemm( &gemm_param );
             } else if ( i_s > R/2 && (i_w + w_step - 1)*stride_w + (i_s - R/2) >= ifw && (i_w + w_step - 2)*stride_w + (i_s - R/2) < ifw ) {
               // the case when right i_s is out of input image for the last pitch only
-              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
+              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2) , pad_w_in + i_w * stride_w + (i_s - S/2) , 0, Cb, ifhp, ifwp, bc);
               gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
               brgemm_kernel_1less.gemm( &gemm_param );
             } else if ( i_s > R/2 && (i_w + w_step - 1)*stride_w + (i_s - R/2) >= ifw && (i_w + w_step - 2)*stride_w + (i_s - R/2) >= ifw && (i_w + w_step - 3)*stride_w + (i_s - R/2) < ifw ) {
               // for the case when right i_s is out of input image for the last 2 pitches
-              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
+              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2) , pad_w_in + i_w * stride_w + (i_s - S/2) , 0, Cb, ifhp, ifwp, bc);
               gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
               brgemm_kernel_2less.gemm( &gemm_param );
             } else {
-              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
+              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2) , pad_w_in + i_w * stride_w + (i_s - S/2) , 0, Cb, ifhp, ifwp, bc);
               gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
               brgemm_kernel.gemm( &gemm_param );
             }
@@ -355,24 +386,23 @@ int conv_benchmark(int argc, char** argv) {
             } else if (i_r == R-1 && (i_h + h_step - 1)*stride_h + i_r == ifh + 1 ) {
               /* Do no FLOPS  */
             } else if ( i_w == 0 && i_s == 0 ) {
-              //gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s + 1, 0, Cb, ifhp, ifwp, bc);
-              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, (i_w + 1) * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
+              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2), pad_w_in + (i_w + 1) * stride_w + (i_s - S/2), 0, Cb, ifhp, ifwp, bc);
               gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w + 1, 0, Kb, ofhp, ofwp, bk);
               brgemm_kernel_1less.gemm( &gemm_param );
             //} else if ( i_w + w_step == ofw  && i_s == S-1) {
             } else if ( (i_w + w_step - 1)*stride_w + i_s == ifw + 1 && i_s == S-1) {
-              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
+              //exit(-1);
+              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2), pad_w_in + i_w * stride_w + (i_s - S/2), 0, Cb, ifhp, ifwp, bc);
               gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
               brgemm_kernel_1less.gemm( &gemm_param );
+
             } else {
-              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
+              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2), pad_w_in + i_w * stride_w + (i_s - S/2), 0, Cb, ifhp, ifwp, bc);
               gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
               brgemm_kernel.gemm( &gemm_param );
+
             }
-          } else if (R == 1 && S == 1) { /* works for 3x3 stride-1 and stride-2 convolutions */
-            gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
-            gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
-            brgemm_kernel.gemm( &gemm_param );
+
           }
         }
       },
@@ -390,7 +420,7 @@ int conv_benchmark(int argc, char** argv) {
       tensor_copy_NCHWc_to_NCHW ((float*)output_libxsmm, naive_output_opt, N, K, ofhp, ofwp, bk);
     }
     /* If non 1x1 and multiple h in gemm, then make sure that we zero out the rims... */
-    if ((R != 1 || S != 1) && (h_in_gemm > 1)) {
+    if (!logical_padding && (R != 1 || S != 1) && (h_in_gemm > 1)) {
       set_zeropad_nchw(naive_output_opt, N, K, ofhp, ofwp, pad_h_out, pad_w_out);
     }
     printf("##########################################\n");
