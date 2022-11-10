@@ -420,7 +420,7 @@ int conv_benchmark(int argc, char** argv) {
       tensor_copy_NCHWc_to_NCHW ((float*)output_libxsmm, naive_output_opt, N, K, ofhp, ofwp, bk);
     }
     /* If non 1x1 and multiple h in gemm, then make sure that we zero out the rims... */
-    if (!logical_padding && (R != 1 || S != 1) && (h_in_gemm > 1)) {
+    if ((R != 1 || S != 1) && (h_in_gemm > 1)) {
       set_zeropad_nchw(naive_output_opt, N, K, ofhp, ofwp, pad_h_out, pad_w_out);
     }
     printf("##########################################\n");
