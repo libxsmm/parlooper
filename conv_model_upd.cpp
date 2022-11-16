@@ -121,11 +121,10 @@ int conv_benchmark(int argc, char** argv) {
   }
 
   long Kb = K/bk, Cb = C/bc;
-  // For now only physical padding
-  long  pad_h_in = pad_h;
-  long  pad_w_in = pad_w;
-  long  pad_h_out = pad_h;
-  long  pad_w_out = pad_w;
+  long pad_h_in = (logical_padding == 0 ? pad_h : 0);
+  long pad_w_in = (logical_padding == 0 ? pad_w : 0);
+  long pad_h_out = (logical_padding == 0 ? pad_h : 0);
+  long pad_w_out = (logical_padding == 0 ? pad_w : 0);
 
   // Deriving some aux values
   long ofh = (H + 2 * pad_h - R) / stride_h + 1;
@@ -136,27 +135,26 @@ int conv_benchmark(int argc, char** argv) {
   long ofwp = ofw + 2 * pad_w_out;
   long ifh = H;
   long ifw = W;
+   /* used for tr_input_libxsmm and tr_output_libxsmm */
+  long ifhp_physically_padded = ifh + 2 * pad_h;
+  long ifwp_physically_padded = ifw + 2 * pad_w;
+  long ofhp_physically_padded = ofh + 2 * pad_h;
+  long ofwp_physically_padded = ofw + 2 * pad_w;
   bn = N;
 
   // Allocate buffers
   float *naive_input  = (float*)libxsmm_aligned_malloc( N*ifhp*ifwp*C*sizeof(float), 2097152);
   float *naive_input_nchwc  = (float*)libxsmm_aligned_malloc( N*ifhp*ifwp*C*sizeof(float), 2097152);
-  float *naive_input_unpad  = (float*)libxsmm_aligned_malloc( N*ifh*ifw*C*sizeof(float), 2097152);
-  float *naive_input_unpad_nchwc  = (float*)libxsmm_aligned_malloc( N*ifh*ifw*C*sizeof(float), 2097152);
   float *naive_output = (float*)libxsmm_aligned_malloc( N*ofhp*ofwp*K*sizeof(float), 2097152);
   float *naive_output_nchwc = (float*)libxsmm_aligned_malloc( N*ofhp*ofwp*K*sizeof(float), 2097152);
-  float *naive_output_unpad = (float*)libxsmm_aligned_malloc( N*ofh*ofw*K*sizeof(float), 2097152);
-  float *naive_output_unpad_nchwc = (float*)libxsmm_aligned_malloc( N*ofh*ofw*K*sizeof(float), 2097152);
   float *naive_output_opt = (float*)libxsmm_aligned_malloc( N*ofhp*ofwp*K*sizeof(float), 2097152);
   float *naive_filter = (float*)libxsmm_aligned_malloc( C*K*R*S*sizeof(float), 2097152);
   float *naive_filter_opt = (float*)libxsmm_aligned_malloc( C*K*R*S*sizeof(float), 2097152);
   float *naive_filter_kcrsck = (float*)libxsmm_aligned_malloc( C*K*R*S*sizeof(float), 2097152);
   DType *input_libxsmm  = (DType*)libxsmm_aligned_malloc( N*ifhp*ifwp*C*sizeof(DType), 2097152);
-  DType *input_unpad_libxsmm  = (DType*)libxsmm_aligned_malloc( N*ifh*ifw*C*sizeof(DType), 2097152);
   DType *output_libxsmm = (DType*)libxsmm_aligned_malloc( N*ofhp*ofwp*K*sizeof(DType), 2097152);
-  DType *output_unpad_libxsmm = (DType*)libxsmm_aligned_malloc( N*ofh*ofw*K*sizeof(DType), 2097152);
-  DType *tr_input_libxsmm  = (DType*)libxsmm_aligned_malloc( N*ifhp*ifwp*C*sizeof(DType), 2097152);
-  DType *tr_output_libxsmm = (DType*)libxsmm_aligned_malloc( N*ofhp*ofwp*K*sizeof(DType), 2097152);
+  DType *tr_input_libxsmm  = (DType*)libxsmm_aligned_malloc( N*ifhp_physically_padded*ifwp_physically_padded*C*sizeof(DType), 2097152);
+  DType *tr_output_libxsmm = (DType*)libxsmm_aligned_malloc( N*ofhp_physically_padded*ofwp_physically_padded*K*sizeof(DType), 2097152);
   DType **private_tr_input_libxsmm  = (DType**)libxsmm_aligned_malloc( nThreads*sizeof(DType*), 2097152);
   DType **private_tr_output_libxsmm = (DType**)libxsmm_aligned_malloc( nThreads*sizeof(DType*), 2097152);
   for (int thr = 0; thr < nThreads; thr++) {
@@ -181,33 +179,24 @@ int conv_benchmark(int argc, char** argv) {
   // Init buffers
   float *naive_input_tmp = (float*)libxsmm_aligned_malloc( (size_t)N*C*ifhp*ifwp*sizeof(float), 2097152);
   init_buf(naive_input_tmp,          N*C*ifh*ifw, 0, 0);
-  copy_internal_nchw( naive_input_unpad, naive_input_tmp, N, C, ifh, ifw, 0, 0);
-  copy_internal_nchw( naive_input , naive_input_tmp, N, C, ifh, ifw, pad_h, pad_w);
+  copy_internal_nchw( naive_input , naive_input_tmp, N, C, ifh, ifw, pad_h_in, pad_w_in);
   libxsmm_free(naive_input_tmp);
   set_zeropad_nchw(naive_input, N, C, ifhp, ifwp, pad_h_in, pad_w_in);
 
   float *naive_output_tmp = (float*)libxsmm_aligned_malloc( (size_t)N*K*ofhp*ofwp*sizeof(float), 2097152);
   init_buf(naive_output_tmp,          N*K*ofh*ofw, 0, 0);
-  copy_internal_nchw( naive_output_unpad, naive_output_tmp, N, K, ofh, ofw, 0, 0);
-  copy_internal_nchw( naive_output , naive_output_tmp, N, K, ofh, ofw, pad_h, pad_w);
+  copy_internal_nchw( naive_output , naive_output_tmp, N, K, ofh, ofw, pad_h_out, pad_w_out);
   libxsmm_free(naive_output_tmp);
   set_zeropad_nchw(naive_output, N, K, ofhp, ofwp, pad_h_out, pad_w_out);
-
-  //init_buf(naive_output,         N*K*ofwp*ofhp, 0, 0);
-  //set_zeropad_nchw(naive_output, N, K, ofhp, ofwp, pad_h_out, pad_w_out);
 
   init_buf(naive_filter,         K*C*R*S, 0, 0);
   
   if (sizeof(DType) == 2) {
     tensor_copy_NCHW_to_NCHWc (naive_input , naive_input_nchwc,  N, C, ifhp, ifwp, bc);
-    tensor_copy_NCHW_to_NCHWc (naive_input_unpad, naive_input_unpad_nchwc,  N, C, ifh, ifw, bc);
     tensor_copy_NCHW_to_NCHWc (naive_output, naive_output_nchwc, N, K, ofhp, ofwp, bk);
-    tensor_copy_NCHW_to_NCHWc (naive_output_unpad, naive_output_unpad_nchwc,  N, K, ofh, ofw, bk);
     tensor_copy_KCRS_to_KCRSck_bf16(naive_filter, (libxsmm_bfloat16*)filter_libxsmm, K, C, R, S, bc, bk);
     libxsmm_rne_convert_fp32_bf16( naive_input_nchwc,     (libxsmm_bfloat16*)input_libxsmm,     N*C*ifhp*ifwp );
     libxsmm_rne_convert_fp32_bf16( naive_output_nchwc,    (libxsmm_bfloat16*)output_libxsmm,    N*K*ofhp*ofwp );
-    libxsmm_rne_convert_fp32_bf16( naive_input_unpad_nchwc,     (libxsmm_bfloat16*)input_unpad_libxsmm,     N*C*ifh*ifw );
-    libxsmm_rne_convert_fp32_bf16( naive_output_unpad_nchwc,    (libxsmm_bfloat16*)output_unpad_libxsmm,    N*K*ofh*ofw );
   } else {
     tensor_copy_NCHW_to_NCHWc (naive_input , (float*)input_libxsmm,  N, C, ifhp, ifwp, bc);
     tensor_copy_NCHW_to_NCHWc (naive_output, (float*)output_libxsmm, N, K, ofhp, ofwp, bk);
@@ -335,16 +324,10 @@ int conv_benchmark(int argc, char** argv) {
   auto tr_unary_shape = libxsmm_create_meltw_unary_shape(bk, bc, bk, bk, dtype, dtype, dtype);
   wt_vnni_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI2, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
 
-  if (logical_padding)
-    tr_unary_shape = libxsmm_create_meltw_unary_shape(bk, bn, K*ofh*ofw, bk, dtype, dtype, dtype);
-  else
-    tr_unary_shape = libxsmm_create_meltw_unary_shape(bk, bn, K*ofhp*ofwp, bk, dtype, dtype, dtype);
+  tr_unary_shape = libxsmm_create_meltw_unary_shape(bk, bn, K*ofhp*ofwp, bk, dtype, dtype, dtype);
   vnni_xform_kernel =  libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI2, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
 
-  if (logical_padding)
-    tr_unary_shape = libxsmm_create_meltw_unary_shape(bc, bn, C*ifh*ifw, bn, dtype, dtype, dtype);
-  else
-    tr_unary_shape = libxsmm_create_meltw_unary_shape(bc, bn, C*ifhp*ifwp, bn, dtype, dtype, dtype);
+  tr_unary_shape = libxsmm_create_meltw_unary_shape(bc, bn, C*ifhp*ifwp, bn, dtype, dtype, dtype);
   trans_xform_kernel = libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_NORMT, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
 
   // Generate f32->bf16 cvt TPP kernel
@@ -509,17 +492,17 @@ int conv_benchmark(int argc, char** argv) {
       fp32_conv_spec_string);
 
   // Transposes input to CHWN format
-  auto tr_input_loop = ThreadedLoop<3>({
+  auto tr_input_chwn_loop = ThreadedLoop<3>({
       LoopSpecs{0, Cb, tr_step},
-      LoopSpecs{0, ifhp, tr_step},
-      LoopSpecs{0, ifwp, tr_step}},
+      LoopSpecs{0, ifhp_physically_padded, tr_step},
+      LoopSpecs{0, ifwp_physically_padded, tr_step}},
       "ABC");
 
   // Transposes output to Kb HW bk N format
-  auto tr_output_loop  = ThreadedLoop<3>({
+  auto tr_output_chwn_loop  = ThreadedLoop<3>({
       LoopSpecs{0, Kb, tr_step},
-      LoopSpecs{0, ofhp, tr_step},
-      LoopSpecs{0, ofwp, tr_step}},
+      LoopSpecs{0, ofhp_physically_padded, tr_step},
+      LoopSpecs{0, ofwp_physically_padded, tr_step}},
       "ABC");
 
   if (sizeof(DType) == 2) {
@@ -888,66 +871,52 @@ int conv_benchmark(int argc, char** argv) {
     
     if ( (sizeof(DType) == 2) && (bf16_use_chwn_format > 0)) {
       if (use_private_trans == 0) {
-        if (logical_padding) {
-          tr_input_loop(
-            [&](int* ind) {
-              int i_c = ind[0], i_h = ind[1], i_w = ind[2];
+        tr_input_chwn_loop(
+          [&](int* ind) {
+            int i_c = ind[0], i_h = ind[1], i_w = ind[2];
+
+            if (logical_padding) {
               libxsmm_meltw_unary_param zero_param;
-              zero_param.out.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), tr_input_libxsmm, i_c, i_h, i_w, 0, 0, ifhp, ifwp, bc, bn);
+              zero_param.out.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), tr_input_libxsmm, i_c, i_h, i_w, 0, 0, ifhp_physically_padded, ifwp_physically_padded, bc, bn);
               zero_kernel_chwn( &zero_param );
+            }
 
-              if (i_h >= pad_h && i_h < ifhp - pad_h && i_w >= pad_w && i_w < ifwp - pad_w) {
-                libxsmm_meltw_unary_param trans_param;
-                trans_param.in.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_unpad_libxsmm, 0, i_c, i_h - pad_h, i_w - pad_w, 0, Cb, ifh, ifw, bc);
-                trans_param.out.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), tr_input_libxsmm, i_c, i_h, i_w, 0, 0, ifhp, ifwp, bc, bn);
-                trans_xform_kernel( &trans_param );
-              }
-            },
-            [&]() {},
-            [&]() {});
-        } else {
-          tr_input_loop(
-            [&](int* ind) {
-              int i_c = ind[0], i_h = ind[1], i_w = ind[2];
-              libxsmm_meltw_unary_param trans_param;
-              trans_param.in.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, 0, i_c, i_h, i_w, 0, Cb, ifhp, ifwp, bc);
-              trans_param.out.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), tr_input_libxsmm, i_c, i_h, i_w, 0, 0, ifhp, ifwp, bc, bn);
+            libxsmm_meltw_unary_param trans_param;
+            trans_param.out.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), tr_input_libxsmm, i_c, i_h, i_w, 0, 0, ifhp_physically_padded, ifwp_physically_padded, bc, bn);
+            if (logical_padding && i_h >= pad_h && i_h < ifhp_physically_padded - pad_h && i_w >= pad_w && i_w < ifwp_physically_padded - pad_w) {
+              trans_param.in.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, 0, i_c, i_h - pad_h, i_w - pad_w, 0, Cb, ifh, ifw, bc);
               trans_xform_kernel( &trans_param );
-            },
-            [&]() {},
-            [&]() {});
-        }
+            } else if (!logical_padding) {
+              trans_param.in.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, 0, i_c, i_h, i_w, 0, Cb, ifhp, ifwp, bc);
+              trans_xform_kernel( &trans_param );
+            }
 
+          },
+          [&]() {},
+          [&]() {});
 
-        if (logical_padding) {
-          tr_output_loop(
-            [&](int* ind) {
-              int i_k = ind[0], i_h = ind[1], i_w = ind[2];
+        tr_output_chwn_loop(
+          [&](int* ind) {
+            int i_k = ind[0], i_h = ind[1], i_w = ind[2];
+
+            if (logical_padding) {
               libxsmm_meltw_unary_param zero_param;
-              zero_param.out.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), tr_output_libxsmm, i_k, i_h, i_w, 0, 0, ofhp, ofwp, bn, bk);
+              zero_param.out.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), tr_output_libxsmm, i_k, i_h, i_w, 0, 0, ofhp_physically_padded, ofwp_physically_padded, bn, bk);
               zero_kernel_khwn( &zero_param );
+            }
 
-              if (i_h >= pad_h && i_h < ofhp - pad_h && i_w >= pad_w && i_w < ofwp - pad_w) {
-                libxsmm_meltw_unary_param trans_param;
-                trans_param.in.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_unpad_libxsmm, 0, i_k, i_h - pad_h, i_w - pad_w, 0, Kb, ofh, ofw, bk);
-                trans_param.out.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), tr_output_libxsmm, i_k, i_h, i_w, 0, 0, ofhp, ofwp, bn, bk);
-                vnni_xform_kernel( &trans_param );
-              }
-            },
-            [&]() {},
-            [&]() {});
-        } else {
-          tr_output_loop(
-            [&](int* ind) {
-              int i_k = ind[0], i_h = ind[1], i_w = ind[2];
-              libxsmm_meltw_unary_param trans_param;
-              trans_param.in.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm, 0, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
-              trans_param.out.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), tr_output_libxsmm, i_k, i_h, i_w, 0, 0, ofhp, ofwp, bn, bk);
+            libxsmm_meltw_unary_param trans_param;
+            trans_param.out.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), tr_output_libxsmm, i_k, i_h, i_w, 0, 0, ofhp_physically_padded, ofwp_physically_padded, bn, bk);
+            if (logical_padding && i_h >= pad_h && i_h < ofhp_physically_padded - pad_h && i_w >= pad_w && i_w < ofwp_physically_padded - pad_w) {
+              trans_param.in.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm, 0, i_k, i_h - pad_h, i_w - pad_w, 0, Kb, ofh, ofw, bk);
               vnni_xform_kernel( &trans_param );
-            },
-            [&]() {},
-            [&]() {});
-        }
+            } else if (!logical_padding) {
+              trans_param.in.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm, 0, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
+              vnni_xform_kernel( &trans_param );
+            }
+          },
+          [&]() {},
+          [&]() {});
       }
 
       if (par_over_h_pixels > 0) {
@@ -1015,8 +984,8 @@ int conv_benchmark(int argc, char** argv) {
             gemm_param.a.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), (DType*)private_tr_output_libxsmm[tid], i_k, i_h + pad_h_out, i_w + pad_w_out, 0, 0, ofhp, ofwp, bn, bk);
             gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), (DType*)private_tr_input_libxsmm[tid] , i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, 0, ifhp, ifwp, bc, bn);
           } else {            
-            gemm_param.a.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), tr_output_libxsmm, i_k, i_h + pad_h_out, i_w + pad_w_out, 0, 0, ofhp, ofwp, bn, bk);
-            gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), tr_input_libxsmm, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, 0, ifhp, ifwp, bc, bn);
+            gemm_param.a.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), tr_output_libxsmm, i_k, i_h + pad_h, i_w + pad_w, 0, 0, ofhp_physically_padded, ofwp_physically_padded, bn, bk);
+            gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), tr_input_libxsmm, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, 0, ifhp_physically_padded, ifwp_physically_padded, bc, bn);
           }
 
           if (compute_full_wt_output_block == 0) {
@@ -1113,20 +1082,14 @@ int conv_benchmark(int argc, char** argv) {
   // Free buffers
   libxsmm_free(naive_input);
   libxsmm_free(naive_input_nchwc);
-  libxsmm_free(naive_input_unpad);
-  libxsmm_free(naive_input_unpad_nchwc);
   libxsmm_free(naive_output);
   libxsmm_free(naive_output_nchwc);
-  libxsmm_free(naive_output_unpad);
-  libxsmm_free(naive_output_unpad_nchwc);
   libxsmm_free(naive_output_opt);
   libxsmm_free(naive_filter);
   libxsmm_free(naive_filter_opt);
   libxsmm_free(naive_filter_kcrsck);
   libxsmm_free(input_libxsmm);
-  libxsmm_free(input_unpad_libxsmm);
   libxsmm_free(output_libxsmm);
-  libxsmm_free(output_unpad_libxsmm);
   libxsmm_free(filter_libxsmm);
   libxsmm_free(scratch_libxsmm);
   libxsmm_free(scratch_libxsmm_bf16_weights);
