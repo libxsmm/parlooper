@@ -355,22 +355,22 @@ int conv_benchmark(int argc, char** argv) {
               /* Do no FLOPS  */
             } else if (i_h *stride_h + i_r - R/2 >= ifh ) {
               /* Do no FLOPS  */
-            } else if ( i_s < R/2 && i_w * stride_w + (i_s - R/2) < 0 && (i_w + 1) * stride_w + (i_s - R/2) >= 0  ) {
+            } else if ( i_s < S/2 && i_w * stride_w + (i_s - S/2) < 0 && (i_w + 1) * stride_w + (i_s - S/2) >= 0  ) {
               // the case when left i_s is out of input image for the first pitch only
               gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2) , pad_w_in + (i_w + 1) * stride_w + (i_s - S/2) , 0, Cb, ifhp, ifwp, bc);
               gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w + 1, 0, Kb, ofhp, ofwp, bk);
               brgemm_kernel_1less.gemm( &gemm_param );
-            } else if ( i_s < R/2 && i_w * stride_w + (i_s - R/2) < 0 && (i_w + 1) * stride_w + (i_s - R/2) < 0 && (i_w + 2) * stride_w + (i_s - R/2) >= 0  ) {
+            } else if ( i_s < S/2 && i_w * stride_w + (i_s - S/2) < 0 && (i_w + 1) * stride_w + (i_s - S/2) < 0 && (i_w + 2) * stride_w + (i_s - S/2) >= 0  ) {
               // the case when left i_s is out of input image for the first two pitches
               gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2) , pad_w_in + (i_w + 2) * stride_w + (i_s - S/2) , 0, Cb, ifhp, ifwp, bc);
               gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w + 2, 0, Kb, ofhp, ofwp, bk);
               brgemm_kernel_2less.gemm( &gemm_param );
-            } else if ( i_s > R/2 && (i_w + w_step - 1)*stride_w + (i_s - R/2) >= ifw && (i_w + w_step - 2)*stride_w + (i_s - R/2) < ifw ) {
+            } else if ( i_s > S/2 && (i_w + w_step - 1)*stride_w + (i_s - S/2) >= ifw && (i_w + w_step - 2)*stride_w + (i_s - S/2) < ifw ) {
               // the case when right i_s is out of input image for the last pitch only
               gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2) , pad_w_in + i_w * stride_w + (i_s - S/2) , 0, Cb, ifhp, ifwp, bc);
               gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
               brgemm_kernel_1less.gemm( &gemm_param );
-            } else if ( i_s > R/2 && (i_w + w_step - 1)*stride_w + (i_s - R/2) >= ifw && (i_w + w_step - 2)*stride_w + (i_s - R/2) >= ifw && (i_w + w_step - 3)*stride_w + (i_s - R/2) < ifw ) {
+            } else if ( i_s > S/2 && (i_w + w_step - 1)*stride_w + (i_s - S/2) >= ifw && (i_w + w_step - 2)*stride_w + (i_s - S/2) >= ifw && (i_w + w_step - 3)*stride_w + (i_s - S/2) < ifw ) {
               // for the case when right i_s is out of input image for the last 2 pitches
               gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2) , pad_w_in + i_w * stride_w + (i_s - S/2) , 0, Cb, ifhp, ifwp, bc);
               gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
