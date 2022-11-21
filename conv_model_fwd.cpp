@@ -187,6 +187,10 @@ int conv_benchmark(int argc, char** argv) {
   auto l_flags    = (sizeof(DType) == 2) ? ( LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG ) : LIBXSMM_GEMM_FLAGS('N', 'N');
   if (Cb_step == Cb && r_step == R && s_step == S)
     l_flags |= LIBXSMM_GEMM_FLAG_BETA_0;
+  if (sizeof(DType) == 2 && avoid_rim_fmas != 0) { /* enabling tile config and tile release within brgemm as this code path requires calling different brgemms */
+    l_flags &= ~LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG;
+    l_flags &= ~LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG;
+  }
   auto l_tc_flags = (sizeof(DType) == 2) ? ( LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') ) : LIBXSMM_GEMM_FLAGS('N', 'N');
   auto l_tr_flags = (sizeof(DType) == 2) ? ( LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') ) : LIBXSMM_GEMM_FLAGS('N', 'N');
   auto dtype      = (sizeof(DType) == 2) ? LIBXSMM_DATATYPE_BF16 : LIBXSMM_DATATYPE_F32;
@@ -400,14 +404,13 @@ int conv_benchmark(int argc, char** argv) {
               gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2), pad_w_in + i_w * stride_w + (i_s - S/2), 0, Cb, ifhp, ifwp, bc);
               gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
               brgemm_kernel.gemm( &gemm_param );
-
             }
 
           }
         }
       },
-      [&]() {if (sizeof(DType) == 2) tileconfig_kernel.gemm(NULL);},
-      [&]() {if (sizeof(DType) == 2) tilerelease_kernel.gemm(NULL);});
+      [&]() {if (sizeof(DType) == 2 && avoid_rim_fmas == 0) tileconfig_kernel.gemm(NULL);},
+      [&]() {if (sizeof(DType) == 2 && avoid_rim_fmas == 0) tilerelease_kernel.gemm(NULL);});
     if (i == n_iters) t_end = getTime();
   }
   
