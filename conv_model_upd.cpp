@@ -194,7 +194,7 @@ int conv_benchmark(int argc, char** argv) {
   if (sizeof(DType) == 2) {
     tensor_copy_NCHW_to_NCHWc (naive_input , naive_input_nchwc,  N, C, ifhp, ifwp, bc);
     tensor_copy_NCHW_to_NCHWc (naive_output, naive_output_nchwc, N, K, ofhp, ofwp, bk);
-    tensor_copy_KCRS_to_KCRSck_bf16(naive_filter, (libxsmm_bfloat16*)filter_libxsmm, K, C, R, S, bc, bk);
+    tensor_cvt_copy_KCRS_to_KCRSck_bf16(naive_filter, (libxsmm_bfloat16*)filter_libxsmm, K, C, R, S, bc, bk);
     libxsmm_rne_convert_fp32_bf16( naive_input_nchwc,     (libxsmm_bfloat16*)input_libxsmm,     N*C*ifhp*ifwp );
     libxsmm_rne_convert_fp32_bf16( naive_output_nchwc,    (libxsmm_bfloat16*)output_libxsmm,    N*K*ofhp*ofwp );
   } else {
@@ -1043,7 +1043,7 @@ int conv_benchmark(int argc, char** argv) {
   // Check correctness if requested
   if (check_correctness) {
     if (sizeof(DType) == 2) {
-      tensor_copy_KCRSck_vnni_to_norm_f32( (libxsmm_bfloat16*)filter_libxsmm, naive_filter_kcrsck, K, C, R, S, bc, bk);
+      tensor_cvt_copy_KCRSck_vnni_to_norm_f32( (libxsmm_bfloat16*)filter_libxsmm, naive_filter_kcrsck, K, C, R, S, bc, bk);
       tensor_copy_KCRSck_to_KCRS( (float*)naive_filter_kcrsck, naive_filter_opt, K, C, R, S, bc, bk);
     } else {
       tensor_copy_KCRSck_to_KCRS( (float*)filter_libxsmm, naive_filter_opt, K, C, R, S, bc, bk);
