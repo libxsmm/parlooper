@@ -54,7 +54,11 @@ int conv_benchmark(int argc, char** argv) {
   long n_img_teams = 7;
   long n_ofm_teams = 4;
   long weight_copies = 0;
-  long multiple_target = 2;
+#ifdef __x86_64__
+  long multiple_target = (sizeof(DType) == 2 ? 32 : 2); // FIXME: By default, it is supposed bf16 is run on SPR with TMUL
+#else
+  long multiple_target = (sizeof(DType) == 2 ? 4 : 2); // FIXME: 8 might provide better perf for bf16 (needs testing)
+#endif
   long max_compute_offset_input = 0;
   long use_f32_wt_reduction_and_external_wt_vnni = 0;
   long compute_full_wt_output_block = 0;
@@ -281,6 +285,8 @@ int conv_benchmark(int argc, char** argv) {
   auto dtype      = (sizeof(DType) == 2) ? LIBXSMM_DATATYPE_BF16 : LIBXSMM_DATATYPE_F32;
   
   // Configure WT Reduction related TPP kernels
+  int vnni_block = libxsmm_cpuid_dot_pack_factor(dtype);
+  printf("vnni_block = %d \n", vnni_block);
   long fm_blocking = (bk % 16 == 0) ? 16 : bk;
   long reduce_work = Kb * C * R * S * (bk/fm_blocking);
   long reduce_chunk_size = (reduce_work + nThreads - 1)/nThreads;
@@ -321,11 +327,19 @@ int conv_benchmark(int argc, char** argv) {
   zero_kernel_bf16 = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
 
   // Generate XForm TPP kernels
+#ifdef __x86_64__
   auto tr_unary_shape = libxsmm_create_meltw_unary_shape(bk, bc, bk, bk, dtype, dtype, dtype);
   wt_vnni_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI2, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
 
   tr_unary_shape = libxsmm_create_meltw_unary_shape(bk, bn, K*ofhp*ofwp, bk, dtype, dtype, dtype);
   vnni_xform_kernel =  libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI2, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
+#else
+  auto tr_unary_shape = libxsmm_create_meltw_unary_shape(bk, bc, bk, bk, dtype, dtype, dtype);
+  wt_vnni_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI4, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
+
+  tr_unary_shape = libxsmm_create_meltw_unary_shape(bk, bn, K*ofhp*ofwp, bk, dtype, dtype, dtype);
+  vnni_xform_kernel =  libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI4, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
+#endif
 
   tr_unary_shape = libxsmm_create_meltw_unary_shape(bc, bn, C*ifhp*ifwp, bn, dtype, dtype, dtype);
   trans_xform_kernel = libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_NORMT, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
@@ -414,12 +428,23 @@ int conv_benchmark(int argc, char** argv) {
       auto new_tr_unary_shape = libxsmm_create_meltw_unary_shape(bc, ifwp, bc, input_pixels, dtype, dtype, dtype);
       transpose_input_pixels_bf16 = libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_NORMT, new_tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
       new_tr_unary_shape = libxsmm_create_meltw_unary_shape(bk, compute_pixels, bk, bk, dtype, dtype, dtype);
+#ifdef __x86_64__
       if ((ofhp * ofwp) % 2 == 0) {
         vnni_output_compute_pixels_bf16 =  libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI2, new_tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
       } else {
         vnni_output_compute_pixels_bf16 =  libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI2_PAD, new_tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
       }
-      upd_remaining_pixels = output_pixels - ((compute_pixels+1)/2)*2;
+#else
+      if (compute_pixels % vnni_block == 0) {
+        vnni_output_compute_pixels_bf16 =  libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI4, new_tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
+      } else {
+        vnni_output_compute_pixels_bf16 =  libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI4_PAD, new_tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
+      }
+#endif
+      printf("multiple_target = %d\n", multiple_target);
+      printf("output_pixels = %d compute_pixels = %d \n", output_pixels, compute_pixels);
+      upd_remaining_pixels = output_pixels - ((compute_pixels + vnni_block - 1)/vnni_block)*vnni_block;
+      printf("upd_remaining_pixels = %d \n", upd_remaining_pixels);
       auto zero_unary_shape = libxsmm_create_meltw_unary_shape(bk*upd_remaining_pixels, 1, bk*upd_remaining_pixels, bk*upd_remaining_pixels, LIBXSMM_DATATYPE_BF16, LIBXSMM_DATATYPE_BF16, LIBXSMM_DATATYPE_BF16);
       vnni_output_zero_remaining_pixels_bf16 = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, zero_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
     } else {
@@ -684,7 +709,7 @@ int conv_benchmark(int argc, char** argv) {
             unary_param.out.primary= LIBXSMM_ACCESS_RAW(4, sizeof(DType), output_linearized_pixels, i_n, i_k, 0, 0, Kb, output_pixels, bk);
             vnni_output_compute_pixels_bf16( &unary_param );
             if (upd_remaining_pixels > 0) {
-              unary_param.out.primary= LIBXSMM_ACCESS_RAW(4, sizeof(DType), output_linearized_pixels, i_n, i_k, ((compute_pixels+1)/2)*2, 0, Kb, output_pixels, bk);
+              unary_param.out.primary= LIBXSMM_ACCESS_RAW(4, sizeof(DType), output_linearized_pixels, i_n, i_k, ((compute_pixels + vnni_block - 1)/vnni_block)*vnni_block, 0, Kb, output_pixels, bk);
               vnni_output_zero_remaining_pixels_bf16( &unary_param );
             }
           },
@@ -704,7 +729,7 @@ int conv_benchmark(int argc, char** argv) {
               unary_param.out.primary= LIBXSMM_ACCESS_RAW(4, sizeof(DType), output_linearized_pixels, i_n, i_k, 0, 0, Kb, output_pixels, bk);
               vnni_output_compute_pixels_bf16( &unary_param );
               if (upd_remaining_pixels > 0) {
-                unary_param.out.primary= LIBXSMM_ACCESS_RAW(4, sizeof(DType), output_linearized_pixels, i_n, i_k, ((compute_pixels+1)/2)*2, 0, Kb, output_pixels, bk);
+                unary_param.out.primary= LIBXSMM_ACCESS_RAW(4, sizeof(DType), output_linearized_pixels, i_n, i_k, ((compute_pixels + vnni_block - 1)/vnni_block)*vnni_block, 0, Kb, output_pixels, bk);
                 vnni_output_zero_remaining_pixels_bf16( &unary_param );
               }
             }
