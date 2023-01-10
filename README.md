@@ -343,4 +343,5 @@ srun ./gemm_upd cABa 2048 4096 1024 32 32 32 8 0 0 400
 ## Contributors
 * Evangelos Georganas (Intel Corp.)
 * Dhiraj Kalamkar (Intel Corp.)
+* Kirill Voronin (Intel Corp.)
 
