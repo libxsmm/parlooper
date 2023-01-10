@@ -54,7 +54,7 @@ int conv_benchmark(int argc, char** argv) {
   long n_img_teams = 7;
   long n_ofm_teams = 4;
   long weight_copies = 0;
-  long multiple_target = 2;
+  long multiple_target = (sizeof(DType) == 2 ? 32 : 2);
   long max_compute_offset_input = 0;
   long use_f32_wt_reduction_and_external_wt_vnni = 0;
   long compute_full_wt_output_block = 0;
@@ -468,7 +468,7 @@ int conv_benchmark(int argc, char** argv) {
   printf("Tuning parameters: use_hybrid n_img_teams n_ofm_teams: %d %d %d \n", use_hybrid_imgfm_parallelization, n_img_teams, n_ofm_teams);
   printf("Tuning parameters: use_f32_wt_reduction_and_external_wt_vnni compute_full_wt_output_block pblock: %d %d %d \n", use_f32_wt_reduction_and_external_wt_vnni, compute_full_wt_output_block, pixels_blocking_factor);
   printf("Tuning parameters: use_mb_par_f32: %d \n", use_mb_par_f32);
-
+  printf("Inferred parameters: multiple_target: %d \n", multiple_target);
 
   auto t0 = getTime();
 
