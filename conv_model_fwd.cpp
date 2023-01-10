@@ -25,6 +25,7 @@ int conv_benchmark(int argc, char** argv) {
   long h_in_gemm = 1;
   long pack_input = 0;
   long logical_padding = 0;
+  long input_padding_copy = 0;
   // Setup model and trace
   ifreq = 1.0 / getFreq();
   std::vector<std::string> inp_trace[128];
@@ -61,6 +62,9 @@ int conv_benchmark(int argc, char** argv) {
       }
       if (argc > 22) {
         logical_padding = atoi(argv[22]);
+        if (argc > 23) {
+          input_padding_copy = atoi(argv[23]);
+        }
       }
     }
   }
@@ -72,7 +76,12 @@ int conv_benchmark(int argc, char** argv) {
 
   if (logical_padding && h_in_gemm > 1 ) {
     printf("Error: logical padding is only supported for h_in_gemm = 1\n");
-    exit(-1);
+    return -1;
+  }
+
+  if (!logical_padding && input_padding_copy != 0) {
+    printf("Error: input_padding_copy only makes sense for logical_padding enabled\n");
+    return -1;
   }
 
   long Kb = K/bk, Cb = C/bc;
@@ -90,6 +99,10 @@ int conv_benchmark(int argc, char** argv) {
   long ifh = H;
   long ifw = W;
 
+  /* used for always-physically-padded input copy when input_padding_copy != 0 */
+  long ifhp_physically_padded = H + 2 * pad_h;
+  long ifwp_physically_padded = W + 2 * pad_w;
+
   // Allocate buffers
   float *naive_input  = (float*)libxsmm_aligned_malloc( N*ifhp*ifwp*C*sizeof(float), 2097152);
   float *naive_input_nchwc  = (float*)libxsmm_aligned_malloc( N*ifhp*ifwp*C*sizeof(float), 2097152);
@@ -99,6 +112,7 @@ int conv_benchmark(int argc, char** argv) {
   float *naive_filter = (float*)libxsmm_aligned_malloc( C*K*R*S*sizeof(float), 2097152);
   float *naive_filter_kcrsck = (float*)libxsmm_aligned_malloc( C*K*R*S*sizeof(float), 2097152);
   DType *input_libxsmm  = (DType*)libxsmm_aligned_malloc( N*ifhp*ifwp*C*sizeof(DType), 2097152);
+  DType *scratch_input_libxsmm = (DType*)libxsmm_aligned_malloc( N*ifhp_physically_padded*ifwp_physically_padded*C*sizeof(DType), 2097152);
   DType *packed_input_libxsmm  = (DType*)libxsmm_aligned_malloc( N*ofh*ofw*C*sizeof(DType), 2097152);
   DType *output_libxsmm = (DType*)libxsmm_aligned_malloc( N*ofhp*ofwp*K*sizeof(DType), 2097152);
   DType *filter_libxsmm = (DType*)libxsmm_aligned_malloc( C*K*R*S*sizeof(DType), 2097152);
@@ -143,7 +157,7 @@ int conv_benchmark(int argc, char** argv) {
     avoid_rim_fmas = 1;
   }
 
-  if (logical_padding)
+  if (logical_padding && !input_padding_copy)
     avoid_rim_fmas = 1;
 
   if (avoid_rim_fmas == 1 && (R == 1 || S == 1)) {
@@ -165,6 +179,11 @@ int conv_benchmark(int argc, char** argv) {
     pack_input = 0;
   }
 
+  if (pack_input != 0 && input_padding_copy != 0) {
+    printf("Error: input_padding_copy does not work with pack_input enabled\n");
+    return -1;
+  }
+
   long Cb_step = Cb/c_block;
   long n_step = 1;
   long c_step = Cb_step;
@@ -180,13 +199,18 @@ int conv_benchmark(int argc, char** argv) {
   }
 
   printf("Test parameters: N H W C K R S stride_h stride_w pad_h pad_w bc bk: %d %d %d %d %d %d %d %d %d %d %d %d %d\n", N, H, W, C, K, R, S, stride_h, stride_w, pad_h, pad_w, bc, bk);
-  printf("Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding: %d %d %d %d %d %d %d\n", h_block, w_block, c_block, k_block, h_in_gemm, pack_input, logical_padding);
+  printf("Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: %d %d %d %d %d %d %d %d\n",
+          h_block, w_block, c_block, k_block, h_in_gemm, pack_input, logical_padding, input_padding_copy);
   printf("Tuning parameters: avoid_rim_fmas: %d\n", avoid_rim_fmas);
 
   // Setup TPP kernels
   auto l_flags    = (sizeof(DType) == 2) ? ( LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG ) : LIBXSMM_GEMM_FLAGS('N', 'N');
   if (Cb_step == Cb && r_step == R && s_step == S)
     l_flags |= LIBXSMM_GEMM_FLAG_BETA_0;
+  if (sizeof(DType) == 2 && avoid_rim_fmas != 0) { /* enabling tile config and tile release within brgemm as this code path requires calling different brgemms */
+    l_flags &= ~LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG;
+    l_flags &= ~LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG;
+  }
   auto l_tc_flags = (sizeof(DType) == 2) ? ( LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') ) : LIBXSMM_GEMM_FLAGS('N', 'N');
   auto l_tr_flags = (sizeof(DType) == 2) ? ( LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') ) : LIBXSMM_GEMM_FLAGS('N', 'N');
   auto dtype      = (sizeof(DType) == 2) ? LIBXSMM_DATATYPE_BF16 : LIBXSMM_DATATYPE_F32;
@@ -197,20 +221,29 @@ int conv_benchmark(int argc, char** argv) {
   libxsmm_xmmfunction brgemm_kernel_1less;
   libxsmm_xmmfunction brgemm_kernel_2less;
   libxsmm_meltwfunction_unary zero_kernel;
+  libxsmm_meltwfunction_unary zero_padded_hwbc_kernel;
+  libxsmm_meltwfunction_unary copy_wbc_kernel;
   libxsmm_meltwfunction_unary input_pack_kernel;
 
+  auto w_gemm_pixels = ofw/w_block;
+  auto gemm_n = (w_gemm_pixels +  2 * pad_w) * (h_in_gemm - 2) + 2 * (w_gemm_pixels + pad_w);
+  auto gemm_m = bk;
+  auto gemm_k = bc;
+
+  auto l_unary_shape = libxsmm_create_meltw_unary_shape(bk*gemm_n, 1, bk*gemm_n, bk*gemm_n, dtype, dtype, dtype);
+  zero_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
+
+  l_unary_shape = libxsmm_create_meltw_unary_shape(ifhp_physically_padded*ifwp_physically_padded*bc, 1, ifhp_physically_padded*ifwp_physically_padded*bc, ifhp_physically_padded*ifwp_physically_padded*bc, dtype, dtype, dtype);
+  zero_padded_hwbc_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
+
+  l_unary_shape = libxsmm_create_meltw_unary_shape(ifw*bc, 1, ifwp*bc, ifwp_physically_padded*bc, dtype, dtype, dtype);
+  copy_wbc_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_IDENTITY, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
 
   if ((R == 1 && S == 1) ||
       (avoid_rim_fmas == 1)) {
-    auto w_gemm_pixels = ofw/w_block;
-    auto gemm_n = (w_gemm_pixels +  2 * pad_w) * (h_in_gemm - 2) + 2 * (w_gemm_pixels + pad_w);
-    auto gemm_m = bk;
-    auto gemm_k = bc;
     auto l_shape = libxsmm_create_gemm_shape( gemm_m, gemm_n, gemm_k, bk, bc*stride_w, bk, dtype, dtype, dtype, dtype );
     auto l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
     auto l_brconfig = libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, R*S*bc*bk*sizeof(DType), bc*ifhp*ifwp*sizeof(DType), Cb_step );
-    auto l_unary_shape = libxsmm_create_meltw_unary_shape(bk*gemm_n, 1, bk*gemm_n, bk*gemm_n, dtype, dtype, dtype);
-    zero_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);  
     tileconfig_kernel.gemm  = libxsmm_dispatch_gemm_v2( l_shape, l_tc_flags, l_prefetch_flags );
     tilerelease_kernel.gemm = libxsmm_dispatch_gemm_v2( l_shape, l_tr_flags, l_prefetch_flags );
     if (pack_input == 0) {
@@ -227,15 +260,9 @@ int conv_benchmark(int argc, char** argv) {
     l_shape = libxsmm_create_gemm_shape( gemm_m, gemm_n-2, gemm_k, bk, bc*stride_w, bk, dtype, dtype, dtype, dtype );
     brgemm_kernel_2less.gemm      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
   } else {
-    auto w_gemm_pixels = ofw/w_block;
-    auto gemm_n = (w_gemm_pixels +  2 * pad_w) * (h_in_gemm - 2) + 2 * (w_gemm_pixels + pad_w);
-    auto gemm_m = bk;
-    auto gemm_k = bc;
     auto l_shape = libxsmm_create_gemm_shape( gemm_m, gemm_n, gemm_k, bk, bc*stride_w, bk, dtype, dtype, dtype, dtype );
     auto l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
     auto l_brconfig = libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_OFFSET, 0, 0, 0 );
-    auto l_unary_shape = libxsmm_create_meltw_unary_shape(bk*gemm_n, 1, bk*gemm_n, bk*gemm_n, dtype, dtype, dtype);
-    zero_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);  
     tileconfig_kernel.gemm  = libxsmm_dispatch_gemm_v2( l_shape, l_tc_flags, l_prefetch_flags );
     tilerelease_kernel.gemm = libxsmm_dispatch_gemm_v2( l_shape, l_tr_flags, l_prefetch_flags );
     brgemm_kernel.gemm      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
@@ -247,9 +274,14 @@ int conv_benchmark(int argc, char** argv) {
           A_offsets[i] = (ifm * R * S * bc * bk +
               kj * S * bc * bk +
               ki * bc * bk) * sizeof(DType);
-          B_offsets[i] = (ifm * ifhp * ifwp * bc +
-              kj * ifwp * bc +
-              ki * bc) * sizeof(DType);
+          if (input_padding_copy)
+            B_offsets[i] = (ifm * ifhp_physically_padded * ifwp_physically_padded * bc +
+                kj * ifwp_physically_padded * bc +
+                ki * bc) * sizeof(DType);
+          else
+            B_offsets[i] = (ifm * ifhp * ifwp * bc +
+                kj * ifwp * bc +
+                ki * bc) * sizeof(DType);
           i++;
         }
       }
@@ -287,6 +319,10 @@ int conv_benchmark(int argc, char** argv) {
   // JIT requested nested loop specs
 
   auto t0 = getTime();
+  auto input_pad_loop = ThreadedLoop<2>({
+      LoopSpecs{0, N, n_step, true},
+      LoopSpecs{0, Cb, c_step}},
+      "Ab");
   auto conv_loop = ThreadedLoop<7>({
       LoopSpecs{0, N, n_step, true},
       LoopSpecs{0, Cb, c_step},
@@ -302,6 +338,25 @@ int conv_benchmark(int argc, char** argv) {
   double t_start, t_end;
   for (i = 0; i < n_iters+1; i++) {
     if (i == 1) t_start = getTime();
+    if (input_padding_copy) {
+      input_pad_loop(
+        [&](int* ind) {
+          int i_n = ind[0], i_c = ind[1];
+
+          libxsmm_meltw_unary_param unary_param;
+
+          unary_param.out.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), scratch_input_libxsmm, i_n, i_c, 0, 0, 0, Cb, ifhp_physically_padded, ifwp_physically_padded, bc);
+          zero_padded_hwbc_kernel( &unary_param );
+
+          for (int _i_h = pad_h; _i_h < ifhp_physically_padded - pad_h; _i_h++) {
+            unary_param.in.primary  = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, _i_h - pad_h, 0, 0, Cb, ifhp, ifwp, bc);
+            unary_param.out.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), scratch_input_libxsmm, i_n, i_c, _i_h, pad_w, 0, Cb, ifhp_physically_padded, ifwp_physically_padded, bc);
+            copy_wbc_kernel( &unary_param );
+          }
+        },
+        [&]() {if (sizeof(DType) == 2) {};},
+        [&]() {if (sizeof(DType) == 2) {};});
+    }
     conv_loop(
       [&](int* ind) {
         int i_n = ind[0], i_c = ind[1], i_k = ind[2], i_h = ind[3], i_w = ind[4], i_r = ind[5], i_s = ind[6];
@@ -312,8 +367,11 @@ int conv_benchmark(int argc, char** argv) {
           gemm_param.a.secondary = (void*)A_offsets;
           gemm_param.b.secondary = (void*)B_offsets;
           gemm_param.a.primary = LIBXSMM_ACCESS_RAW(6, sizeof(DType), filter_libxsmm, i_k, i_c, i_r, i_s, 0, 0, Cb, R, S, bc, bk);
-          if (pack_input ==  0) {    
-            gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
+          if (pack_input ==  0) {
+            if (input_padding_copy)
+              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), scratch_input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, Cb, ifhp_physically_padded, ifwp_physically_padded, bc);
+            else
+              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
           } else {
             gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), packed_input_libxsmm, i_n, i_c, i_h, i_w, 0, Cb, ofh, ofw, bc);     
           }
@@ -355,22 +413,22 @@ int conv_benchmark(int argc, char** argv) {
               /* Do no FLOPS  */
             } else if (i_h *stride_h + i_r - R/2 >= ifh ) {
               /* Do no FLOPS  */
-            } else if ( i_s < R/2 && i_w * stride_w + (i_s - R/2) < 0 && (i_w + 1) * stride_w + (i_s - R/2) >= 0  ) {
+            } else if ( i_s < S/2 && i_w * stride_w + (i_s - S/2) < 0 && (i_w + 1) * stride_w + (i_s - S/2) >= 0  ) {
               // the case when left i_s is out of input image for the first pitch only
               gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2) , pad_w_in + (i_w + 1) * stride_w + (i_s - S/2) , 0, Cb, ifhp, ifwp, bc);
               gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w + 1, 0, Kb, ofhp, ofwp, bk);
               brgemm_kernel_1less.gemm( &gemm_param );
-            } else if ( i_s < R/2 && i_w * stride_w + (i_s - R/2) < 0 && (i_w + 1) * stride_w + (i_s - R/2) < 0 && (i_w + 2) * stride_w + (i_s - R/2) >= 0  ) {
+            } else if ( i_s < S/2 && i_w * stride_w + (i_s - S/2) < 0 && (i_w + 1) * stride_w + (i_s - S/2) < 0 && (i_w + 2) * stride_w + (i_s - S/2) >= 0  ) {
               // the case when left i_s is out of input image for the first two pitches
               gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2) , pad_w_in + (i_w + 2) * stride_w + (i_s - S/2) , 0, Cb, ifhp, ifwp, bc);
               gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w + 2, 0, Kb, ofhp, ofwp, bk);
               brgemm_kernel_2less.gemm( &gemm_param );
-            } else if ( i_s > R/2 && (i_w + w_step - 1)*stride_w + (i_s - R/2) >= ifw && (i_w + w_step - 2)*stride_w + (i_s - R/2) < ifw ) {
+            } else if ( i_s > S/2 && (i_w + w_step - 1)*stride_w + (i_s - S/2) >= ifw && (i_w + w_step - 2)*stride_w + (i_s - S/2) < ifw ) {
               // the case when right i_s is out of input image for the last pitch only
               gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2) , pad_w_in + i_w * stride_w + (i_s - S/2) , 0, Cb, ifhp, ifwp, bc);
               gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
               brgemm_kernel_1less.gemm( &gemm_param );
-            } else if ( i_s > R/2 && (i_w + w_step - 1)*stride_w + (i_s - R/2) >= ifw && (i_w + w_step - 2)*stride_w + (i_s - R/2) >= ifw && (i_w + w_step - 3)*stride_w + (i_s - R/2) < ifw ) {
+            } else if ( i_s > S/2 && (i_w + w_step - 1)*stride_w + (i_s - S/2) >= ifw && (i_w + w_step - 2)*stride_w + (i_s - S/2) >= ifw && (i_w + w_step - 3)*stride_w + (i_s - S/2) < ifw ) {
               // for the case when right i_s is out of input image for the last 2 pitches
               gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2) , pad_w_in + i_w * stride_w + (i_s - S/2) , 0, Cb, ifhp, ifwp, bc);
               gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
@@ -400,14 +458,13 @@ int conv_benchmark(int argc, char** argv) {
               gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2), pad_w_in + i_w * stride_w + (i_s - S/2), 0, Cb, ifhp, ifwp, bc);
               gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
               brgemm_kernel.gemm( &gemm_param );
-
             }
 
           }
         }
       },
-      [&]() {if (sizeof(DType) == 2) tileconfig_kernel.gemm(NULL);},
-      [&]() {if (sizeof(DType) == 2) tilerelease_kernel.gemm(NULL);});
+      [&]() {if (sizeof(DType) == 2 && avoid_rim_fmas == 0) tileconfig_kernel.gemm(NULL);},
+      [&]() {if (sizeof(DType) == 2 && avoid_rim_fmas == 0) tilerelease_kernel.gemm(NULL);});
     if (i == n_iters) t_end = getTime();
   }
   
@@ -463,6 +520,7 @@ int conv_benchmark(int argc, char** argv) {
   libxsmm_free(naive_filter);
   libxsmm_free(naive_filter_kcrsck);
   libxsmm_free(input_libxsmm);
+  libxsmm_free(scratch_input_libxsmm);
   libxsmm_free(packed_input_libxsmm);
   libxsmm_free(output_libxsmm);
   libxsmm_free(filter_libxsmm);
