@@ -196,6 +196,16 @@ int conv_benchmark(int argc, char** argv) {
     return -1;
   }
 
+  if (pack_input == 0 && h_in_gemm > 1 && (pad_h_in != pad_h_out || pad_w_in != pad_w_out)) {
+    printf("Error: h_in_gemm = %d > 1 does not work with different inout/output paddings when input is not packed (%d != %d or %d != %d)\n", h_in_gemm, pad_h_in, pad_h_out, pad_w_in, pad_w_out);
+    return -1;
+  }
+
+  if ((pack_input == 1 && h_in_gemm > 1 && ((pad_h_in == 0 && pad_h_in != 0) || (pad_w_in == 0 && pad_w_out != 0)))) {
+    printf("Error: h_in_gemm = %d > 1 does not work with zero input and non-zero output paddings when input is packed (%d != %d or %d != %d)\n", h_in_gemm, pad_h_in, pad_h_out, pad_w_in, pad_w_out);
+    return -1;
+  }
+
   long Cb_step = Cb/c_block;
   long n_step = 1;
   long c_step = Cb_step;
