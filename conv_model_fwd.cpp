@@ -14,7 +14,7 @@ int conv_benchmark(int argc, char** argv) {
   // Setup default GEMM sizes
   int check_correctness = 1;
   char loop_specs_str[256] = "aBC";  
-  long N = 14, H = 28, W = 28, C = 512, K = 1024, R = 1, S = 1, stride_h = 1, stride_w = 1, pad_h = 0, pad_w = 0;
+  long N = 14, H = 28, W = 28, C = 512, K = 1024, R = 1, S = 1, stride_h = 1, stride_w = 1, pad_h = 0, pad_w = 0, pad_h_in = 0, pad_w_in = 0, pad_h_out = 0, pad_w_out = 0;
   long bc = 32, bk = 32;
   long n_iters = 400;
   long i;
@@ -65,10 +65,21 @@ int conv_benchmark(int argc, char** argv) {
         if (argc > 23) {
           input_padding_copy = atoi(argv[23]);
         }
+        if (argc > 27) {
+          pad_h_in  = atoi(argv[24]);
+          pad_w_in  = atoi(argv[25]);
+          pad_h_out = atoi(argv[26]);
+          pad_w_out = atoi(argv[27]);
+        } else {
+          pad_h_in = (logical_padding == 0 ? pad_h : 0);
+          pad_w_in = (logical_padding == 0 ? pad_w : 0);
+          pad_h_out = (logical_padding == 0 ? pad_h : 0);
+          pad_w_out = (logical_padding == 0 ? pad_w : 0);
+        }
       }
     }
   }
-  
+
   if ( (h_in_gemm > 1) && (w_block != 1) ) {
     printf("Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...\n");
     return -1;
@@ -84,11 +95,12 @@ int conv_benchmark(int argc, char** argv) {
     return -1;
   }
 
+  if ((pad_h_in != 0 || pad_w_in != 0 || pad_h_out != 0 || pad_w_out != 0) && logical_padding != 0) {
+    printf("Error: Passed value of logical_padding = %d does not match the padding parameters: %d %d %d %d %d %d\n", logical_padding, pad_h, pad_w, pad_h_in, pad_w_in, pad_h_out, pad_w_out);
+    return -1;
+  }
+
   long Kb = K/bk, Cb = C/bc;
-  long  pad_h_in = (logical_padding == 0 ? pad_h : 0);
-  long  pad_w_in = (logical_padding == 0 ? pad_w : 0);
-  long  pad_h_out = (logical_padding == 0 ? pad_h : 0);
-  long  pad_w_out = (logical_padding == 0 ? pad_w : 0);
   // Deriving some aux values
   long ofh = (H + 2 * pad_h - R) / stride_h + 1;
   long ofw = (W + 2 * pad_w - S) / stride_w + 1;
@@ -184,6 +196,16 @@ int conv_benchmark(int argc, char** argv) {
     return -1;
   }
 
+  if (pack_input == 0 && h_in_gemm > 1 && (pad_h_in != pad_h_out || pad_w_in != pad_w_out)) {
+    printf("Error: h_in_gemm = %d > 1 does not work with different inout/output paddings when input is not packed (%d != %d or %d != %d)\n", h_in_gemm, pad_h_in, pad_h_out, pad_w_in, pad_w_out);
+    return -1;
+  }
+
+  if ((pack_input == 1 && h_in_gemm > 1 && ((pad_h_in == 0 && pad_h_in != 0) || (pad_w_in == 0 && pad_w_out != 0)))) {
+    printf("Error: h_in_gemm = %d > 1 does not work with zero input and non-zero output paddings when input is packed (%d != %d or %d != %d)\n", h_in_gemm, pad_h_in, pad_h_out, pad_w_in, pad_w_out);
+    return -1;
+  }
+
   long Cb_step = Cb/c_block;
   long n_step = 1;
   long c_step = Cb_step;
@@ -198,7 +220,10 @@ int conv_benchmark(int argc, char** argv) {
     s_step = 1;
   }
 
-  printf("Test parameters: N H W C K R S stride_h stride_w pad_h pad_w bc bk: %d %d %d %d %d %d %d %d %d %d %d %d %d\n", N, H, W, C, K, R, S, stride_h, stride_w, pad_h, pad_w, bc, bk);
+  printf("Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk: %d  %d %d %d %d  %d %d %d %d  %d %d %d %d %d %d  %d %d\n", N, H, W, C, K,
+          R, S, stride_h, stride_w,
+          pad_h, pad_w, pad_h_in, pad_w_in, pad_h_out, pad_w_out,
+          bc, bk);
   printf("Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: %d %d %d %d %d %d %d %d\n",
           h_block, w_block, c_block, k_block, h_in_gemm, pack_input, logical_padding, input_padding_copy);
   printf("Tuning parameters: avoid_rim_fmas: %d\n", avoid_rim_fmas);
@@ -371,7 +396,7 @@ int conv_benchmark(int argc, char** argv) {
             if (input_padding_copy)
               gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), scratch_input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, Cb, ifhp_physically_padded, ifwp_physically_padded, bc);
             else
-              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
+              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in - pad_h + i_h * stride_h + i_r, pad_w_in - pad_w + i_w * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
           } else {
             gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), packed_input_libxsmm, i_n, i_c, i_h, i_w, 0, Cb, ofh, ofw, bc);     
           }
@@ -382,7 +407,7 @@ int conv_benchmark(int argc, char** argv) {
             for (_br = 0; _br < Cb; _br++) {
               for (_h = 0; _h < h_step; _h++) {
                 libxsmm_meltw_unary_param pack_param;
-                pack_param.in.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, _br, (i_h+_h) * stride_h, i_w * stride_w, 0, Cb, ifhp, ifwp, bc);
+                pack_param.in.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, _br, pad_h_in - pad_h + (i_h+_h) * stride_h, pad_w_in - pad_w + i_w * stride_w, 0, Cb, ifhp, ifwp, bc);
                 pack_param.out.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), packed_input_libxsmm, i_n, _br, i_h+_h, i_w, 0, Cb, ofh, ofw, bc);
                 input_pack_kernel( &pack_param );
               }
@@ -398,7 +423,7 @@ int conv_benchmark(int argc, char** argv) {
           }
 
           brgemm_kernel.gemm( &gemm_param );
-        } else {
+        } else { /* for avoid_rim_fmas dispatch */
           unsigned long long brcount = Cb_step;
           libxsmm_gemm_param gemm_param;
           gemm_param.op.tertiary = (void*)&brcount;
