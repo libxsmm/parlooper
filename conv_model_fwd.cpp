@@ -26,6 +26,7 @@ int conv_benchmark(int argc, char** argv) {
   long pack_input = 0;
   long logical_padding = 0;
   long input_padding_copy = 0;
+  long zero_output_rims = 0;
   // Setup model and trace
   ifreq = 1.0 / getFreq();
   std::vector<std::string> inp_trace[128];
@@ -75,6 +76,9 @@ int conv_benchmark(int argc, char** argv) {
           pad_w_in = (logical_padding == 0 ? pad_w : 0);
           pad_h_out = (logical_padding == 0 ? pad_h : 0);
           pad_w_out = (logical_padding == 0 ? pad_w : 0);
+        }
+        if (argc > 28) {
+          zero_output_rims = atoi(argv[28]);
         }
       }
     }
@@ -143,11 +147,15 @@ int conv_benchmark(int argc, char** argv) {
   libxsmm_free(naive_input_tmp);
   set_zeropad_nchw(naive_input, N, C, ifhp, ifwp, pad_h_in, pad_w_in);
 
+/*
   float *naive_output_tmp = (float*)libxsmm_aligned_malloc( (size_t)N*K*ofhp*ofwp*sizeof(float), 2097152);
   init_buf(naive_output_tmp,          N*K*ofh*ofw, 0, 0);
   copy_internal_nchw( naive_output , naive_output_tmp, N, K, ofh, ofw, pad_h_out, pad_w_out);
   libxsmm_free(naive_output_tmp);
   set_zeropad_nchw(naive_output, N, K, ofhp, ofwp, pad_h_out, pad_w_out);
+*/
+  init_buf(naive_output, N*K*ofhp*ofwp, 0, 0);
+//  set_zeropad_nchw(naive_output, N, K, ofhp, ofwp, pad_h_out, pad_w_out);
 
   init_buf(naive_filter,         K*C*R*S, 0, 0);
   
@@ -163,6 +171,8 @@ int conv_benchmark(int argc, char** argv) {
     tensor_copy_NCHW_to_NCHWc (naive_output, (float*)output_libxsmm, N, K, ofhp, ofwp, bk);
     tensor_copy_KCRS_to_KCRSck(naive_filter, (float*)filter_libxsmm, K, C, R, S, bc, bk);
   }
+  /* Note: have to zeropad reference output after copying (not after init) to keep random non-zero values in the rims of output_libxsmm */
+  set_zeropad_nchw(naive_output, N, K, ofhp, ofwp, pad_h_out, pad_w_out);
   
   long avoid_rim_fmas = 0;
   if (ofh <= 7 && ofw <=7 && R == 3 && S == 3 && stride_w == 1 && stride_h == 1 && h_in_gemm == 1) {
@@ -220,10 +230,12 @@ int conv_benchmark(int argc, char** argv) {
     s_step = 1;
   }
 
-  printf("Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk: %d  %d %d %d %d  %d %d %d %d  %d %d %d %d %d %d  %d %d\n", N, H, W, C, K,
+  printf("Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims: %d  %d %d %d %d  %d %d %d %d  %d %d %d %d %d %d  %d %d  %d\n",
+          N, H, W, C, K,
           R, S, stride_h, stride_w,
           pad_h, pad_w, pad_h_in, pad_w_in, pad_h_out, pad_w_out,
-          bc, bk);
+          bc, bk,
+          zero_output_rims);
   printf("Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: %d %d %d %d %d %d %d %d\n",
           h_block, w_block, c_block, k_block, h_in_gemm, pack_input, logical_padding, input_padding_copy);
   printf("Tuning parameters: avoid_rim_fmas: %d\n", avoid_rim_fmas);
@@ -247,6 +259,8 @@ int conv_benchmark(int argc, char** argv) {
   libxsmm_xmmfunction brgemm_kernel_2less;
   libxsmm_meltwfunction_unary zero_kernel;
   libxsmm_meltwfunction_unary zero_padded_hwbc_kernel;
+  libxsmm_meltwfunction_unary zero_hwpad_kernel;
+  libxsmm_meltwfunction_unary zero_wpad_kernel;
   libxsmm_meltwfunction_unary copy_wbc_kernel;
   libxsmm_meltwfunction_unary input_pack_kernel;
 
@@ -260,6 +274,12 @@ int conv_benchmark(int argc, char** argv) {
 
   l_unary_shape = libxsmm_create_meltw_unary_shape(ifhp_physically_padded*ifwp_physically_padded*bc, 1, ifhp_physically_padded*ifwp_physically_padded*bc, ifhp_physically_padded*ifwp_physically_padded*bc, dtype, dtype, dtype);
   zero_padded_hwbc_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
+
+  l_unary_shape = libxsmm_create_meltw_unary_shape(pad_h_out*ofwp*bk, 1, pad_h_out*ofwp*bk, pad_h_out*ofwp*bk, dtype, dtype, dtype);
+  zero_hwpad_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
+
+  l_unary_shape = libxsmm_create_meltw_unary_shape(pad_w_out*bk, 1, pad_w_out*bk, pad_w_out*bk, dtype, dtype, dtype);
+  zero_wpad_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
 
   l_unary_shape = libxsmm_create_meltw_unary_shape(ifw*bc, 1, ifwp*bc, ifwp_physically_padded*bc, dtype, dtype, dtype);
   copy_wbc_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_IDENTITY, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
@@ -487,6 +507,37 @@ int conv_benchmark(int argc, char** argv) {
 
           }
         }
+
+        if (zero_output_rims) { /* note: this code block assumes h_step (= h_in_gemm) = 1 strictly */
+          libxsmm_meltw_unary_param zero_param;
+          if (i_c == Cb - c_step && i_r == R - r_step && i_s == S - s_step) {
+//              printf("here for i_n = %d i_c = %d i_k = %d i_h = %d i_w = %d i_r = %d i_s = %d ", i_n, i_c, i_k, i_h, i_w, i_r, i_s);
+            if (i_h == 0) {
+//                printf("zeroing hwpad for i_h = %d i_w = %d ", i_h, i_w);
+              zero_param.out.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm, i_n, i_k, 0, 0, 0, Kb, ofhp, ofwp, bk);
+              zero_hwpad_kernel( &zero_param );
+            }
+            if ( i_h == ofh - h_step) {
+//                printf("zeroing hwpad for i_h = %d i_w = %d ", i_h, i_w);
+              zero_param.out.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm, i_n, i_k, pad_h_out + ofh, 0, 0, Kb, ofhp, ofwp, bk);
+              zero_hwpad_kernel( &zero_param );
+            }
+            if (i_w == 0) {
+//                printf("zeroing left wpad for i_h = %d i_w = %d ", i_h, i_w);
+              zero_param.out.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm, i_n, i_k, pad_h_out + i_h, 0, 0, Kb, ofhp, ofwp, bk);
+              zero_wpad_kernel( &zero_param );
+            }
+            if (i_w == ofw - w_step) {
+//                printf("zeroing right wpad for i_h = %d i_w = %d ", i_h, i_w);
+              zero_param.out.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm, i_n, i_k, pad_h_out + i_h, pad_w_out + ofw, 0, Kb, ofhp, ofwp, bk);
+              zero_wpad_kernel( &zero_param );
+            }
+//              printf("\n");
+          }
+            //printf("Error: zero_output_rims = 1 has not been implemented yet\n");
+            //exit(-1);
+        } /* for if (zero_output_rims) */
+
       },
       [&]() {if (sizeof(DType) == 2 && avoid_rim_fmas == 0) tileconfig_kernel.gemm(NULL);},
       [&]() {if (sizeof(DType) == 2 && avoid_rim_fmas == 0) tilerelease_kernel.gemm(NULL);});
@@ -501,8 +552,9 @@ int conv_benchmark(int argc, char** argv) {
     } else {
       tensor_copy_NCHWc_to_NCHW ((float*)output_libxsmm, naive_output_opt, N, K, ofhp, ofwp, bk);
     }
-    /* If non 1x1 and multiple h in gemm, then make sure that we zero out the rims... */
-    if ((R != 1 || S != 1) && (h_in_gemm > 1)) {
+    /* If non 1x1 and multiple h in gemm and we don't request to zero the output rims within the convolution code, then we zero out the rims here */
+    //if (!zero_output_rims && (R != 1 || S != 1) && (h_in_gemm > 1)) {
+    if (!zero_output_rims && (pad_h_out > 0 || pad_w_out > 0)) {
       set_zeropad_nchw(naive_output_opt, N, K, ofhp, ofwp, pad_h_out, pad_w_out);
     }
     printf("##########################################\n");
