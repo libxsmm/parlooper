@@ -28,6 +28,9 @@ int conv_benchmark(int argc, char** argv) {
   long input_padding_copy = 0;
   long zero_output_rims = 0;
   long with_bias = 0;
+  /* if there is parallelization over W, then zeroing rims (if requested) directly after brgemm will lead to multiple threads zeroing the same rim,
+     which can be avoided by doing zeroing of the rims in a separate loop after the convolution (with extra perf cost potentially)  */
+  long avoid_racey_zeroing_in_rims = 0; /* by default, zeroing of the rims (if requested through zero_output_rims > 0) is done inside the conv loop */
   // Setup model and trace
   ifreq = 1.0 / getFreq();
   std::vector<std::string> inp_trace[128];
@@ -242,6 +245,41 @@ int conv_benchmark(int argc, char** argv) {
   printf("Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: %d %d %d %d %d %d %d %d\n",
           h_block, w_block, c_block, k_block, h_in_gemm, pack_input, logical_padding, input_padding_copy);
   printf("Tuning parameters: avoid_rim_fmas: %d\n", avoid_rim_fmas);
+  printf("Tuning string: %s\n", loop_specs_str);
+  printf("Extra parameters: avoid_racey_zeroing_in_rims: %d\n", avoid_racey_zeroing_in_rims);
+
+  int has_W_parallelization = 0;
+  for (size_t i = 0; i < strlen(loop_specs_str); i++) {
+    if (loop_specs_str[i] == 'E') {
+      has_W_parallelization++;
+      break;
+    }
+  }
+
+  if (has_W_parallelization && zero_output_rims && !avoid_racey_zeroing_in_rims) {
+    printf("Warning: potentially racey zeroing of the rims will happen as zero_output_rims = %d,"
+           " has_W_parallelization = %d and avoid_racey_zeroing_in_rims = %d (0 is default)\n",
+           zero_output_rims, has_W_parallelization, has_W_parallelization, avoid_racey_zeroing_in_rims);
+  }
+
+  char zero_output_rims_loop_specs_str[256] = "abcd"; /* same parallelization over output as in the conv loop string except non-parallel W dimension*/
+  if (has_W_parallelization) {
+    std::string tmp_nkhw_string;
+    for (size_t i = 0; i < strlen(loop_specs_str); i++) {
+      if (loop_specs_str[i] == 'A' || loop_specs_str[i] == 'a')
+        tmp_nkhw_string += loop_specs_str[i];
+      if (loop_specs_str[i] == 'C' || loop_specs_str[i] == 'c')
+        tmp_nkhw_string += loop_specs_str[i] - 1;
+      if (loop_specs_str[i] == 'D' || loop_specs_str[i] == 'd')
+        tmp_nkhw_string += 'c';
+      if (loop_specs_str[i] == 'E' || loop_specs_str[i] == 'e')
+        tmp_nkhw_string += loop_specs_str[i] - 1;
+    }
+    strcpy(zero_output_rims_loop_specs_str, tmp_nkhw_string.c_str());
+  }
+
+  printf("dbg: zero_output_rims_loop_specs_str = %s \n", zero_output_rims_loop_specs_str);
+  printf("dbg: has_W_parallelization = %d \n", has_W_parallelization);
 
   
   // Setup TPP kernels
@@ -418,6 +456,13 @@ int conv_benchmark(int argc, char** argv) {
       LoopSpecs{0, R, r_step},
       LoopSpecs{0, S, s_step}},
       loop_specs_str);
+  auto zero_output_rims_loop = ThreadedLoop<4>({
+      LoopSpecs{0, N, n_step, true},
+      LoopSpecs{0, Kb, k_step, {k_block}},
+      LoopSpecs{0, ofh, h_step, {h_block}},
+      LoopSpecs{0, ofw, w_step}},
+      zero_output_rims_loop_specs_str);
+
   auto t1 = getTime();
 
   // benchmark the convolution
@@ -569,7 +614,7 @@ int conv_benchmark(int argc, char** argv) {
           }
         } /* end of if-else around avoid_rim_fmas */
 
-        if (zero_output_rims) {
+        if ((!has_W_parallelization || !avoid_racey_zeroing_in_rims) && zero_output_rims) {
           libxsmm_meltw_unary_param zero_param;
           if (i_c == Cb - c_step && i_r == R - r_step && i_s == S - s_step) {
             if (i_h == 0) {
@@ -598,6 +643,40 @@ int conv_benchmark(int argc, char** argv) {
       },
       [&]() {if (sizeof(DType) == 2 && avoid_rim_fmas == 0) tileconfig_kernel.gemm(NULL);},
       [&]() {if (sizeof(DType) == 2 && avoid_rim_fmas == 0) tilerelease_kernel.gemm(NULL);});
+
+      if (avoid_racey_zeroing_in_rims && has_W_parallelization && zero_output_rims) {
+        zero_output_rims_loop(
+          [&] (int * ind) {
+            int i_n = ind[0], i_k = ind[1], i_h = ind[2], i_w = ind[3];
+
+            libxsmm_meltw_unary_param zero_param;
+
+            if (i_h == 0) {
+              zero_param.out.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm, i_n, i_k, 0, 0, 0, Kb, ofhp, ofwp, bk);
+              zero_hwpad_kernel( &zero_param );
+            }
+            if ( i_h == ofh - h_step) {
+              zero_param.out.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm, i_n, i_k, pad_h_out + ofh, 0, 0, Kb, ofhp, ofwp, bk);
+              zero_hwpad_kernel( &zero_param );
+            }
+            if (i_w == 0) {
+              for (int _h = 0; _h < h_step; _h++) {
+                zero_param.out.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm, i_n, i_k, pad_h_out + i_h + _h, 0, 0, Kb, ofhp, ofwp, bk);
+                zero_wpad_kernel( &zero_param );
+              }
+            }
+            if (i_w == ofw - w_step) {
+              for (int _h = 0; _h < h_step; _h++) {
+                zero_param.out.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm, i_n, i_k, pad_h_out + i_h + _h, pad_w_out + ofw, 0, Kb, ofhp, ofwp, bk);
+                zero_wpad_kernel( &zero_param );
+              }
+            }
+
+          },
+          [&]() {},
+          [&]() {});
+      }
+
     if (i == n_iters) t_end = getTime();
   }
   
