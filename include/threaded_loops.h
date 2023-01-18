@@ -19,7 +19,6 @@
 #include <string>
 #include <unordered_map>
 #include "jit_compile.h"
-#include "par_loop_cost_estimator.h"
 #include "par_loop_generator.h"
 
 typedef std::function<void()> init_func;
