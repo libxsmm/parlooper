@@ -261,6 +261,7 @@ int conv_benchmark(int argc, char** argv) {
   libxsmm_xmmfunction brgemm_kernel;
   libxsmm_xmmfunction brgemm_kernel_1less;
   libxsmm_xmmfunction brgemm_kernel_2less;
+  libxsmm_xmmfunction brgemm_ext_kernel;
   libxsmm_meltwfunction_unary zero_kernel;
   libxsmm_meltwfunction_unary zero_padded_hwbc_kernel;
   libxsmm_meltwfunction_unary zero_hwpad_kernel;
@@ -332,7 +333,7 @@ int conv_benchmark(int argc, char** argv) {
       auto l_postops = libxsmm_create_gemm_ext_binary_postops(bk, dtype, LIBXSMM_MELTW_TYPE_BINARY_ADD, LIBXSMM_MELTW_FLAG_BINARY_BCAST_COL_IN_0);
       libxsmm_gemm_ext_unary_argops l_argops;
       memset( &l_argops, 0, sizeof(libxsmm_gemm_ext_unary_argops) );
-      brgemm_kernel.gemm_ext  = libxsmm_dispatch_brgemm_ext_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig, l_argops, l_postops );
+      brgemm_ext_kernel.gemm_ext  = libxsmm_dispatch_brgemm_ext_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig, l_argops, l_postops );
     }
 
   } else {
@@ -348,7 +349,7 @@ int conv_benchmark(int argc, char** argv) {
       auto l_postops = libxsmm_create_gemm_ext_binary_postops(bk, dtype, LIBXSMM_MELTW_TYPE_BINARY_ADD, LIBXSMM_MELTW_FLAG_BINARY_BCAST_COL_IN_0);
       libxsmm_gemm_ext_unary_argops l_argops;
       memset( &l_argops, 0, sizeof(libxsmm_gemm_ext_unary_argops) );
-      brgemm_kernel.gemm_ext  = libxsmm_dispatch_brgemm_ext_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig, l_argops, l_postops );
+      brgemm_ext_kernel.gemm_ext  = libxsmm_dispatch_brgemm_ext_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig, l_argops, l_postops );
     }
 
     // Prepare offset array
@@ -493,7 +494,7 @@ int conv_benchmark(int argc, char** argv) {
             gemm_param_ext.c.primary = gemm_param.c.primary;
             gemm_param_ext.d.primary = (void*)LIBXSMM_ACCESS_RAW(2, sizeof(DType), bias_libxsmm, i_k, 0, bk);
 
-            brgemm_kernel.gemm_ext( &gemm_param_ext );
+            brgemm_ext_kernel.gemm_ext( &gemm_param_ext );
           } else {
             brgemm_kernel.gemm( &gemm_param );
           }
