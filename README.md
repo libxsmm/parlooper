@@ -13,10 +13,15 @@ PARLOOPER aims to further simplify the "outer loop" writing by enabling the user
 ## Compiler requirements
 * gcc  >=  6.1.0
 
-## Build instructions
+## Build instructions for gemm and convolution samples
 ```
 bash prepare_libxsmm.sh 
+cd samples/gemm
 make
+cd ../..
+cd samples/conv
+make
+cd ../..
 ```
 ## How to use PARLOOPER
 The development of applications via PARLOOPER is comprised of two steps:
