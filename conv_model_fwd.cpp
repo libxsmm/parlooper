@@ -28,6 +28,7 @@ int conv_benchmark(int argc, char** argv) {
   long input_padding_copy = 0;
   long zero_output_rims = 0;
   long with_bias = 0;
+  long with_relu = 0;
   /* if there is parallelization over W, then zeroing rims (if requested) directly after brgemm will lead to multiple threads zeroing the same rim,
      which can be avoided by doing zeroing of the rims in a separate loop after the convolution (with extra perf cost potentially)  */
   long avoid_racey_zeroing_in_rims = 0; /* by default, zeroing of the rims (if requested through zero_output_rims > 0) is done inside the conv loop */
@@ -84,8 +85,9 @@ int conv_benchmark(int argc, char** argv) {
         if (argc > 28) {
           zero_output_rims = atoi(argv[28]);
         }
-        if (argc > 29) {
+        if (argc > 30) {
           with_bias = atoi(argv[29]);
+          with_relu = atoi(argv[30]);
         }
       }
     }
@@ -235,13 +237,13 @@ int conv_benchmark(int argc, char** argv) {
     s_step = 1;
   }
 
-  printf("Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias: %d  %d %d %d %d  %d %d %d %d  %d %d %d %d %d %d  %d %d  %d  %d\n",
+  printf("Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: %d  %d %d %d %d  %d %d %d %d  %d %d %d %d %d %d  %d %d  %d  %d %d\n",
           N, H, W, C, K,
           R, S, stride_h, stride_w,
           pad_h, pad_w, pad_h_in, pad_w_in, pad_h_out, pad_w_out,
           bc, bk,
           zero_output_rims,
-          with_bias);
+          with_bias, with_relu);
   printf("Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: %d %d %d %d %d %d %d %d\n",
           h_block, w_block, c_block, k_block, h_in_gemm, pack_input, logical_padding, input_padding_copy);
   printf("Tuning parameters: avoid_rim_fmas: %d\n", avoid_rim_fmas);
@@ -278,9 +280,6 @@ int conv_benchmark(int argc, char** argv) {
     strcpy(zero_output_rims_loop_specs_str, tmp_nkhw_string.c_str());
   }
 
-  printf("dbg: zero_output_rims_loop_specs_str = %s \n", zero_output_rims_loop_specs_str);
-  printf("dbg: has_W_parallelization = %d \n", has_W_parallelization);
-
   
   // Setup TPP kernels
   auto l_flags    = (sizeof(DType) == 2) ? ( LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG ) : LIBXSMM_GEMM_FLAGS('N', 'N');
@@ -308,6 +307,7 @@ int conv_benchmark(int argc, char** argv) {
   libxsmm_meltwfunction_unary input_pack_kernel;
 
   libxsmm_meltwfunction_binary colbias_add_kernel;
+  libxsmm_meltwfunction_unary  relu_kernel;
 
   auto w_gemm_pixels = ofw/w_block;
   auto gemm_n = (w_gemm_pixels +  2 * pad_w) * (h_in_gemm - 2) + 2 * (w_gemm_pixels + pad_w);
@@ -344,6 +344,14 @@ int conv_benchmark(int argc, char** argv) {
       auto l_binary_shape = libxsmm_create_meltw_binary_shape(bk, w_gemm_pixels, bk, bk, bk, dtype, dtype, dtype, LIBXSMM_DATATYPE_F32);
       colbias_add_kernel = libxsmm_dispatch_meltw_binary_v2( LIBXSMM_MELTW_TYPE_BINARY_ADD, l_binary_shape, LIBXSMM_MELTW_FLAG_BINARY_BCAST_COL_IN_1);
     }
+    if (with_relu) {
+#ifdef __x86_64__
+      auto l_unary_shape = libxsmm_create_meltw_unary_shape(bk, w_gemm_pixels, bk, bk, dtype, dtype, dtype);
+#else
+      auto l_unary_shape = libxsmm_create_meltw_unary_shape(bk, w_gemm_pixels, bk, bk, dtype, dtype, LIBXSMM_DATATYPE_F32); /* there is no bf16 compute relu on non-x86 */
+#endif
+      relu_kernel = libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_RELU, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
+    }
   } else if (R == 1 && S == 1) {
     auto l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
 
@@ -367,10 +375,19 @@ int conv_benchmark(int argc, char** argv) {
 
     brgemm_kernel.gemm      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
 
-    if (with_bias) {
-      auto l_postops = libxsmm_create_gemm_ext_binary_postops(bk, dtype, LIBXSMM_MELTW_TYPE_BINARY_ADD, LIBXSMM_MELTW_FLAG_BINARY_BCAST_COL_IN_0);
+    if (with_bias || with_relu) {
       libxsmm_gemm_ext_unary_argops l_argops;
       memset( &l_argops, 0, sizeof(libxsmm_gemm_ext_unary_argops) );
+
+      libxsmm_gemm_ext_binary_postops l_postops;
+      memset( &l_postops, 0, sizeof(libxsmm_gemm_ext_binary_postops) );
+
+      if (with_bias)
+        l_postops = libxsmm_create_gemm_ext_binary_postops(bk, dtype, LIBXSMM_MELTW_TYPE_BINARY_ADD, LIBXSMM_MELTW_FLAG_BINARY_BCAST_COL_IN_0);
+      if (with_relu) {
+        l_argops.cp_unary_type  = LIBXSMM_MELTW_TYPE_UNARY_RELU;
+        l_argops.ldcp           = l_shape.ldc;
+      }
       brgemm_ext_kernel.gemm_ext  = libxsmm_dispatch_brgemm_ext_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig, l_argops, l_postops );
     }
 
@@ -383,10 +400,19 @@ int conv_benchmark(int argc, char** argv) {
 
     brgemm_kernel.gemm      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
 
-    if (with_bias) {
-      auto l_postops = libxsmm_create_gemm_ext_binary_postops(bk, dtype, LIBXSMM_MELTW_TYPE_BINARY_ADD, LIBXSMM_MELTW_FLAG_BINARY_BCAST_COL_IN_0);
+    if (with_bias || with_relu) {
       libxsmm_gemm_ext_unary_argops l_argops;
       memset( &l_argops, 0, sizeof(libxsmm_gemm_ext_unary_argops) );
+
+      libxsmm_gemm_ext_binary_postops l_postops;
+      memset( &l_postops, 0, sizeof(libxsmm_gemm_ext_binary_postops) );
+
+      if (with_bias)
+        l_postops = libxsmm_create_gemm_ext_binary_postops(bk, dtype, LIBXSMM_MELTW_TYPE_BINARY_ADD, LIBXSMM_MELTW_FLAG_BINARY_BCAST_COL_IN_0);
+      if (with_relu) {
+        l_argops.cp_unary_type  = LIBXSMM_MELTW_TYPE_UNARY_RELU;
+        l_argops.ldcp           = l_shape.ldc;
+      }
       brgemm_ext_kernel.gemm_ext  = libxsmm_dispatch_brgemm_ext_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig, l_argops, l_postops );
     }
 
@@ -415,7 +441,15 @@ int conv_benchmark(int argc, char** argv) {
   // Compute reference if requested
   if (check_correctness) {
     naive_conv_t naive_param;
-    libxsmm_blasint naive_fuse_type = (with_bias ? 1 : 0);
+    libxsmm_blasint naive_fuse_type = 0;
+    if (with_bias) {
+      if (with_relu)
+        naive_fuse_type = 3;
+      else
+        naive_fuse_type = 1;
+    }
+    else if (with_relu)
+      naive_fuse_type = 2;
     naive_param.nImg = N;
     naive_param.nIfm = C;
     naive_param.nOfm = K;
@@ -530,14 +564,15 @@ int conv_benchmark(int argc, char** argv) {
             }
           }
 
-          if (with_bias && i_c == Cb - c_step) {
+          if ((with_bias || with_relu) && i_c == Cb - c_step) {
             gemm_param_ext.op.tertiary = gemm_param.op.tertiary;
             gemm_param_ext.a.secondary = gemm_param.a.secondary;
             gemm_param_ext.b.secondary = gemm_param.b.secondary;
             gemm_param_ext.a.primary = gemm_param.a.primary;
             gemm_param_ext.b.primary = gemm_param.b.primary;
             gemm_param_ext.c.primary = gemm_param.c.primary;
-            gemm_param_ext.d.primary = (void*)LIBXSMM_ACCESS_RAW(2, sizeof(DType), bias_libxsmm, i_k, 0, bk);
+            if (with_bias)
+              gemm_param_ext.d.primary = (void*)LIBXSMM_ACCESS_RAW(2, sizeof(DType), bias_libxsmm, i_k, 0, bk);
 
             brgemm_ext_kernel.gemm_ext( &gemm_param_ext );
           } else {
@@ -606,13 +641,21 @@ int conv_benchmark(int argc, char** argv) {
             }
           }
 
-          if (with_bias && i_r == R - r_step && i_s == S - s_step && i_c == Cb - c_step) {
-            libxsmm_meltw_binary_param binary_param;
-            binary_param.in0.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
-            binary_param.in1.primary = (void*)LIBXSMM_ACCESS_RAW(2, sizeof(DType), bias_libxsmm, i_k, 0, bk);
-            binary_param.out.primary = binary_param.in0.primary;
-            colbias_add_kernel( &binary_param );
-          }
+          if ((with_bias || with_relu) && i_r == R - r_step && i_s == S - s_step && i_c == Cb - c_step) {
+            if (with_bias) {
+              libxsmm_meltw_binary_param binary_param;
+              binary_param.in0.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
+              binary_param.in1.primary = (void*)LIBXSMM_ACCESS_RAW(2, sizeof(DType), bias_libxsmm, i_k, 0, bk);
+              binary_param.out.primary = binary_param.in0.primary;
+              colbias_add_kernel( &binary_param );
+            }
+            if (with_relu) {
+              libxsmm_meltw_unary_param unary_param;
+              unary_param.in.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
+              unary_param.out.primary = unary_param.in.primary;
+              relu_kernel( &unary_param );
+            }
+          } /* handling the fusion of bias/relu */
         } /* end of if-else around avoid_rim_fmas */
 
         if ((!has_W_parallelization || !avoid_racey_zeroing_in_rims) && zero_output_rims) {
