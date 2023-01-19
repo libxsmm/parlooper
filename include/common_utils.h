@@ -18,13 +18,14 @@
 #include <functional>
 #include <omp.h>
 #include "jit_compile.h"
-#include "par_loop_cost_estimator.h"
 #include "par_loop_generator.h"
 #include "threaded_loops.h"
+#include "par_loop_cost_estimator.h"
 #include <cstring>
 #include <unistd.h>
 #include <libxsmm.h>
 #include <dnn_common.h>
+#include <vector>
 //#define AARCH64_RDTSC
 
 double ifreq;
