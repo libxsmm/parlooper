@@ -10,19 +10,6 @@ These "outer loops" effectively control the parallelization scheme of the comput
 
 PARLOOPER aims to further simplify the "outer loop" writing by enabling the user to declare the _logical_ "outer loops" along with their specifications (i.e. bounds/steps), instead of having to explicitly write the tedious loop nests involving multiple loop orders, tilings and parallelization schemes. At runtime, the user may provide a single parameter (henceforth called _loop_string_) to dictate the desired instantiation of the loop nest (i.e. loop order, loop blockings/tilings, parallelization schemes). PARLOOPER auto-generates Just-In-Time (JIT) the requested instantiation of the loop nest by considering the loop specifications and the single _loop_string_ runtime parameter. The resulting user's code is extremely simple, yet powerful: With zero lines of code-changes the loop nest can be instantiated to arbitrarily complex implementation that maximizes the performance on a specific platform. PARLOOPER uses internally caching schemes to avoid JIT overheads whenever possible. By leveraging PARLOOPER along with the TPP programming abstraction, the user code is simple/declarative, and naturally lends itself to trivial autotuning to explore complex/exotic outer loop instantiations with zero lines of code writing. 
 
-## Compiler requirements
-* gcc  >=  6.1.0
-
-## Build instructions for gemm and convolution samples
-```
-bash prepare_libxsmm.sh 
-cd samples/gemm
-make
-cd ../..
-cd samples/conv
-make
-cd ../..
-```
 ## How to use PARLOOPER
 The development of applications via PARLOOPER is comprised of two steps:
 1. Declaring the nested loops along with their specification
@@ -319,21 +306,35 @@ When leveraging "PAR-MODE 2" this method returns the "thread id" of the calling 
 
 The helper methods 1-4 enable the user to express *programmatically* in the *loop_body_func* complex parallelization strategies "ahead of time" since the exact loop-nest instantiation depends on the *loop_string* which is a runtime/JIT parameter.
 
+## Compiler requirements
+* gcc  >=  6.1.0
+
+## Build instructions for GEMM and Convolution samples
+```
+bash prepare_libxsmm.sh 
+cd samples/gemm
+make
+cd ../..
+cd samples/conv
+make
+cd ../..
+```
+
 ## Sample codes using the PARLOOPER infrastructure
 For all the developed sample codes, by exporting: ```export USE_BF16=1``` during runtime, the used precision will be bfloat16, otherwise it will be single precision (float).
 
-1. **gemm_model_fwd.cpp** : This is the full GEMM working example used in this README. It also supports chaining together multiple GEMMs to effectively implement a Multi-Layer Perceptron primitive (MLP) by setting n_layers > 1 in the argument list.
-2. **gemm_model_bwd.cpp** : This is the backward-by-data pass in backpropagation of a Fully-Connected layer primitive. It supports "privately" transposing matrix A by setting private_wt_trans = 1 in the argument list. Otherwise the matrix A is transposed upfront.
-3. **gemm_model_upd.cpp** : This is the backward-by-weights pass in backpropagation of a Fully-Connected layer primitive. For bfloat16 precision it supports "privately" transposing matrices A (vnni-formating) and B (normal transpose) by setting private_trans = 1 in the argument list, otherwise the matrices A and B are transposed upfront. This primitive also allows parallelization across the "inner-product"/contraction dimension N by setting n_partial_filters to non-zero value in the argument list (i.e. the code extracts also parallelization across the N dimension, and at the end a reduction across all partial filters is performed to calculate the final result). More specifically, if the *loop_string* has "collapse" type parallelization, then n_partial_filters should be equal to the number of threads (if the dimension N is parallelized, otherwise n_partial_filters should be zero). If the *loop_string* has "explicit" thread decomposition (PAR-MODE 2) across the N dimension in X-ways, then n_partial_filters should have the value X.
-4. **conv_model_fwd.cpp** Forward pass of a convolution layer.
-5. **conv_model_bwd.cpp** Backward-by-data pass in backpropagation of a convolution layer.
-6. **conv_model_upd.cpp** Backward-by-weights pass in backpropagation of a convolution layer.
+1. **samples/gemm/gemm_model_fwd.cpp** : This is the full GEMM working example used in this README. It also supports chaining together multiple GEMMs to effectively implement a Multi-Layer Perceptron primitive (MLP) by setting n_layers > 1 in the argument list.
+2. **samples/gemm/gemm_model_bwd.cpp** : This is the backward-by-data pass in backpropagation of a Fully-Connected layer primitive. It supports "privately" transposing matrix A by setting private_wt_trans = 1 in the argument list. Otherwise the matrix A is transposed upfront.
+3. **samples/gemm/gemm_model_upd.cpp** : This is the backward-by-weights pass in backpropagation of a Fully-Connected layer primitive. For bfloat16 precision it supports "privately" transposing matrices A (vnni-formating) and B (normal transpose) by setting private_trans = 1 in the argument list, otherwise the matrices A and B are transposed upfront. This primitive also allows parallelization across the "inner-product"/contraction dimension N by setting n_partial_filters to non-zero value in the argument list (i.e. the code extracts also parallelization across the N dimension, and at the end a reduction across all partial filters is performed to calculate the final result). More specifically, if the *loop_string* has "collapse" type parallelization, then n_partial_filters should be equal to the number of threads (if the dimension N is parallelized, otherwise n_partial_filters should be zero). If the *loop_string* has "explicit" thread decomposition (PAR-MODE 2) across the N dimension in X-ways, then n_partial_filters should have the value X.
+4. **samples/conv/conv_model_fwd.cpp** Forward pass of a convolution layer.
+5. **samples/conv/conv_model_bwd.cpp** Backward-by-data pass in backpropagation of a convolution layer.
+6. **samples/conv/conv_model_upd.cpp** Backward-by-weights pass in backpropagation of a convolution layer.
 
 ## Auto-tuning codes using the PARLOOPER infrastructure
 The general methodology of auto-tuning codes using the PARLOOPER infrastructure is to (auto)-generate valid *loop_string* permutations and effectively explore different parallelization strategies, loop orders, and loop blockings to find the ones that maximize performance for the platform and problem at hand. To this extent we have created some auxiliary/helper codes:
 
-1. **spec_loop_generator.cpp**: It can be used as a blueprint to generate valid permutations of *loop_string*
-2. **gemm_loop_tuner.sh** Can be used a blueprint to auto-tune GEMMs
+1. **utils/spec_loop_generator.cpp**: It can be used as a blueprint to generate valid permutations of *loop_string*
+2. **samples/gemm/gemm_loop_tuner.sh** Can be used a blueprint to auto-tune GEMMs
 
 ## Exemplary run of sample matmul and convolution
 ```
