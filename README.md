@@ -342,7 +342,7 @@ salloc --nodes=1 --partition=clx --time=03:59:00
 export OMP_NUM_THREADS=28
 export GOMP_CPU_AFFINITY="0-27"
 srun ./gemm aCBc 2048 2048 2048 32 32 32 2 1 400
-srun ./conv_fwd Abcdefg 28 14 14 64 64 3 3 1 1 1 1 32 32 1 1 1 1 1 0 400
+srun ./conv_fwd Abcdefg 28 14 14 64 64 3 3 1 1 1 1 32 32 1 1 1 1 1 0 400 0 0 1 1 1 1 1 1 1
 srun ./gemm_bwd bCAc 2048 4096 1024 32 32 32 4 0 400
 srun ./gemm_upd cABa 2048 4096 1024 32 32 32 8 0 0 400
  ```
