@@ -27,6 +27,8 @@ int conv_benchmark(int argc, char** argv) {
   long logical_padding = 0;
   long input_padding_copy = 0;
   long zero_output_rims = 0;
+  long with_bias = 0;
+  long with_relu = 0;
   /* if there is parallelization over W, then zeroing rims (if requested) directly after brgemm will lead to multiple threads zeroing the same rim,
      which can be avoided by doing zeroing of the rims in a separate loop after the convolution (with extra perf cost potentially)  */
   long avoid_racey_zeroing_in_rims = 0; /* by default, zeroing of the rims (if requested through zero_output_rims > 0) is done inside the conv loop */
@@ -83,6 +85,10 @@ int conv_benchmark(int argc, char** argv) {
         if (argc > 28) {
           zero_output_rims = atoi(argv[28]);
         }
+        if (argc > 30) {
+          with_bias = atoi(argv[29]);
+          with_relu = atoi(argv[30]);
+        }
       }
     }
   }
@@ -130,12 +136,14 @@ int conv_benchmark(int argc, char** argv) {
   float *naive_output_opt = (float*)libxsmm_aligned_malloc( N*ofhp*ofwp*K*sizeof(float), 2097152);
   float *naive_filter = (float*)libxsmm_aligned_malloc( C*K*R*S*sizeof(float), 2097152);
   float *naive_filter_kcrsck = (float*)libxsmm_aligned_malloc( C*K*R*S*sizeof(float), 2097152);
+  float *naive_bias = (float*)libxsmm_aligned_malloc( K*sizeof(float), 2097152);
   DType *input_libxsmm  = (DType*)libxsmm_aligned_malloc( N*ifhp*ifwp*C*sizeof(DType), 2097152);
   DType *scratch_input_libxsmm = (DType*)libxsmm_aligned_malloc( N*ifhp_physically_padded*ifwp_physically_padded*C*sizeof(DType), 2097152);
   DType *packed_input_libxsmm  = (DType*)libxsmm_aligned_malloc( N*ofh*ofw*C*sizeof(DType), 2097152);
   DType *output_libxsmm = (DType*)libxsmm_aligned_malloc( N*ofhp*ofwp*K*sizeof(DType), 2097152);
   DType *filter_libxsmm = (DType*)libxsmm_aligned_malloc( C*K*R*S*sizeof(DType), 2097152);
   DType *output_libxsmm_off= (DType*)output_libxsmm + (size_t) (pad_h_out * ofwp * bk + pad_w_out * bk);
+  DType *bias_libxsmm = (DType*)libxsmm_aligned_malloc( K*sizeof(DType), 2097152);
   unsigned long long *A_offsets = (unsigned long long*) libxsmm_aligned_malloc(Cb * R * S * sizeof(unsigned long long), 2097152);
   unsigned long long *B_offsets = (unsigned long long*) libxsmm_aligned_malloc(Cb * R * S * sizeof(unsigned long long), 2097152);
 
@@ -153,6 +161,8 @@ int conv_benchmark(int argc, char** argv) {
   init_buf(naive_output, N*K*ofhp*ofwp, 0, 0);
 
   init_buf(naive_filter,         K*C*R*S, 0, 0);
+
+  init_buf(naive_bias,           K, 0, 0);
   
   if (sizeof(DType) == 2) {
     tensor_copy_NCHW_to_NCHWc (naive_input , naive_input_nchwc,  N, C, ifhp, ifwp, bc);
@@ -161,10 +171,12 @@ int conv_benchmark(int argc, char** argv) {
     libxsmm_rne_convert_fp32_bf16( naive_input_nchwc,     (libxsmm_bfloat16*)input_libxsmm,     N*C*ifhp*ifwp );
     libxsmm_rne_convert_fp32_bf16( naive_output_nchwc,    (libxsmm_bfloat16*)output_libxsmm,    N*K*ofhp*ofwp );
     //libxsmm_rne_convert_fp32_bf16( naive_filter_kcrsck,   (libxsmm_bfloat16*)filter_libxsmm,    K*C*R*S );
+    libxsmm_rne_convert_fp32_bf16( naive_bias,     (libxsmm_bfloat16*)bias_libxsmm,     K );
   } else {
     tensor_copy_NCHW_to_NCHWc (naive_input , (float*)input_libxsmm,  N, C, ifhp, ifwp, bc);
     tensor_copy_NCHW_to_NCHWc (naive_output, (float*)output_libxsmm, N, K, ofhp, ofwp, bk);
     tensor_copy_KCRS_to_KCRSck(naive_filter, (float*)filter_libxsmm, K, C, R, S, bc, bk);
+    memcpy(bias_libxsmm, naive_bias, K * sizeof(float));
   }
   /* Note: have to zeropad reference output after copying (not after init) to keep random non-zero values in the rims of output_libxsmm */
   set_zeropad_nchw(naive_output, N, K, ofhp, ofwp, pad_h_out, pad_w_out);
@@ -225,12 +237,13 @@ int conv_benchmark(int argc, char** argv) {
     s_step = 1;
   }
 
-  printf("Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims: %d  %d %d %d %d  %d %d %d %d  %d %d %d %d %d %d  %d %d  %d\n",
+  printf("Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: %d  %d %d %d %d  %d %d %d %d  %d %d %d %d %d %d  %d %d  %d  %d %d\n",
           N, H, W, C, K,
           R, S, stride_h, stride_w,
           pad_h, pad_w, pad_h_in, pad_w_in, pad_h_out, pad_w_out,
           bc, bk,
-          zero_output_rims);
+          zero_output_rims,
+          with_bias, with_relu);
   printf("Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: %d %d %d %d %d %d %d %d\n",
           h_block, w_block, c_block, k_block, h_in_gemm, pack_input, logical_padding, input_padding_copy);
   printf("Tuning parameters: avoid_rim_fmas: %d\n", avoid_rim_fmas);
@@ -267,9 +280,7 @@ int conv_benchmark(int argc, char** argv) {
     strcpy(zero_output_rims_loop_specs_str, tmp_nkhw_string.c_str());
   }
 
-  printf("dbg: zero_output_rims_loop_specs_str = %s \n", zero_output_rims_loop_specs_str);
-  printf("dbg: has_W_parallelization = %d \n", has_W_parallelization);
-
+  
   // Setup TPP kernels
   auto l_flags    = (sizeof(DType) == 2) ? ( LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG ) : LIBXSMM_GEMM_FLAGS('N', 'N');
   if (Cb_step == Cb && r_step == R && s_step == S)
@@ -287,12 +298,16 @@ int conv_benchmark(int argc, char** argv) {
   libxsmm_xmmfunction brgemm_kernel;
   libxsmm_xmmfunction brgemm_kernel_1less;
   libxsmm_xmmfunction brgemm_kernel_2less;
+  libxsmm_xmmfunction brgemm_ext_kernel;
   libxsmm_meltwfunction_unary zero_kernel;
   libxsmm_meltwfunction_unary zero_padded_hwbc_kernel;
   libxsmm_meltwfunction_unary zero_hwpad_kernel;
   libxsmm_meltwfunction_unary zero_wpad_kernel;
   libxsmm_meltwfunction_unary copy_wbc_kernel;
   libxsmm_meltwfunction_unary input_pack_kernel;
+
+  libxsmm_meltwfunction_binary colbias_add_kernel;
+  libxsmm_meltwfunction_unary  relu_kernel;
 
   auto w_gemm_pixels = ofw/w_block;
   auto gemm_n = (w_gemm_pixels +  2 * pad_w) * (h_in_gemm - 2) + 2 * (w_gemm_pixels + pad_w);
@@ -314,33 +329,93 @@ int conv_benchmark(int argc, char** argv) {
   l_unary_shape = libxsmm_create_meltw_unary_shape(ifw*bc, 1, ifwp*bc, ifwp_physically_padded*bc, dtype, dtype, dtype);
   copy_wbc_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_IDENTITY, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
 
-  if ((R == 1 && S == 1) ||
-      (avoid_rim_fmas == 1)) {
-    auto l_shape = libxsmm_create_gemm_shape( gemm_m, gemm_n, gemm_k, bk, bc*stride_w, bk, dtype, dtype, dtype, dtype );
+  if (avoid_rim_fmas == 1) {
     auto l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
     auto l_brconfig = libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, R*S*bc*bk*sizeof(DType), bc*ifhp*ifwp*sizeof(DType), Cb_step );
-    tileconfig_kernel.gemm  = libxsmm_dispatch_gemm_v2( l_shape, l_tc_flags, l_prefetch_flags );
-    tilerelease_kernel.gemm = libxsmm_dispatch_gemm_v2( l_shape, l_tr_flags, l_prefetch_flags );
+    auto l_shape = libxsmm_create_gemm_shape( gemm_m, gemm_n, gemm_k, bk, bc*stride_w, bk, dtype, dtype, dtype, dtype );
+    brgemm_kernel.gemm      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
+
+    l_shape = libxsmm_create_gemm_shape( gemm_m, gemm_n-1, gemm_k, bk, bc*stride_w, bk, dtype, dtype, dtype, dtype );
+    brgemm_kernel_1less.gemm      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
+    l_shape = libxsmm_create_gemm_shape( gemm_m, gemm_n-2, gemm_k, bk, bc*stride_w, bk, dtype, dtype, dtype, dtype );
+    brgemm_kernel_2less.gemm      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
+
+    if (with_bias) {
+      auto l_binary_shape = libxsmm_create_meltw_binary_shape(bk, w_gemm_pixels, bk, bk, bk, dtype, dtype, dtype, LIBXSMM_DATATYPE_F32);
+      colbias_add_kernel = libxsmm_dispatch_meltw_binary_v2( LIBXSMM_MELTW_TYPE_BINARY_ADD, l_binary_shape, LIBXSMM_MELTW_FLAG_BINARY_BCAST_COL_IN_1);
+    }
+    if (with_relu) {
+#ifdef __x86_64__
+      auto l_unary_shape = libxsmm_create_meltw_unary_shape(bk, w_gemm_pixels, bk, bk, dtype, dtype, dtype);
+#else
+      auto l_unary_shape = libxsmm_create_meltw_unary_shape(bk, w_gemm_pixels, bk, bk, dtype, dtype, LIBXSMM_DATATYPE_F32); /* there is no bf16 compute relu on non-x86 */
+#endif
+      relu_kernel = libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_RELU, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
+    }
+  } else if (R == 1 && S == 1) {
+    auto l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
+
+    libxsmm_gemm_batch_reduce_config l_brconfig;
+    memset( &l_brconfig, 0, sizeof(libxsmm_gemm_batch_reduce_config) );
+    libxsmm_gemm_shape l_shape;
+    memset( &l_shape, 0, sizeof(libxsmm_gemm_shape) );
+
     if (pack_input == 0) {
-      brgemm_kernel.gemm      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
+      l_shape = libxsmm_create_gemm_shape( gemm_m, gemm_n, gemm_k, bk, bc*stride_w, bk, dtype, dtype, dtype, dtype );
+      l_brconfig = libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, R*S*bc*bk*sizeof(DType), bc*ifhp*ifwp*sizeof(DType), Cb_step );
     } else {
       auto l_pack_shape = libxsmm_create_meltw_unary_shape(bc, w_gemm_pixels, bc*stride_w, bc, dtype, dtype, dtype);
       input_pack_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_IDENTITY, l_pack_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);  
       l_shape = libxsmm_create_gemm_shape( gemm_m, gemm_n, gemm_k, bk, bc, bk, dtype, dtype, dtype, dtype );
       l_brconfig = libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, R*S*bc*bk*sizeof(DType), bc*ofh*ofw*sizeof(DType), Cb_step );   
-      brgemm_kernel.gemm      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
     }
-    l_shape = libxsmm_create_gemm_shape( gemm_m, gemm_n-1, gemm_k, bk, bc*stride_w, bk, dtype, dtype, dtype, dtype );
-    brgemm_kernel_1less.gemm      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
-    l_shape = libxsmm_create_gemm_shape( gemm_m, gemm_n-2, gemm_k, bk, bc*stride_w, bk, dtype, dtype, dtype, dtype );
-    brgemm_kernel_2less.gemm      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
+
+    tileconfig_kernel.gemm  = libxsmm_dispatch_gemm_v2( l_shape, l_tc_flags, l_prefetch_flags );
+    tilerelease_kernel.gemm = libxsmm_dispatch_gemm_v2( l_shape, l_tr_flags, l_prefetch_flags );
+
+    brgemm_kernel.gemm      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
+
+    if (with_bias || with_relu) {
+      libxsmm_gemm_ext_unary_argops l_argops;
+      memset( &l_argops, 0, sizeof(libxsmm_gemm_ext_unary_argops) );
+
+      libxsmm_gemm_ext_binary_postops l_postops;
+      memset( &l_postops, 0, sizeof(libxsmm_gemm_ext_binary_postops) );
+
+      if (with_bias)
+        l_postops = libxsmm_create_gemm_ext_binary_postops(bk, dtype, LIBXSMM_MELTW_TYPE_BINARY_ADD, LIBXSMM_MELTW_FLAG_BINARY_BCAST_COL_IN_0);
+      if (with_relu) {
+        l_argops.cp_unary_type  = LIBXSMM_MELTW_TYPE_UNARY_RELU;
+        l_argops.ldcp           = l_shape.ldc;
+      }
+      brgemm_ext_kernel.gemm_ext  = libxsmm_dispatch_brgemm_ext_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig, l_argops, l_postops );
+    }
+
   } else {
     auto l_shape = libxsmm_create_gemm_shape( gemm_m, gemm_n, gemm_k, bk, bc*stride_w, bk, dtype, dtype, dtype, dtype );
     auto l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
     auto l_brconfig = libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_OFFSET, 0, 0, 0 );
     tileconfig_kernel.gemm  = libxsmm_dispatch_gemm_v2( l_shape, l_tc_flags, l_prefetch_flags );
     tilerelease_kernel.gemm = libxsmm_dispatch_gemm_v2( l_shape, l_tr_flags, l_prefetch_flags );
+
     brgemm_kernel.gemm      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
+
+    if (with_bias || with_relu) {
+      libxsmm_gemm_ext_unary_argops l_argops;
+      memset( &l_argops, 0, sizeof(libxsmm_gemm_ext_unary_argops) );
+
+      libxsmm_gemm_ext_binary_postops l_postops;
+      memset( &l_postops, 0, sizeof(libxsmm_gemm_ext_binary_postops) );
+
+      if (with_bias)
+        l_postops = libxsmm_create_gemm_ext_binary_postops(bk, dtype, LIBXSMM_MELTW_TYPE_BINARY_ADD, LIBXSMM_MELTW_FLAG_BINARY_BCAST_COL_IN_0);
+      if (with_relu) {
+        l_argops.cp_unary_type  = LIBXSMM_MELTW_TYPE_UNARY_RELU;
+        l_argops.ldcp           = l_shape.ldc;
+      }
+      brgemm_ext_kernel.gemm_ext  = libxsmm_dispatch_brgemm_ext_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig, l_argops, l_postops );
+    }
+
     // Prepare offset array
     i = 0;
     for (long ifm = 0; ifm < Cb_step; ifm++) {
@@ -366,6 +441,15 @@ int conv_benchmark(int argc, char** argv) {
   // Compute reference if requested
   if (check_correctness) {
     naive_conv_t naive_param;
+    libxsmm_blasint naive_fuse_type = 0;
+    if (with_bias) {
+      if (with_relu)
+        naive_fuse_type = 3;
+      else
+        naive_fuse_type = 1;
+    }
+    else if (with_relu)
+      naive_fuse_type = 2;
     naive_param.nImg = N;
     naive_param.nIfm = C;
     naive_param.nOfm = K;
@@ -388,7 +472,7 @@ int conv_benchmark(int argc, char** argv) {
     naive_param.stride_h = stride_h;
     naive_param.stride_w = stride_w;
     zero_buf(naive_output,    N*K*ofhp*ofwp);
-    naive_fused_conv_fp(&naive_param, naive_input, naive_output, naive_filter, NULL, (libxsmm_blasint)0); 
+    naive_fused_conv_fp(&naive_param, naive_input, naive_output, naive_filter, naive_bias, naive_fuse_type);
   }
 
   // JIT requested nested loop specs
@@ -445,6 +529,7 @@ int conv_benchmark(int argc, char** argv) {
         if (avoid_rim_fmas == 0) {
           unsigned long long brcount = Cb_step * r_step * s_step;
           libxsmm_gemm_param gemm_param;
+          libxsmm_gemm_ext_param  gemm_param_ext;
           gemm_param.op.tertiary = (void*)&brcount;
           gemm_param.a.secondary = (void*)A_offsets;
           gemm_param.b.secondary = (void*)B_offsets;
@@ -479,12 +564,25 @@ int conv_benchmark(int argc, char** argv) {
             }
           }
 
-          brgemm_kernel.gemm( &gemm_param );
+          if ((with_bias || with_relu) && i_c == Cb - c_step) {
+            gemm_param_ext.op.tertiary = gemm_param.op.tertiary;
+            gemm_param_ext.a.secondary = gemm_param.a.secondary;
+            gemm_param_ext.b.secondary = gemm_param.b.secondary;
+            gemm_param_ext.a.primary = gemm_param.a.primary;
+            gemm_param_ext.b.primary = gemm_param.b.primary;
+            gemm_param_ext.c.primary = gemm_param.c.primary;
+            if (with_bias)
+              gemm_param_ext.d.primary = (void*)LIBXSMM_ACCESS_RAW(2, sizeof(DType), bias_libxsmm, i_k, 0, bk);
+
+            brgemm_ext_kernel.gemm_ext( &gemm_param_ext );
+          } else {
+            brgemm_kernel.gemm( &gemm_param );
+          }
         } else { /* for avoid_rim_fmas dispatch */
           unsigned long long brcount = Cb_step;
           libxsmm_gemm_param gemm_param;
           gemm_param.op.tertiary = (void*)&brcount;
-          gemm_param.a.primary = LIBXSMM_ACCESS_RAW(6, sizeof(DType), filter_libxsmm, i_k, i_c, i_r, i_s, 0, 0, Cb, R, S, bc, bk);        
+          gemm_param.a.primary = LIBXSMM_ACCESS_RAW(6, sizeof(DType), filter_libxsmm, i_k, i_c, i_r, i_s, 0, 0, Cb, R, S, bc, bk);
           if (i_c == 0 && i_r == 0 && i_s == 0) {
             libxsmm_meltw_unary_param zero_param;
             zero_param.out.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
@@ -541,9 +639,24 @@ int conv_benchmark(int argc, char** argv) {
               gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
               brgemm_kernel.gemm( &gemm_param );
             }
-
           }
-        }
+
+          if ((with_bias || with_relu) && i_r == R - r_step && i_s == S - s_step && i_c == Cb - c_step) {
+            if (with_bias) {
+              libxsmm_meltw_binary_param binary_param;
+              binary_param.in0.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
+              binary_param.in1.primary = (void*)LIBXSMM_ACCESS_RAW(2, sizeof(DType), bias_libxsmm, i_k, 0, bk);
+              binary_param.out.primary = binary_param.in0.primary;
+              colbias_add_kernel( &binary_param );
+            }
+            if (with_relu) {
+              libxsmm_meltw_unary_param unary_param;
+              unary_param.in.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
+              unary_param.out.primary = unary_param.in.primary;
+              relu_kernel( &unary_param );
+            }
+          } /* handling the fusion of bias/relu */
+        } /* end of if-else around avoid_rim_fmas */
 
         if ((!has_W_parallelization || !avoid_racey_zeroing_in_rims) && zero_output_rims) {
           libxsmm_meltw_unary_param zero_param;
@@ -662,11 +775,13 @@ int conv_benchmark(int argc, char** argv) {
   libxsmm_free(naive_output_opt);
   libxsmm_free(naive_filter);
   libxsmm_free(naive_filter_kcrsck);
+  libxsmm_free(naive_bias);
   libxsmm_free(input_libxsmm);
   libxsmm_free(scratch_input_libxsmm);
   libxsmm_free(packed_input_libxsmm);
   libxsmm_free(output_libxsmm);
   libxsmm_free(filter_libxsmm);
+  libxsmm_free(bias_libxsmm);
   libxsmm_free(A_offsets);
   libxsmm_free(B_offsets);
   return error;
