@@ -308,6 +308,7 @@ The helper methods 1-4 enable the user to express *programmatically* in the *loo
 
 ## Compiler requirements
 * gcc  >=  6.1.0
+
 The compilation toolchain used for LIBXSMM and PARLOOPER can be controlled via the enviroment variable ```PARLOOPER_COMPILER``` (default is gcc). The valid values for the PARLOOPER_COMPILER variable are ```gcc```, ```icc``` and ```clang```.
 
 ## Build instructions for GEMM and Convolution samples
