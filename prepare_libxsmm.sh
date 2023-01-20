@@ -7,6 +7,24 @@
 # SPDX-License-Identifier: BSD-3-Clause                                       #
 ###############################################################################
 #!/bin/bash
+CC_USE=gcc
+CXX_USE=g++
+if [[ -z "${PARLOOPER_COMPILER}" ]]; then
+  CC_USE=gcc
+  CXX_USE=g++
+elif [[ "${PARLOOPER_COMPILER}" == "icc" ]]; then
+  CC_USE=icc
+  CXX_USE=icpc
+elif [[ "${PARLOOPER_COMPILER}" == "clang" ]]; then
+  CC_USE=clang
+  CXX_USE=clang++
+elif [[ "${PARLOOPER_COMPILER}" == "gcc" ]]; then
+  CC_USE=gcc
+  CXX_USE=g++
+else
+  CC_USE=gcc
+  CXX_USE=g++
+fi
 
 #clone LIBXSMM
 if [ ! -d "libxsmm" ]; then
@@ -19,7 +37,7 @@ else
   git pull
 fi
 echo "building LIBXSMM..."
-make realclean && make CC=gcc CXX=g++ FC= -j16
+make realclean && make CC=${CC_USE} CXX=${CXX_USE} FC= -j16
 echo "done building LIBXSMM"
 cd ..
 
@@ -35,6 +53,6 @@ else
 fi
 echo "building LIBXSMM_DNN..."
 export LIBXSMMROOT=../libxsmm
-make realclean && make CC=gcc CXX=g++ FC= -j16
+make realclean && make CC=${CC_USE} CXX=${CXX_USE} FC= -j16
 echo "done building LIBXSMM_DNN"
 cd ..

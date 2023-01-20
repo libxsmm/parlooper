@@ -16,6 +16,7 @@
 #include <initializer_list>
 #include <iostream>
 #include <sstream>
+#include <string.h>
 #include <string>
 #include <unordered_map>
 #include "jit_compile.h"
@@ -218,9 +219,21 @@ class LoopingScheme {
       ofs.close();
       std::cout << "Scheme: " << scheme << std::endl;
       std::cout << "Generated code:" << std::endl << gen_code;
+      std::string openmp_flag = std::string(" -fopenmp ");
+      const char *const env_compiler = getenv("PARLOOPER_COMPILER");
+      if ( 0 == env_compiler ) {
+      } else {
+        if (strcmp(env_compiler, "clang") == 0) {
+          openmp_flag = std::string(" -fopenmp=libomp ");  
+        } else if (strcmp(env_compiler, "icc") == 0) {
+          openmp_flag = std::string(" -fopenmp -std=c++11 ");  
+        } else if (strcmp(env_compiler, "gcc") == 0) {
+          openmp_flag = std::string(" -fopenmp ");  
+        }   
+      }
 
       test_kernel = (par_loop_kernel)jit_from_str(
-          code_str + gen_code, " -fopenmp ", "par_nested_loops");
+          code_str + gen_code, openmp_flag, "par_nested_loops");
     }
   }
 

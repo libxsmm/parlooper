@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 #include <string>
 
 void* jit_compile_and_load(
@@ -21,7 +22,19 @@ void* jit_compile_and_load(
   unlink(libname);
   char fdname[50];
   sprintf(fdname, "/proc/self/fd/%d", fd);
-  auto cmd = std::string("g++ -shared -fPIC -x c++ ") + flags;
+  std::string compiler = std::string("g++");
+  const char *const env_compiler = getenv("PARLOOPER_COMPILER");
+  if ( 0 == env_compiler ) {
+  } else {
+    if (strcmp(env_compiler, "clang") == 0) {
+      compiler = std::string("clang++");  
+    } else if (strcmp(env_compiler, "icc") == 0) {
+      compiler = std::string("icpc");  
+    } else if (strcmp(env_compiler, "gcc") == 0) {
+      compiler = std::string("g++");  
+    }   
+  }
+  auto cmd = compiler + std::string(" -shared -fPIC -x c++ ") + flags;
   cmd = cmd + " -o " + libname + " " + filename;
   printf("JIT COMPILE: %s\n", cmd.c_str());
   int ret = system(cmd.c_str());
