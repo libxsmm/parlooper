@@ -7,6 +7,7 @@
 * SPDX-License-Identifier: BSD-3-Clause                                       *
 ******************************************************************************/
 #include "common_utils.h"
+#include "threaded_loops.h"
 
 template<typename DType>
 int gemm_benchmark(int argc, char** argv) {
