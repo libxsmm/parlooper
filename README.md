@@ -313,6 +313,7 @@ The compilation toolchain used for LIBXSMM and PARLOOPER can be controlled via t
 
 ## Build instructions for GEMM and Convolution samples
 ```
+export PARLOOPER_COMPILER=gcc/icc/clang
 bash prepare_libxsmm.sh 
 cd samples/gemm
 make
