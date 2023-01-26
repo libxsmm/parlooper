@@ -342,7 +342,7 @@ int conv_benchmark(int argc, char** argv) {
 
     if (with_bias) {
       auto l_binary_shape = libxsmm_create_meltw_binary_shape(bk, w_gemm_pixels, bk, bk, bk, dtype, dtype, dtype, LIBXSMM_DATATYPE_F32);
-      colbias_add_kernel = libxsmm_dispatch_meltw_binary_v2( LIBXSMM_MELTW_TYPE_BINARY_ADD, l_binary_shape, LIBXSMM_MELTW_FLAG_BINARY_BCAST_COL_IN_1);
+      colbias_add_kernel = libxsmm_dispatch_meltw_binary_v2( LIBXSMM_MELTW_TYPE_BINARY_ADD, l_binary_shape, LIBXSMM_MELTW_FLAG_BINARY_BCAST_COL_IN_0);
     }
     if (with_relu) {
 #ifdef __x86_64__
@@ -644,9 +644,9 @@ int conv_benchmark(int argc, char** argv) {
           if ((with_bias || with_relu) && i_r == R - r_step && i_s == S - s_step && i_c == Cb - c_step) {
             if (with_bias) {
               libxsmm_meltw_binary_param binary_param;
-              binary_param.in0.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
-              binary_param.in1.primary = (void*)LIBXSMM_ACCESS_RAW(2, sizeof(DType), bias_libxsmm, i_k, 0, bk);
-              binary_param.out.primary = binary_param.in0.primary;
+              binary_param.in0.primary = (void*)LIBXSMM_ACCESS_RAW(2, sizeof(DType), bias_libxsmm, i_k, 0, bk);
+              binary_param.in1.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
+              binary_param.out.primary = binary_param.in1.primary;
               colbias_add_kernel( &binary_param );
             }
             if (with_relu) {
