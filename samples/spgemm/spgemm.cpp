@@ -10,16 +10,32 @@
 #include "threaded_loops.h"
 
 template<typename DType>
-int gemm_benchmark(int argc, char** argv) {
-  // Setup default GEMM sizes
+int spgemm_benchmark(int argc, char** argv) {
+  // Setup default SPGEMM sizes
   int check_correctness = 1;
   char loop_specs_str[256] = "aBC";  
-  long M = 1024*4, N = 1024*4, K = 1024*4;
-  long bm = 32, bn = 32, bk = 32;
-  long kbf = 1;
-  long n_layers = 1;
-  long n_iters = 1;
+  long M = 128, N = 256, K = 512;
+  long bm = 32, N_target_blocks = 8;
+  long Mb = M/bm;
+  long Nb = N_target_blocks;
+  double sparse_frac = 0.8;
+  unsigned int use_bf16 = 1;
+  unsigned int use_bcsc = 1;
+  unsigned int bcsc_bk = 4;
+  unsigned int bcsc_bn = 2;
+  unsigned int sparse_block_bk = 4;
+  unsigned int sparse_block_bn = 2;
+  unsigned int n_iters = 1;
+  unsigned int use_ac_vnni = (use_bcsc > 0) ? 1 : 0;
+  unsigned int vnni_block_size = (use_ac_vnni > 0) ? 4 : 1;
+  unsigned int n_warmup_iters = 2;
   long i;
+  unsigned long long l_start, l_end;
+  double l_total;
+
+  libxsmm_matdiff_info norms_csc, diff;
+  libxsmm_matdiff_clear(&norms_csc);
+  libxsmm_matdiff_clear(&diff);
 
   ifreq = 1.0 / getFreq();
   if (argc > 1) {
@@ -30,119 +46,283 @@ int gemm_benchmark(int argc, char** argv) {
     N = atoi(argv[3]);
     K = atoi(argv[4]);
     bm = atoi(argv[5]);
-    bn = atoi(argv[6]);
-    bk = atoi(argv[7]);
-    if (argc > 8) {
-      kbf = atoi(argv[8]);
-    }
-    if (argc > 9) {
-      n_layers = atoi(argv[9]);
-    }
-    if (argc > 10) {
-      n_iters = atoi(argv[10]);
-    }
+    N_target_blocks = atoi(argv[6]);
+    sparse_frac = atof(argv[7]);
+    use_bf16 = atoi(argv[8]);
+    use_bcsc = atoi(argv[9]);
+    bcsc_bk = atoi(argv[10]);
+    bcsc_bn = atoi(argv[11]);
+    sparse_block_bk = atoi(argv[12]);
+    sparse_block_bn = atoi(argv[13]);
+    n_iters = atoi(argv[14]);
+    use_ac_vnni = (use_bcsc > 0) ? 1 : 0;
+    vnni_block_size = (use_ac_vnni > 0) ? 4 : 1;
+    Mb = M/bm;
   }
 
-  if ((n_layers > 1) && !(M == K && bm == bk && bk == bn) ) {
-    printf("MLP support only for M == K and bm == bn == bk\n");
-    return 1;
-  }
-
-  long Mb = M/bm, Nb = N/bn, Kb = K/bk;
-  long brcount = Kb/kbf;
-  while (Kb % kbf != 0) {
-    kbf--;
-  }
-  brcount = Kb/kbf;
-
-  /* Early exit to avoid testing the same combos since in this case the "a" loop has trip count 1 */
-  if (kbf == 1 && loop_specs_str[0] != 'a') {
-    return 0;
-  }
+  // Kernel management specifics
+  const libxsmm_bitfield l_flags = LIBXSMM_GEMM_FLAGS('N', 'N');
+  const libxsmm_bitfield l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
+  libxsmm_gemmfunction kernels_csc[N_target_blocks+1];
 
   // Allocate buffers
-  DType **ACT = (DType**) malloc((n_layers+1)*sizeof(DType*));
-  DType **WGT = (DType**) malloc(n_layers    *sizeof(DType*));
-  for (i = 0; i < (n_layers+1); i++) {
-    if (i % 2 == 0) {
-      ACT[i] = (DType*) libxsmm_aligned_malloc(N*K*sizeof(DType), 2097152);
-    } else {
-      ACT[i] = (DType*) libxsmm_aligned_malloc(M*N*sizeof(DType), 2097152);
-    }
-    if (i < n_layers) {
-      WGT[i] = (DType*) libxsmm_aligned_malloc(M*K*sizeof(DType), 2097152);
+  unsigned int* l_colptr = NULL;
+  unsigned int* l_rowidx = NULL;
+  float* l_b_de = (float*)libxsmm_aligned_malloc(sizeof(float) * K * N, 64);
+  float* l_b_sp_csc = NULL;
+  libxsmm_bfloat16* l_b_sp_csc_bf16 = NULL;
+  libxsmm_bfloat16* l_b_sp_bcsc_bf16 = NULL;
+  float* l_a = (float*)libxsmm_aligned_malloc(sizeof(float) * M * K, 64);
+  libxsmm_bfloat16* l_a_bf16 = (libxsmm_bfloat16*)libxsmm_aligned_malloc(sizeof(libxsmm_bfloat16) * M * K, 64);
+  libxsmm_bfloat16* l_a_vnni_bf16 = (libxsmm_bfloat16*)libxsmm_aligned_malloc(sizeof(libxsmm_bfloat16) * M * K, 64);
+  float* l_c_gold = (float*)libxsmm_aligned_malloc(sizeof(float) * M * N, 64);
+  float* l_c_asm_csc = (float*)libxsmm_aligned_malloc(sizeof(float) * M * N, 64);
+  libxsmm_bfloat16* l_c_asm_csc_bf16 = (libxsmm_bfloat16*)libxsmm_aligned_malloc(sizeof(libxsmm_bfloat16) * M * N, 64);
+  libxsmm_bfloat16* l_c_vnni_asm_csc_bf16 = (libxsmm_bfloat16*)libxsmm_aligned_malloc(sizeof(libxsmm_bfloat16) * M * N, 64);
+  libxsmm_blasint l_k, l_n;
+  libxsmm_blasint l_i, l_j, l_jj;
+  libxsmm_datatype dtype = (use_bf16 == 0) ? LIBXSMM_DATATYPE_F32 : LIBXSMM_DATATYPE_BF16;
+  unsigned int nnz = 0;
+  unsigned int *Nblocks_offsets = (unsigned int*)libxsmm_aligned_malloc(sizeof(unsigned int) * N_target_blocks, 64);
+
+  LIBXSMM_VLA_DECL(2, float, l_p_b_de, l_b_de, K);
+  LIBXSMM_VLA_DECL(3, float, l_p_a, l_a, K, bm);
+  LIBXSMM_VLA_DECL(3, libxsmm_bfloat16, l_p_a_bf16, l_a_bf16, K, bm);
+  LIBXSMM_VLA_DECL(4, libxsmm_bfloat16, l_p_a_vnni_bf16, l_a_vnni_bf16, K/vnni_block_size, bm, vnni_block_size);
+  LIBXSMM_VLA_DECL(3, float, l_p_c_asm_csc, l_c_asm_csc, N, bm);
+  LIBXSMM_VLA_DECL(3, libxsmm_bfloat16, l_p_c_asm_csc_bf16, l_c_asm_csc_bf16, N, bm);
+  LIBXSMM_VLA_DECL(4, libxsmm_bfloat16, l_p_c_vnni_asm_csc_bf16, l_c_vnni_asm_csc_bf16, N/vnni_block_size, bm, vnni_block_size);
+  LIBXSMM_VLA_DECL(3, float, l_p_c_gold, l_c_gold, N, bm);
+
+  /* touch A */
+  for ( l_i = 0; l_i < Mb; l_i++) {
+    for ( l_j = 0; l_j < K; l_j++) {
+      for ( l_k = 0; l_k < bm; l_k++ ) {
+        LIBXSMM_VLA_ACCESS(3, l_p_a, l_i, l_j, l_k, K, bm) = (float)libxsmm_rng_f64();
+        if (use_bf16 > 0) {
+          libxsmm_rne_convert_fp32_bf16( &LIBXSMM_VLA_ACCESS(3, l_p_a, l_i, l_j, l_k, K, bm), &LIBXSMM_VLA_ACCESS(3, l_p_a_bf16, l_i, l_j, l_k, K, bm), 1);
+          libxsmm_convert_bf16_f32( &LIBXSMM_VLA_ACCESS(3, l_p_a_bf16, l_i, l_j, l_k, K, bm), &LIBXSMM_VLA_ACCESS(3, l_p_a, l_i, l_j, l_k, K, bm), 1 );
+          if (use_ac_vnni > 0) {
+            LIBXSMM_VLA_ACCESS(4, l_p_a_vnni_bf16, l_i, l_j/vnni_block_size, l_k, l_j%vnni_block_size, K/vnni_block_size, bm, vnni_block_size) =
+            LIBXSMM_VLA_ACCESS(3, l_p_a_bf16, l_i, l_j, l_k, K, bm);
+          }
+        }
+      }
     }
   }
-  float *naive_input  = (float*)libxsmm_aligned_malloc( K*N*sizeof(float), 2097152);
-  float *naive_output = (float*)libxsmm_aligned_malloc( M*N*sizeof(float), 2097152);
-  float *naive_output_opt = (float*)libxsmm_aligned_malloc( M*N*sizeof(float), 2097152);
-  float *naive_filter = (float*)libxsmm_aligned_malloc( M*K*sizeof(float), 2097152);
-  DType *naive_input_bf16  = (DType*)libxsmm_aligned_malloc( K*N*sizeof(DType), 2097152);
-  DType *naive_output_bf16 = (DType*)libxsmm_aligned_malloc( M*N*sizeof(DType), 2097152);
-  DType *naive_filter_bf16 = (DType*)libxsmm_aligned_malloc( M*K*sizeof(DType), 2097152);
-  libxsmm_matdiff_info norms, diff;
-  libxsmm_matdiff_clear(&norms);
-  libxsmm_matdiff_clear(&diff);
 
-  // Init buffers
-  init_buf( naive_input,     K*N, 0, 0 );
-  init_buf( naive_output,    M*N, 0, 0 );
-  init_buf( naive_filter,    M*K, 0, 0 );
-  if (sizeof(DType) == 2) {
-    libxsmm_rne_convert_fp32_bf16( naive_input,     (libxsmm_bfloat16*)naive_input_bf16,     N*K );
-    libxsmm_rne_convert_fp32_bf16( naive_output,    (libxsmm_bfloat16*)naive_output_bf16,    N*M );
-    libxsmm_rne_convert_fp32_bf16( naive_filter,    (libxsmm_bfloat16*)naive_filter_bf16,    M*K );
-    matrix_copy_NC_to_NCNC_bf16(  (libxsmm_bfloat16*)naive_input_bf16,  (libxsmm_bfloat16*)ACT[0],     1, N, K, bn, bk );
-    matrix_copy_NC_to_NCNC_bf16(  (libxsmm_bfloat16*)naive_output_bf16, (libxsmm_bfloat16*)ACT[n_layers],     1, N, M, bn, bm );
-    for (i = 0; i < n_layers; i++) {
-      matrix_copy_KC_to_KCCK_bf16( (libxsmm_bfloat16*)naive_filter_bf16, (libxsmm_bfloat16*)WGT[i]       , K, M, bk, bm );
+  /* touch dense B */
+  for ( l_i = 0; l_i < N; l_i++ ) {
+    for ( l_j = 0; l_j < K; l_j++ ) {
+      LIBXSMM_VLA_ACCESS(2, l_p_b_de, l_i, l_j, K) = 0;
+    }
+  }
+
+  /* Enforce sparsty pattern on dense B */
+  if (use_bcsc > 0) {
+    nnz = 0;
+    for ( l_i = 0; l_i < N/sparse_block_bn; l_i++ ) {
+      for ( l_j = 0; l_j < K/sparse_block_bk; l_j++ ) {
+        if (LIBXSMM_VLA_ACCESS(2, l_p_b_de, l_i, l_j, K) == 0) {
+          float tmp = (float)libxsmm_rng_f64();
+          if (tmp >= sparse_frac) {
+            unsigned int l_ui = l_i * sparse_block_bn;
+            unsigned int l_uj = l_j * sparse_block_bk;
+            unsigned int l_di = 0, l_dj = 0;
+            for (l_di = 0; l_di < sparse_block_bn; l_di++) {
+              for (l_dj = 0; l_dj < sparse_block_bk; l_dj++) {
+                float val = (float)libxsmm_rng_f64();
+                while (val == 0) {
+                  val = (float)libxsmm_rng_f64();
+                }
+                LIBXSMM_VLA_ACCESS(2, l_p_b_de, l_ui+l_di, l_uj+l_dj, K) = val;
+              }
+            }
+            nnz += sparse_block_bn*sparse_block_bk;
+          }
+        }
+      }
     }
   } else {
-    matrix_copy_NC_to_NCNC( naive_input,     (float*)ACT[0],     1, N, K, bn, bk );
-    matrix_copy_NC_to_NCNC( naive_output,    (float*)ACT[n_layers],     1, N, M, bn, bm );
-    for (i = 0; i < n_layers; i++) {
-      matrix_copy_KC_to_KCCK( naive_filter,    (float*)WGT[i]       , K, M, bk, bm );
+    for ( l_i = 0; l_i < N; l_i++ ) {
+      for ( l_j = 0; l_j < K; l_j++ ) {
+        float tmp = (float)libxsmm_rng_f64();
+        if ( tmp < sparse_frac ) {
+          tmp = 0;
+        }
+        LIBXSMM_VLA_ACCESS(2, l_p_b_de, l_i, l_j, K) = tmp;
+      }
     }
   }
-   
-  // Setup TPP kernels
-  auto l_flags    = (sizeof(DType) == 2) ? ( LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG ) : LIBXSMM_GEMM_FLAGS('N', 'N');
-  auto l_tc_flags = (sizeof(DType) == 2) ? ( LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') ) : LIBXSMM_GEMM_FLAGS('N', 'N');
-  auto l_tr_flags = (sizeof(DType) == 2) ? ( LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') ) : LIBXSMM_GEMM_FLAGS('N', 'N');
-  auto dtype      = (sizeof(DType) == 2) ? LIBXSMM_DATATYPE_BF16 : LIBXSMM_DATATYPE_F32;
-  auto l_shape = libxsmm_create_gemm_shape( bm, bn, bk, bm, bk, bm, dtype, dtype, dtype, dtype );
-  auto l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
-  auto l_brconfig = libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, bm*bk*sizeof(DType), bk*bn*sizeof(DType), brcount );
-  auto l_unary_shape = libxsmm_create_meltw_unary_shape(bm*bn, 1, bm*bn, bm*bn, dtype, dtype, dtype);
 
-  auto zero_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);  
-  auto tileconfig_kernel  = libxsmm_dispatch_gemm_v2( l_shape, l_tc_flags, l_prefetch_flags );
-  auto tilerelease_kernel = libxsmm_dispatch_gemm_v2( l_shape, l_tr_flags, l_prefetch_flags );
-  if (brcount == Kb) l_flags |= LIBXSMM_GEMM_FLAG_BETA_0;
-  auto brgemm_kernel      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
+  if (use_bcsc == 0) {
+    nnz = 0;
+    for ( l_i = 0; l_i < N; l_i++ ) {
+      for ( l_j = 0; l_j < K; l_j++ ) {
+        if (LIBXSMM_VLA_ACCESS(2, l_p_b_de, l_i, l_j, K) != 0) {
+          LIBXSMM_VLA_ACCESS(2, l_p_b_de, l_i, l_j, K) = (float)libxsmm_rng_f64();
+          while (LIBXSMM_VLA_ACCESS(2, l_p_b_de, l_i, l_j, K) == 0) {
+            LIBXSMM_VLA_ACCESS(2, l_p_b_de, l_i, l_j, K) = (float)libxsmm_rng_f64();
+          }
+          nnz++;
+        }
+      }
+    }
+  } 
+
+  printf("We just generated a %i x %i matrix (K x N) with %i NZ entries (%.3g sparsity)\n", K, N, nnz, 100.0-100.0*nnz/(N*K));
+
+  /* touch C */
+  for ( l_i = 0; l_i < Mb; l_i++) {
+    for ( l_j = 0; l_j < N; l_j++) {
+      for ( l_k = 0; l_k < bm; l_k++ ) {
+        LIBXSMM_VLA_ACCESS(3, l_p_c_gold, l_i, l_j, l_k, N, bm) = 0.f;
+        LIBXSMM_VLA_ACCESS(3, l_p_c_asm_csc,  l_i, l_j, l_k, N, bm) = 0.f;
+        LIBXSMM_VLA_ACCESS(3, l_p_c_asm_csc_bf16,  l_i, l_j, l_k, N, bm) = (libxsmm_bfloat16)0;
+        LIBXSMM_VLA_ACCESS(4, l_p_c_vnni_asm_csc_bf16,  l_i, l_j/vnni_block_size, l_k, l_j%vnni_block_size, N/vnni_block_size, bm, vnni_block_size) = (libxsmm_bfloat16)0;
+      }
+    }
+  }
+
+  if (use_bcsc == 0) {
+    /* create B, csc */
+    l_colptr   = (unsigned int*) libxsmm_aligned_malloc( (N+1)*sizeof(unsigned int), 64 );
+    l_rowidx   = (unsigned int*) libxsmm_aligned_malloc( nnz*sizeof(unsigned int),   64 );
+    l_b_sp_csc = (float*       ) libxsmm_aligned_malloc( nnz*sizeof(float),          64 );
+    l_b_sp_csc_bf16 = (libxsmm_bfloat16*) libxsmm_aligned_malloc( nnz*sizeof(libxsmm_bfloat16),          64 );
+    l_k = 0;
+    l_colptr[N] = nnz;
+    for ( l_i = 0; l_i < N; l_i++ ) {
+      l_colptr[l_i] = l_k;
+      for ( l_j = 0; l_j < K; l_j++ ) {
+        if ( LIBXSMM_VLA_ACCESS(2, l_p_b_de, l_i, l_j, K) != 0.0 ) {
+          l_rowidx[l_k] = l_j;
+          l_b_sp_csc[l_k] = LIBXSMM_VLA_ACCESS(2, l_p_b_de, l_i, l_j, K);
+          if (use_bf16 > 0) {
+            libxsmm_rne_convert_fp32_bf16( &l_b_sp_csc[l_k], &l_b_sp_csc_bf16[l_k], 1);
+            libxsmm_convert_bf16_f32( &l_b_sp_csc_bf16[l_k], &l_b_sp_csc[l_k], 1 );
+            libxsmm_convert_bf16_f32( &l_b_sp_csc_bf16[l_k], &LIBXSMM_VLA_ACCESS(2, l_p_b_de, l_i, l_j, K), 1 );
+          }
+          l_k++;
+        }
+      }
+    }
+  } else {
+    /* Create B, BCSC if requested */
+    unsigned int l_val_idx = 0;
+    unsigned int l_nz_block_id = 0;
+    l_colptr   = (unsigned int*) libxsmm_aligned_malloc( (N/bcsc_bn+1)*sizeof(unsigned int), 64 );
+    l_rowidx   = (unsigned int*) libxsmm_aligned_malloc( nnz/(bcsc_bk*bcsc_bn)*sizeof(unsigned int),   64 );
+    l_b_sp_bcsc_bf16 = (libxsmm_bfloat16*) libxsmm_aligned_malloc( nnz*sizeof(libxsmm_bfloat16),          64 );
+    l_nz_block_id = 0;
+    l_colptr[N/bcsc_bn] = nnz/(bcsc_bk*bcsc_bn);
+    for ( l_i = 0; l_i < N/bcsc_bn; l_i++ ) {
+      l_colptr[l_i] = l_nz_block_id;
+      for ( l_j = 0; l_j < K/bcsc_bk; l_j++ ) {
+        unsigned int l_ui = l_i * bcsc_bn;
+        unsigned int l_uj = l_j * bcsc_bk;
+        /* It is a non-zero block, do something...  */
+        if ( LIBXSMM_VLA_ACCESS(2, l_p_b_de, l_ui, l_uj, K) != 0.0 ) {
+          unsigned int l_di = 0, l_dj = 0;
+          l_rowidx[l_nz_block_id] = l_j;
+          for (l_di = 0; l_di < bcsc_bn; l_di++) {
+            for (l_dj = 0; l_dj < bcsc_bk; l_dj++) {
+              float val = LIBXSMM_VLA_ACCESS(2, l_p_b_de, l_ui+l_di, l_uj+l_dj, K);
+              libxsmm_rne_convert_fp32_bf16( &val, &l_b_sp_bcsc_bf16[l_val_idx], 1);
+              l_val_idx++;
+            }
+          }
+          l_nz_block_id++;
+        }
+      }
+    }
+  }
+
+  /* Logically partition the sparse B matrix */
+  if (use_bcsc > 0) {
+    unsigned int nnz_entries_per_block = (nnz+N_target_blocks-1)/N_target_blocks;
+    unsigned int all_done = 0;
+    l_i = 0;
+    l_j = 0;
+    Nblocks_offsets[0] = 0;
+    while (all_done == 0) {
+      unsigned int nnz_so_far = 0;
+      while ((nnz_so_far < nnz_entries_per_block) && (l_j < N/bcsc_bn)) {
+        if (l_j + 2 <= N/bcsc_bn) {
+          nnz_so_far += (l_colptr[l_j+2] - l_colptr[l_j]) * bcsc_bk * bcsc_bn;
+          l_j += 2;
+        } else if (l_j + 1 <= N/bcsc_bn) {
+          nnz_so_far += (l_colptr[l_j+1] - l_colptr[l_j]) * bcsc_bk * bcsc_bn;
+          l_j += 1;
+        } else {
+          /* Should not happen  */
+        }
+      }
+      l_i++;
+      Nblocks_offsets[l_i] = l_j;
+      if (l_j >= N/bcsc_bn) {
+        all_done = 1; 
+      }
+    }
+    Nb = l_i;
+    printf("Was targeting for %d logical N blocks, ended up with %d logical N blocks...\n", N_target_blocks, Nb);
+  } else {
   
-  // Compute reference if requested
-  if (check_correctness) {
-    naive_fullyconnected_t naive_param;
-    naive_param.N = N;
-    naive_param.C = K;
-    naive_param.K = M;
-    naive_param.fuse_type = 0;
-    for (i = 0; i < n_layers; i++) {
-      if (i % 2 == 0) {
-        naive_fullyconnected_fused_fp(&naive_param, naive_input, naive_output, naive_filter, NULL);
-      } else {
-        naive_fullyconnected_fused_fp(&naive_param, naive_output, naive_input, naive_filter, NULL);
+  }
+
+  /* dense routine */
+  l_total = 0.0;
+  for ( l_n = 0; l_n < n_iters; l_n++) {
+    l_start = libxsmm_timer_tick();
+    for ( l_i = 0; l_i < Mb; l_i++) {
+      for ( l_j = 0; l_j < N; l_j++) {
+        for ( l_jj = 0; l_jj < K; l_jj++) {
+          LIBXSMM_PRAGMA_SIMD
+          for (l_k = 0; l_k < bm; l_k++) {
+            LIBXSMM_VLA_ACCESS(3, l_p_c_gold, l_i, l_j, l_k, N, bm)
+              +=   LIBXSMM_VLA_ACCESS(3, l_p_a, l_i, l_jj, l_k, K, bm)
+                 * l_b_de[(l_j*K)+l_jj];
+          }
+        }
+      }
+    }
+    l_end = libxsmm_timer_tick();
+    l_total += libxsmm_timer_duration(l_start, l_end);
+    if (l_n < n_iters-1) {
+      memset(&LIBXSMM_VLA_ACCESS(3, l_p_c_gold, 0, 0, 0, N, bm), 0, N * Mb * bm * sizeof(float));
+    }
+  }  
+  printf("%fs for dense\n", l_total);
+  printf("%f GFLOPS for dense\n", ((double)((double)n_iters * (double)M * (double)K * (double)N) * 2.0) / (l_total * 1.0e9));
+
+  /* Create sparse routines */
+  if (use_bcsc == 0) {
+#if 0
+    mykernel_csc = libxsmm_create_packed_spgemm_csc_v2(gemm_shape, l_flags, l_prefetch_flags, nb,
+      l_colptr, l_rowidx, (const void*)l_b_sp_csc);
+    if (mykernel_csc == NULL) {
+      printf("Could not generate CSC kernel!!!\n");
+      return 0;
+    }
+#endif
+  } else {
+    for (l_i = 0; l_i < Nb; l_i++) {
+      libxsmm_blasint cur_n_cols = Nblocks_offsets[l_i+1] - Nblocks_offsets[l_i];
+      libxsmm_gemm_shape gemm_shape = libxsmm_create_gemm_shape( 1, cur_n_cols, K, K, 0, K, dtype, dtype, dtype, LIBXSMM_DATATYPE(float) );
+      kernels_csc[l_i] = libxsmm_create_packed_spgemm_bcsc(gemm_shape, l_flags, l_prefetch_flags, bm, bcsc_bk, bcsc_bn, &l_colptr[Nblocks_offsets[l_i]], l_rowidx);
+      if (kernels_csc[l_i] == NULL) {
+        printf("Could not generate BCSC kernel[%d]!!!\n", l_i);
+        return 0;
       }
     }
   }
 
   // JIT requested nested loop specs
-  long k_step = brcount;
+  long k_step = K;
   long m_step = 1;
   long n_step = 1;
   // Prime factorization of trip-counts to find factors k0,m0 etc
-  long k_trips = Kb/k_step;
+  long k_trips = K/k_step;
   long m_trips = Mb/m_step;
   long n_trips = Nb/n_step;
   long m0, m1, n0, n1, k0, k1;
@@ -168,133 +348,106 @@ int gemm_benchmark(int argc, char** argv) {
   long l1_m_step = m1 * l0_m_step;
   long l1_n_step = n1 * l0_n_step;
 
-
-  auto t0 = getTime();
-  auto gemm_loop = ThreadedLoop<3>({
-      LoopSpecs{0, Kb, k_step, {l1_k_step, l0_k_step}},   // Logical K loop specs
+  auto spgemm_loop = ThreadedLoop<3>({
+      LoopSpecs{0, K,  k_step, {l1_k_step, l0_k_step}},   // Logical K loop specs
       LoopSpecs{0, Mb, m_step, {l1_m_step, l0_m_step}},   // Logical M loop specs
       LoopSpecs{0, Nb, n_step, {l1_n_step, l0_n_step}}},  // Logical N loop specs
       loop_specs_str);
-  auto t1 = getTime();
 
   // Warmup iteration for i-caches
-  for (i = 0; i < n_layers; i++) {
-    gemm_loop(
+  for (i = 0; i < n_warmup_iters; i++) {
+    spgemm_loop(
         [&](int* ind) {
           int i_k = ind[0], i_m = ind[1], i_n = ind[2];
           libxsmm_gemm_param gemm_param;
-          gemm_param.op.tertiary = (void*)&brcount;
-          gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
-          gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
-          gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
-          if ((i_k == 0) && (brcount != Kb)) {
-            libxsmm_meltw_unary_param zero_param;
-            zero_param.out.primary = (void*)gemm_param.c.primary;
-            zero_kernel( &zero_param );
-          }
-          brgemm_kernel( &gemm_param );
-        },
-        [&]() {if (sizeof(DType) == 2) tileconfig_kernel(NULL);},
-        [&]() {if (sizeof(DType) == 2) tilerelease_kernel(NULL);});
-  }
-
-  // benchmark the GEMM
-  auto t_start = getTime();
-  for (long it = 0; it < n_iters; it++) {
-    for (i = 0; i < n_layers; i++) {
-      gemm_loop(
-          [&](int* ind) {
-            int i_k = ind[0], i_m = ind[1], i_n = ind[2];
-            libxsmm_gemm_param gemm_param;
-            gemm_param.op.tertiary = (void*)&brcount;
-            gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
-            gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
-            gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
-            if ((i_k == 0) && (brcount != Kb)) {
-              libxsmm_meltw_unary_param zero_param;
-              zero_param.out.primary = (void*)gemm_param.c.primary;
-              zero_kernel( &zero_param );
+          if (use_bf16 == 0) {
+            gemm_param.a.primary = LIBXSMM_ACCESS_RAW(3, sizeof(float), l_a, i_m, i_k, 0, K, bm);
+            gemm_param.b.primary = l_b_sp_csc;
+            gemm_param.c.primary = LIBXSMM_ACCESS_RAW(3, sizeof(float), l_c_asm_csc, i_m, Nblocks_offsets[i_n], 0, N, bm);
+          } else {
+            if (use_bcsc == 0) {
+              gemm_param.a.primary = LIBXSMM_ACCESS_RAW(3, sizeof(libxsmm_bfloat16), l_a_bf16, i_m, i_k, 0, K, bm);              
+              gemm_param.b.primary = l_b_sp_csc_bf16;
+              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(3, sizeof(libxsmm_bfloat16), l_c_asm_csc_bf16, i_m, Nblocks_offsets[i_n], 0, N, bm);             
+            } else {
+              gemm_param.a.primary = LIBXSMM_ACCESS_RAW(4, sizeof(libxsmm_bfloat16), l_a_vnni_bf16, i_m, i_k/vnni_block_size, 0, i_k%vnni_block_size, K/vnni_block_size, bm, vnni_block_size);
+              gemm_param.b.primary = l_b_sp_bcsc_bf16;
+              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(4, sizeof(libxsmm_bfloat16), l_c_vnni_asm_csc_bf16, i_m, Nblocks_offsets[i_n]/vnni_block_size, 0, Nblocks_offsets[i_n]%vnni_block_size, N/vnni_block_size, bm, vnni_block_size);              
             }
-            brgemm_kernel( &gemm_param );
-          },
-          [&]() {if (sizeof(DType) == 2) tileconfig_kernel(NULL);},
-          [&]() {if (sizeof(DType) == 2) tilerelease_kernel(NULL);});
+          }
+          kernels_csc[i_n]( &gemm_param );
+        },
+        [&]() {},
+        [&]() {});
+    if (i < n_warmup_iters-1) {
+      if (use_bf16 > 0) {
+        if (use_bcsc == 0) {
+          memset((libxsmm_bfloat16*)l_c_asm_csc_bf16, 0, N * Mb * bm * sizeof(libxsmm_bfloat16));
+        } else {
+          memset((libxsmm_bfloat16*)l_c_vnni_asm_csc_bf16, 0, N * Mb * bm * sizeof(libxsmm_bfloat16));
+        }
+      } else {
+        memset((float*)l_c_asm_csc, 0, N * Mb * bm * sizeof(float));
+      }
     }
   }
-  auto t_end = getTime();
- 
-  // Check correctness if requested
-  if (n_layers == 1) {
-    printf("##########################################\n");
-    printf("#  GEMM %d x %d x %d  (M x N x K)        \n", M, N, K);
-    printf("##########################################\n");
+
+  /* check for errors */
+  if (use_bf16 > 0) {
+    if (use_bcsc > 0) {
+      for ( l_i = 0; l_i < Mb; l_i++) {
+        for ( l_j = 0; l_j < N; l_j++) {
+          for ( l_k = 0; l_k < bm; l_k++ ) {
+            LIBXSMM_VLA_ACCESS(3, l_p_c_asm_csc_bf16,  l_i, l_j, l_k, N, bm) =
+              LIBXSMM_VLA_ACCESS(4, l_p_c_vnni_asm_csc_bf16, l_i, l_j/vnni_block_size, l_k, l_j%vnni_block_size, N/vnni_block_size, bm, vnni_block_size);
+          }
+        }
+      }
+    }
+    libxsmm_convert_bf16_f32( &LIBXSMM_VLA_ACCESS(3, l_p_c_asm_csc_bf16, 0, 0, 0, N, bm), &LIBXSMM_VLA_ACCESS(3, l_p_c_asm_csc, 0, 0, 0, N, bm), Mb * N * bm );
+  }
+
+  /* compare */
+  libxsmm_matdiff(&norms_csc, LIBXSMM_DATATYPE_F32, Mb * N * bm, 1, l_c_gold, l_c_asm_csc, 0, 0);
+  printf("L1 reference  : %.25g\n", norms_csc.l1_ref);
+  printf("L1 test       : %.25g\n", norms_csc.l1_tst);
+  printf("L2 abs.error  : %.24f\n", norms_csc.l2_abs);
+  printf("L2 rel.error  : %.24f\n", norms_csc.l2_rel);
+  printf("Linf abs.error: %.24f\n", norms_csc.linf_abs);
+  printf("Linf rel.error: %.24f\n", norms_csc.linf_rel);
+  printf("Check-norm    : %.24f\n", libxsmm_matdiff_epsilon(&norms_csc));
+  libxsmm_matdiff_reduce(&diff, &norms_csc);
+
+  /* free */
+  libxsmm_free( l_b_de );
+  libxsmm_free( l_a );
+  libxsmm_free( l_a_bf16 );
+  libxsmm_free( l_a_vnni_bf16 );
+  libxsmm_free( l_c_gold );
+  libxsmm_free( l_c_asm_csc );
+  libxsmm_free( l_c_asm_csc_bf16 );
+  libxsmm_free( l_c_vnni_asm_csc_bf16);
+  if (use_bcsc == 0) {
+    libxsmm_free( l_b_sp_csc );
+    libxsmm_free( l_b_sp_csc_bf16 );
   } else {
-    printf("##########################################\n");
-    printf("#  %d Layer MLP with sizes  %d x %d x %d  (M x N x K)  \n", n_layers, M, N, K);
-    printf("##########################################\n");
+    libxsmm_free( l_b_sp_bcsc_bf16 );
   }
-  if (check_correctness) {
-    if (sizeof(DType) == 2) {
-      matrix_copy_NCNC_to_NC_bf16( (libxsmm_bfloat16*)ACT[n_layers], (libxsmm_bfloat16*)naive_output_bf16, 1, N, M, bn, bm );
-      libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)naive_output_bf16, naive_output_opt, N*M );
-    } else {
-      matrix_copy_NCNC_to_NC( (float*)ACT[n_layers], naive_output_opt, 1, N, M, bn, bm );
-    }
-    printf("##########################################\n");
-    printf("#           Correctness                  #\n");
-    printf("##########################################\n");
-    if (n_layers % 2 == 1) {
-      libxsmm_matdiff(&norms, LIBXSMM_DATATYPE_F32, N*M, 1, naive_output, naive_output_opt, 0, 0);
-    } else {
-      libxsmm_matdiff(&norms, LIBXSMM_DATATYPE_F32, N*M, 1, naive_input, naive_output_opt, 0, 0);
-    }
-    printf("L1 reference  : %.25g\n", norms.l1_ref);
-    printf("L1 test       : %.25g\n", norms.l1_tst);
-    printf("L2 abs.error  : %.24f\n", norms.l2_abs);
-    printf("L2 rel.error  : %.24f\n", norms.l2_rel);
-    printf("Linf abs.error: %.24f\n", norms.linf_abs);
-    printf("Linf rel.error: %.24f\n", norms.linf_rel);
-    printf("Check-norm    : %.24f\n", norms.normf_rel);
-    libxsmm_matdiff_reduce(&diff, &norms);
-  }
-
-  // Print performance/model numbers
-  double gflop = (2.0*(double)n_layers*(double)M*(double)N*(double)K) / (1000*1000*1000);
-  printf("Time is %.5g ms (%.5g GFLOPS)\n", 1000.0*(t_end-t_start)/(1.0*n_iters), gflop/((t_end-t_start)/(1.0*n_iters)));
-  printf("MEASURE %.5g %s_%d_%d_%d_%d_%d_%d_bf%d_threads%d\n", gflop/((t_end-t_start)/(1.0*n_iters)), loop_specs_str, M, N, K, bm, bn, bk, kbf, omp_get_max_threads());
-
-  // Free buffers
-  libxsmm_free(naive_input);
-  libxsmm_free(naive_output);
-  libxsmm_free(naive_filter);
-  libxsmm_free(naive_output_opt);
-  libxsmm_free(naive_input_bf16);
-  libxsmm_free(naive_output_bf16);
-  libxsmm_free(naive_filter_bf16);
-  for (i = 0; i < (n_layers+1); i++) {
-    libxsmm_free(ACT[i]);
-    if (i < n_layers) {
-      libxsmm_free(WGT[i]);
-    }
-  }
-  free(ACT);
-  free(WGT);
-
+  libxsmm_free( l_colptr );
+  libxsmm_free( l_rowidx );
+  
   return 0;
 }
 
 int main(int argc, char** argv) {
   int use_prec_bf16 = 0;
-  const char* const env_prec_str = getenv("USE_BF16");
-  if (0 == env_prec_str) {
-    use_prec_bf16 = 0;
-  } else {
-    use_prec_bf16 = atoi(env_prec_str);
+  if (argc > 2) {
+    use_prec_bf16 = atoi(argv[8]);
   }
   if (use_prec_bf16 == 0) {
-    return gemm_benchmark<float>(argc, argv);  
+    return spgemm_benchmark<float>(argc, argv);  
   } else {
-    return gemm_benchmark<libxsmm_bfloat16>(argc, argv);  
+    return spgemm_benchmark<libxsmm_bfloat16>(argc, argv);  
   }
 }
 
