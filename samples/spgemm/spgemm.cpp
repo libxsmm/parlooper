@@ -274,7 +274,32 @@ int spgemm_benchmark(int argc, char** argv) {
     Nb = l_i;
     printf("Was targeting for %d logical N blocks, ended up with %d logical N blocks...\n", N_target_blocks, Nb);
   } else {
-  
+    unsigned int total_nnz_processed = 0;
+    unsigned int nnz_entries_per_block = (nnz+N_target_blocks-1)/N_target_blocks;
+    unsigned int all_done = 0;
+    l_i = 0;
+    l_j = 0;
+    Nblocks_offsets[0] = 0;
+    while (all_done == 0) {
+      unsigned int nnz_so_far = 0;
+      while ((nnz_so_far < nnz_entries_per_block) && (l_j < N)) {
+        nnz_so_far += l_colptr[l_j+1] - l_colptr[l_j];
+        l_j++;
+      }
+      total_nnz_processed += nnz_so_far;
+      l_i++;
+      if (total_nnz_processed < nnz) {
+        Nblocks_offsets[l_i] = l_j;
+        if (l_j >= N) {
+          all_done = 1; 
+        }
+      } else {
+        Nblocks_offsets[l_i] = N;
+        all_done = 1; 
+      }
+    }
+    Nb = l_i;
+    printf("Was targeting for %d logical N blocks, ended up with %d logical N blocks...\n", N_target_blocks, Nb);
   }
 
   /* dense routine */
@@ -304,14 +329,15 @@ int spgemm_benchmark(int argc, char** argv) {
 
   /* Create sparse routines */
   if (use_bcsc == 0) {
-#if 0
-    mykernel_csc = libxsmm_create_packed_spgemm_csc_v2(gemm_shape, l_flags, l_prefetch_flags, nb,
-      l_colptr, l_rowidx, (const void*)l_b_sp_csc);
-    if (mykernel_csc == NULL) {
-      printf("Could not generate CSC kernel!!!\n");
-      return 0;
+    for (l_i = 0; l_i < Nb; l_i++) {
+      libxsmm_blasint cur_n_cols = Nblocks_offsets[l_i+1] - Nblocks_offsets[l_i];
+      libxsmm_gemm_shape gemm_shape = libxsmm_create_gemm_shape( 1, cur_n_cols, K, K, 0, K, dtype, dtype, dtype, LIBXSMM_DATATYPE(float) );
+      kernels_csc[l_i] = libxsmm_create_packed_spgemm_csc_v2(gemm_shape, l_flags, l_prefetch_flags, bm, &l_colptr[Nblocks_offsets[l_i]], l_rowidx, (const void*)l_b_sp_csc);
+      if (kernels_csc[l_i] == NULL) {
+        printf("Could not generate BCSC kernel[%d]!!!\n", l_i);
+        return 0;
+      }
     }
-#endif
   } else {
     for (l_i = 0; l_i < Nb; l_i++) {
       libxsmm_blasint cur_n_cols = Nblocks_offsets[l_i+1] - Nblocks_offsets[l_i];
