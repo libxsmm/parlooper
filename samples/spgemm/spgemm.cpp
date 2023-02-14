@@ -240,6 +240,7 @@ int spgemm_benchmark(int argc, char** argv) {
 
   /* Logically partition the sparse B matrix */
   if (use_bcsc > 0) {
+    unsigned int total_nnz_processed = 0;
     unsigned int nnz_entries_per_block = (nnz+N_target_blocks-1)/N_target_blocks;
     unsigned int all_done = 0;
     l_i = 0;
@@ -258,9 +259,15 @@ int spgemm_benchmark(int argc, char** argv) {
           /* Should not happen  */
         }
       }
+      total_nnz_processed += nnz_so_far;
       l_i++;
-      Nblocks_offsets[l_i] = l_j;
-      if (l_j >= N/bcsc_bn) {
+      if (total_nnz_processed < nnz) {
+        Nblocks_offsets[l_i] = l_j*bcsc_bn;
+        if (l_j >= N/bcsc_bn) {
+          all_done = 1; 
+        }
+      } else {
+        Nblocks_offsets[l_i] = N;
         all_done = 1; 
       }
     }
@@ -309,7 +316,7 @@ int spgemm_benchmark(int argc, char** argv) {
     for (l_i = 0; l_i < Nb; l_i++) {
       libxsmm_blasint cur_n_cols = Nblocks_offsets[l_i+1] - Nblocks_offsets[l_i];
       libxsmm_gemm_shape gemm_shape = libxsmm_create_gemm_shape( 1, cur_n_cols, K, K, 0, K, dtype, dtype, dtype, LIBXSMM_DATATYPE(float) );
-      kernels_csc[l_i] = libxsmm_create_packed_spgemm_bcsc(gemm_shape, l_flags, l_prefetch_flags, bm, bcsc_bk, bcsc_bn, &l_colptr[Nblocks_offsets[l_i]], l_rowidx);
+      kernels_csc[l_i] = libxsmm_create_packed_spgemm_bcsc(gemm_shape, l_flags, l_prefetch_flags, bm, bcsc_bk, bcsc_bn, &l_colptr[Nblocks_offsets[l_i]/bcsc_bn], l_rowidx);
       if (kernels_csc[l_i] == NULL) {
         printf("Could not generate BCSC kernel[%d]!!!\n", l_i);
         return 0;
