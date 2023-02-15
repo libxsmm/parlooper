@@ -26,6 +26,14 @@ else
   CXX_USE=g++
 fi
 
+BRANCH=main
+BRANCHDNN=main
+if [ $# -eq 2 ]; then
+  BRANCH=$1
+  BRANCHDNN=$2
+fi
+echo "Building PARLOOPER with libxsmm branch $BRANCH and libxsmm-dnn branch $BRANCHDNN"
+
 #clone LIBXSMM
 if [ ! -d "libxsmm" ]; then
   echo "libxsmm not exist, clone one from remote repo ..."
@@ -37,6 +45,9 @@ else
   git pull
 fi
 echo "building LIBXSMM..."
+echo "switching to $BRANCH branch ..."
+git checkout $BRANCH
+git pull
 make realclean && make CC=${CC_USE} CXX=${CXX_USE} FC= -j16
 echo "done building LIBXSMM"
 cd ..
@@ -52,6 +63,9 @@ else
   git pull
 fi
 echo "building LIBXSMM_DNN..."
+echo "switching to $BRANCHDNN branch ..."
+git checkout $BRANCHDNN
+git pull
 export LIBXSMMROOT=../libxsmm
 make realclean && make CC=${CC_USE} CXX=${CXX_USE} FC= -j16
 echo "done building LIBXSMM_DNN"
