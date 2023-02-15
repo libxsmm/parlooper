@@ -27,7 +27,7 @@ int spgemm_benchmark(int argc, char** argv) {
   unsigned int sparse_block_bn = 2;
   unsigned int n_iters = 1;
   unsigned int use_ac_vnni = (use_bcsc > 0) ? 1 : 0;
-  unsigned int vnni_block_size = (use_ac_vnni > 0) ? 4 : 1;
+  unsigned int vnni_block_size = (use_ac_vnni > 0) ? libxsmm_cpuid_dot_pack_factor(LIBXSMM_DATATYPE_BF16) : 1;
   unsigned int n_warmup_iters = 2;
   long i;
   unsigned long long l_start, l_end;
@@ -56,7 +56,7 @@ int spgemm_benchmark(int argc, char** argv) {
     sparse_block_bn = atoi(argv[13]);
     n_iters = atoi(argv[14]);
     use_ac_vnni = (use_bcsc > 0) ? 1 : 0;
-    vnni_block_size = (use_ac_vnni > 0) ? 4 : 1;
+    vnni_block_size = (use_ac_vnni > 0) ? libxsmm_cpuid_dot_pack_factor(LIBXSMM_DATATYPE_BF16) : 1;
     Mb = M/bm;
   }
 
