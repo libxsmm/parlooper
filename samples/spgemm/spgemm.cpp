@@ -18,6 +18,7 @@ int spgemm_benchmark(int argc, char** argv) {
   long bm = 32, N_target_blocks = 8;
   long Mb = M/bm;
   long Nb = N_target_blocks;
+  long Kb = 1;
   double sparse_frac = 0.8;
   unsigned int use_bf16 = 1;
   unsigned int use_bcsc = 1;
@@ -25,6 +26,7 @@ int spgemm_benchmark(int argc, char** argv) {
   unsigned int bcsc_bn = 2;
   unsigned int sparse_block_bk = 4;
   unsigned int sparse_block_bn = 2;
+  long k_block_size = (K/bcsc_bk)/Kb;
   unsigned int n_iters = 1;
   unsigned int use_ac_vnni = (use_bcsc > 0) ? 1 : 0;
   unsigned int vnni_block_size = (use_ac_vnni > 0) ? libxsmm_cpuid_dot_pack_factor(LIBXSMM_DATATYPE_BF16) : 1;
@@ -47,27 +49,30 @@ int spgemm_benchmark(int argc, char** argv) {
     K = atoi(argv[4]);
     bm = atoi(argv[5]);
     N_target_blocks = atoi(argv[6]);
-    sparse_frac = atof(argv[7]);
-    use_bf16 = atoi(argv[8]);
-    use_bcsc = atoi(argv[9]);
-    bcsc_bk = atoi(argv[10]);
-    bcsc_bn = atoi(argv[11]);
-    sparse_block_bk = atoi(argv[12]);
-    sparse_block_bn = atoi(argv[13]);
-    n_iters = atoi(argv[14]);
+    Kb = atoi(argv[7]);
+    sparse_frac = atof(argv[8]);
+    use_bf16 = atoi(argv[9]);
+    use_bcsc = atoi(argv[10]);
+    bcsc_bk = atoi(argv[11]);
+    bcsc_bn = atoi(argv[12]);
+    sparse_block_bk = atoi(argv[13]);
+    sparse_block_bn = atoi(argv[14]);
+    n_iters = atoi(argv[15]);
     use_ac_vnni = (use_bcsc > 0) ? 1 : 0;
     vnni_block_size = (use_ac_vnni > 0) ? libxsmm_cpuid_dot_pack_factor(LIBXSMM_DATATYPE_BF16) : 1;
     Mb = M/bm;
+    k_block_size = (K/bcsc_bk)/Kb;
   }
 
   // Kernel management specifics
   const libxsmm_bitfield l_flags = LIBXSMM_GEMM_FLAGS('N', 'N');
   const libxsmm_bitfield l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
-  libxsmm_gemmfunction kernels_csc[N_target_blocks+1];
+  libxsmm_gemmfunction kernels_csc[N_target_blocks+1][Kb];
 
   // Allocate buffers
   unsigned int* l_colptr = NULL;
   unsigned int* l_rowidx = NULL;
+  unsigned int* l_rowidx_tmp = NULL;
   float* l_b_de = (float*)libxsmm_aligned_malloc(sizeof(float) * K * N, 64);
   float* l_b_sp_csc = NULL;
   libxsmm_bfloat16* l_b_sp_csc_bf16 = NULL;
@@ -188,6 +193,7 @@ int spgemm_benchmark(int argc, char** argv) {
     /* create B, csc */
     l_colptr   = (unsigned int*) libxsmm_aligned_malloc( (N+1)*sizeof(unsigned int), 64 );
     l_rowidx   = (unsigned int*) libxsmm_aligned_malloc( nnz*sizeof(unsigned int),   64 );
+    l_rowidx_tmp = (unsigned int*) libxsmm_aligned_malloc( nnz*sizeof(unsigned int),   64 ); 
     l_b_sp_csc = (float*       ) libxsmm_aligned_malloc( nnz*sizeof(float),          64 );
     l_b_sp_csc_bf16 = (libxsmm_bfloat16*) libxsmm_aligned_malloc( nnz*sizeof(libxsmm_bfloat16),          64 );
     l_k = 0;
@@ -213,6 +219,7 @@ int spgemm_benchmark(int argc, char** argv) {
     unsigned int l_nz_block_id = 0;
     l_colptr   = (unsigned int*) libxsmm_aligned_malloc( (N/bcsc_bn+1)*sizeof(unsigned int), 64 );
     l_rowidx   = (unsigned int*) libxsmm_aligned_malloc( nnz/(bcsc_bk*bcsc_bn)*sizeof(unsigned int),   64 );
+    l_rowidx_tmp   = (unsigned int*) libxsmm_aligned_malloc( nnz/(bcsc_bk*bcsc_bn)*sizeof(unsigned int),   64 );
     l_b_sp_bcsc_bf16 = (libxsmm_bfloat16*) libxsmm_aligned_malloc( nnz*sizeof(libxsmm_bfloat16),          64 );
     l_nz_block_id = 0;
     l_colptr[N/bcsc_bn] = nnz/(bcsc_bk*bcsc_bn);
@@ -329,33 +336,53 @@ int spgemm_benchmark(int argc, char** argv) {
 
   /* Create sparse routines */
   if (use_bcsc == 0) {
-    for (l_i = 0; l_i < Nb; l_i++) {
-      libxsmm_blasint cur_n_cols = Nblocks_offsets[l_i+1] - Nblocks_offsets[l_i];
-      libxsmm_gemm_shape gemm_shape = libxsmm_create_gemm_shape( 1, cur_n_cols, K, K, 0, N, dtype, dtype, dtype, LIBXSMM_DATATYPE(float) );
-      kernels_csc[l_i] = libxsmm_create_packed_spgemm_csc_v2(gemm_shape, l_flags, l_prefetch_flags, bm, &l_colptr[Nblocks_offsets[l_i]], l_rowidx, (const void*)l_b_sp_csc);
-      if (kernels_csc[l_i] == NULL) {
-        printf("Could not generate BCSC kernel[%d]!!!\n", l_i);
-        return 0;
+    for (l_j = 0; l_j < Kb; l_j++) {
+      /* Offset rowidx values for K blocking in BCSC format  */
+      for (l_n = 0; l_n < nnz; l_n++) {
+        if (l_rowidx[l_n] < l_j*k_block_size) {
+          l_rowidx_tmp[l_n] = (unsigned int)-1;
+        } else {
+          l_rowidx_tmp[l_n] = l_rowidx[l_n] - l_j*k_block_size;  
+        }
+      }
+      for (l_i = 0; l_i < Nb; l_i++) {
+        libxsmm_blasint cur_n_cols = Nblocks_offsets[l_i+1] - Nblocks_offsets[l_i];
+        libxsmm_gemm_shape gemm_shape = libxsmm_create_gemm_shape( 1, cur_n_cols, K/Kb, K, 0, N, dtype, dtype, dtype, LIBXSMM_DATATYPE(float) );
+        kernels_csc[l_i][l_j] = libxsmm_create_packed_spgemm_csc_v2(gemm_shape, l_flags, l_prefetch_flags, bm, &l_colptr[Nblocks_offsets[l_i]], l_rowidx_tmp, (const void*)l_b_sp_csc);
+        if (kernels_csc[l_i][l_j] == NULL) {
+          printf("Could not generate CSC kernel[%d][%d] !!!\n", l_i, l_j);
+          return 0;
+        }
       }
     }
   } else {
-    for (l_i = 0; l_i < Nb; l_i++) {
-      libxsmm_blasint cur_n_cols = Nblocks_offsets[l_i+1] - Nblocks_offsets[l_i];
-      libxsmm_gemm_shape gemm_shape = libxsmm_create_gemm_shape( 1, cur_n_cols, K, K, 0, N, dtype, dtype, dtype, LIBXSMM_DATATYPE(float) );
-      kernels_csc[l_i] = libxsmm_create_packed_spgemm_bcsc(gemm_shape, l_flags, l_prefetch_flags, bm, bcsc_bk, bcsc_bn, &l_colptr[Nblocks_offsets[l_i]/bcsc_bn], l_rowidx);
-      if (kernels_csc[l_i] == NULL) {
-        printf("Could not generate BCSC kernel[%d]!!!\n", l_i);
-        return 0;
+    for (l_j = 0; l_j < Kb; l_j++) {
+      /* Offset rowidx values for K blocking in BCSC format  */
+      for (l_n = 0; l_n < nnz/(bcsc_bk*bcsc_bn); l_n++) {
+        if (l_rowidx[l_n] < l_j*k_block_size) {
+          l_rowidx_tmp[l_n] = (unsigned int)-1;
+        } else {
+          l_rowidx_tmp[l_n] = l_rowidx[l_n] - l_j*k_block_size;  
+        }
+      }
+      for (l_i = 0; l_i < Nb; l_i++) {
+        libxsmm_blasint cur_n_cols = Nblocks_offsets[l_i+1] - Nblocks_offsets[l_i];
+        libxsmm_gemm_shape gemm_shape = libxsmm_create_gemm_shape( 1, cur_n_cols, K/Kb, K, 0, N, dtype, dtype, dtype, LIBXSMM_DATATYPE(float) );
+        kernels_csc[l_i][l_j] = libxsmm_create_packed_spgemm_bcsc(gemm_shape, l_flags, l_prefetch_flags, bm, bcsc_bk, bcsc_bn, &l_colptr[Nblocks_offsets[l_i]/bcsc_bn], l_rowidx_tmp);
+        if (kernels_csc[l_i][l_j] == NULL) {
+          printf("Could not generate BCSC kernel[%d][%d] !!!\n", l_i, l_j);
+          return 0;
+        }
       }
     }
   }
 
   // JIT requested nested loop specs
-  long k_step = K;
+  long k_step = k_block_size*bcsc_bk;
   long m_step = 1;
   long n_step = 1;
   // Prime factorization of trip-counts to find factors k0,m0 etc
-  long k_trips = K/k_step;
+  long k_trips = Kb;
   long m_trips = Mb/m_step;
   long n_trips = Nb/n_step;
   long m0, m1, n0, n1, k0, k1;
@@ -408,7 +435,7 @@ int spgemm_benchmark(int argc, char** argv) {
               gemm_param.c.primary = LIBXSMM_ACCESS_RAW(4, sizeof(libxsmm_bfloat16), l_c_vnni_asm_csc_bf16, i_m, Nblocks_offsets[i_n]/vnni_block_size, 0, Nblocks_offsets[i_n]%vnni_block_size, N/vnni_block_size, bm, vnni_block_size);              
             }
           }
-          kernels_csc[i_n]( &gemm_param );
+          kernels_csc[i_n][i_k/(k_block_size*bcsc_bk)]( &gemm_param );
         },
         [&]() {},
         [&]() {});
@@ -461,7 +488,7 @@ int spgemm_benchmark(int argc, char** argv) {
               gemm_param.c.primary = LIBXSMM_ACCESS_RAW(4, sizeof(libxsmm_bfloat16), l_c_vnni_asm_csc_bf16, i_m, Nblocks_offsets[i_n]/vnni_block_size, 0, Nblocks_offsets[i_n]%vnni_block_size, N/vnni_block_size, bm, vnni_block_size);              
             }
           }
-          kernels_csc[i_n]( &gemm_param );
+          kernels_csc[i_n][i_k/(k_block_size*bcsc_bk)]( &gemm_param );
         },
         [&]() {},
         [&]() {});
@@ -489,7 +516,7 @@ int spgemm_benchmark(int argc, char** argv) {
               gemm_param.c.primary = LIBXSMM_ACCESS_RAW(4, sizeof(libxsmm_bfloat16), l_c_vnni_asm_csc_bf16, i_m, Nblocks_offsets[i_n]/vnni_block_size, 0, Nblocks_offsets[i_n]%vnni_block_size, N/vnni_block_size, bm, vnni_block_size);              
             }
           }
-          kernels_csc[i_n]( &gemm_param );
+          kernels_csc[i_n][i_k/(k_block_size*bcsc_bk)]( &gemm_param );
         },
         [&]() {},
         [&]() {});
@@ -517,7 +544,8 @@ int spgemm_benchmark(int argc, char** argv) {
   }
   libxsmm_free( l_colptr );
   libxsmm_free( l_rowidx );
-  
+  libxsmm_free( l_rowidx_tmp );
+
   return 0;
 }
 
