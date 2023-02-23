@@ -20,6 +20,8 @@ int gemm_benchmark(int argc, char** argv) {
   long n_layers = 1;
   long n_iters = 1;
   long i;
+  long fuse_bias = 0;
+  long fuse_relu = 0;
   // Setup model and trace
   int use_model = 0;
   const char* const env_use_model = getenv("USE_MODEL");
@@ -53,6 +55,12 @@ int gemm_benchmark(int argc, char** argv) {
     if (argc > 10) {
       n_iters = atoi(argv[10]);
     }
+    if (argc > 11) {
+      fuse_bias = atoi(argv[11]);
+    }
+    if (argc > 12) {
+      fuse_relu = atoi(argv[12]);
+    }
   }
 
   if ((n_layers > 1) && !(M == K && bm == bk && bk == bn) ) {
@@ -73,7 +81,9 @@ int gemm_benchmark(int argc, char** argv) {
   }
 
   // Allocate buffers
+  float **naive_bias = (float**) malloc((n_layers+1)*sizeof(float*));
   DType **ACT = (DType**) malloc((n_layers+1)*sizeof(DType*));
+  DType **BIAS = (DType**) malloc((n_layers)*sizeof(DType*));
   DType **WGT = (DType**) malloc(n_layers    *sizeof(DType*));
   for (i = 0; i < (n_layers+1); i++) {
     if (i % 2 == 0) {
@@ -83,6 +93,16 @@ int gemm_benchmark(int argc, char** argv) {
     }
     if (i < n_layers) {
       WGT[i] = (DType*) libxsmm_aligned_malloc(M*K*sizeof(DType), 2097152);
+      if (fuse_bias > 0) {
+        BIAS[i] = (DType*) libxsmm_aligned_malloc(M*sizeof(DType), 2097152);
+        naive_bias[i] = (float*) libxsmm_aligned_malloc(M*sizeof(float), 2097152);
+        init_buf( naive_bias[i], M, 0, 0 );
+        if (sizeof(DType) == 2) {
+          libxsmm_rne_convert_fp32_bf16( naive_bias[i],     (libxsmm_bfloat16*)BIAS[i],   M );
+        } else {
+          memcpy(BIAS[i], naive_bias[i], M*sizeof(float));
+        }
+      }
     }
   }
   float *naive_input  = (float*)libxsmm_aligned_malloc( K*N*sizeof(float), 2097152);
@@ -131,8 +151,46 @@ int gemm_benchmark(int argc, char** argv) {
   auto tileconfig_kernel  = libxsmm_dispatch_gemm_v2( l_shape, l_tc_flags, l_prefetch_flags );
   auto tilerelease_kernel = libxsmm_dispatch_gemm_v2( l_shape, l_tr_flags, l_prefetch_flags );
   if (brcount == Kb) l_flags |= LIBXSMM_GEMM_FLAG_BETA_0;
-  auto brgemm_kernel      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
+  auto brgemm_kernel       = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
   
+  // Setup fused TPP kernels
+  libxsmm_gemmfunction_ext brgemm_kernel_fused;
+  libxsmm_meltwfunction_unary copy_colbias_kernel;
+  libxsmm_meltwfunction_unary relu_kernel;
+  if (fuse_bias > 0) {
+    auto l_colbias_unary_shape = libxsmm_create_meltw_unary_shape(bm, bn, bm, bm, dtype, dtype, dtype);
+    // Create copy colbias TPP
+    copy_colbias_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_IDENTITY, l_colbias_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_BCAST_COL);  
+  }
+
+  if (fuse_relu > 0) {
+    auto l_relu_unary_shape = libxsmm_create_meltw_unary_shape(bm, bn, bm, bm, dtype, dtype, LIBXSMM_DATATYPE_F32);
+    // Create relu TPP
+    relu_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_RELU, l_relu_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);  
+  }
+
+  if (fuse_bias > 0 || fuse_relu > 0) {
+    libxsmm_gemm_ext_unary_argops   l_argops;
+    libxsmm_gemm_ext_binary_postops l_postops;
+    auto l_flags_new = l_flags;
+    // Create fused GEMM TPP
+    l_flags_new |= LIBXSMM_GEMM_FLAG_BETA_0;
+    memset( &l_argops,  0, sizeof(libxsmm_gemm_ext_unary_argops  ) );
+    memset( &l_postops, 0, sizeof(libxsmm_gemm_ext_binary_postops) );
+    if (fuse_bias > 0) {
+      l_postops.d_in_type      = dtype;
+      l_postops.d_binary_flags = LIBXSMM_MELTW_FLAG_BINARY_BCAST_COL_IN_0;
+      l_postops.d_binary_type  = LIBXSMM_MELTW_TYPE_BINARY_ADD;
+      l_postops.ldd            = bm;
+    }
+    if (fuse_relu > 0) {
+      l_argops.cp_unary_flags   = LIBXSMM_MELTW_FLAG_UNARY_NONE;
+      l_argops.cp_unary_type    = LIBXSMM_MELTW_TYPE_UNARY_RELU;
+      l_argops.ldcp             = bm;
+    }
+    brgemm_kernel_fused = libxsmm_dispatch_brgemm_ext_v2( l_shape, l_flags_new, l_prefetch_flags, l_brconfig, l_argops, l_postops );
+  }
+
   // Compute reference if requested
   if (check_correctness) {
     naive_fullyconnected_t naive_param;
@@ -140,11 +198,20 @@ int gemm_benchmark(int argc, char** argv) {
     naive_param.C = K;
     naive_param.K = M;
     naive_param.fuse_type = 0;
+    if (fuse_bias > 0 && fuse_relu == 0) {
+      naive_param.fuse_type = 1;
+    }
+    if (fuse_bias == 0 && fuse_relu > 0) {
+      naive_param.fuse_type = 2;
+    }
+    if (fuse_bias > 0 && fuse_relu > 0) {
+      naive_param.fuse_type = 3;
+    }
     for (i = 0; i < n_layers; i++) {
       if (i % 2 == 0) {
-        naive_fullyconnected_fused_fp(&naive_param, naive_input, naive_output, naive_filter, NULL);
+        naive_fullyconnected_fused_fp(&naive_param, naive_input, naive_output, naive_filter, (fuse_bias > 0) ? naive_bias[i] : NULL);
       } else {
-        naive_fullyconnected_fused_fp(&naive_param, naive_output, naive_input, naive_filter, NULL);
+        naive_fullyconnected_fused_fp(&naive_param, naive_output, naive_input, naive_filter, (fuse_bias > 0) ? naive_bias[i] : NULL);
       }
     }
   }
@@ -210,56 +277,46 @@ int gemm_benchmark(int argc, char** argv) {
     gemm_loop(
         [&](int* ind) {
           int i_k = ind[0], i_m = ind[1], i_n = ind[2];
-          libxsmm_gemm_param gemm_param;
-          gemm_param.op.tertiary = (void*)&brcount;
-          gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
-          gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
-          gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
-          if ((i_k == 0) && (brcount != Kb)) {
-            libxsmm_meltw_unary_param zero_param;
-            zero_param.out.primary = (void*)gemm_param.c.primary;
-            zero_kernel( &zero_param );
-          }
-          brgemm_kernel( &gemm_param );
-        },
-        [&]() {if (sizeof(DType) == 2) tileconfig_kernel(NULL);},
-        [&]() {if (sizeof(DType) == 2) tilerelease_kernel(NULL);});
-  }
-
-#if 0
-  // Nuke buffers from cache in case we run 1 layer
-  if (n_layers == 1) {
-    gemm_loop(
-        [&](int* ind) {
-          int i_k = ind[0], i_m = ind[1], i_n = ind[2];
-          DType *my_A = (DType*)WGT[0] + i_m * K * bm + i_k * bk * bm;
-          DType *my_B = (DType*)ACT[0] + i_n * K * bn + i_k * bk * bn;
-          DType *my_C = (DType*)ACT[1] + i_n * M * bn + i_m * bn * bm;
-          unsigned long long  __i, bri;
-          for (bri = 0 ; bri < brcount; bri++) {
-            for (__i = 0; __i < (bk*bm)/(64/sizeof(DType)); __i++) {
-              _mm_clflush((DType*)my_A + bri * bk * bm + __i * (64/sizeof(DType)));
+          if (fuse_bias > 0 || fuse_relu > 0) {
+            if (brcount == Kb) {
+              libxsmm_gemm_ext_param gemm_param_ext;
+              gemm_param_ext.op.tertiary = (void*)&brcount;
+              gemm_param_ext.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
+              gemm_param_ext.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
+              gemm_param_ext.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+              if (fuse_bias > 0) {
+                gemm_param_ext.d.primary = (void*)((DType*)BIAS[i] + i_m * bm );
+              }
+              brgemm_kernel_fused( &gemm_param_ext );             
+            } else {
+              libxsmm_gemm_param gemm_param;
+              gemm_param.op.tertiary = (void*)&brcount;
+              gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
+              gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
+              gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+              if (i_k == 0) {
+                if (fuse_bias > 0) {
+                  libxsmm_meltw_unary_param copy_colbias_param;
+                  copy_colbias_param.in.primary = (void*)(void*)((DType*)BIAS[i] + i_m * bm );
+                  copy_colbias_param.out.primary = (void*)gemm_param.c.primary;
+                  copy_colbias_kernel( &copy_colbias_param );
+                } else {
+                  libxsmm_meltw_unary_param zero_param;
+                  zero_param.out.primary = (void*)gemm_param.c.primary;
+                  zero_kernel( &zero_param );
+                }
+              }
+              brgemm_kernel( &gemm_param );
+              if (fuse_relu > 0) {
+                if (i_k + k_step >= Kb) {
+                  libxsmm_meltw_unary_param relu_param;
+                  relu_param.in.primary =  (void*)gemm_param.c.primary;
+                  relu_param.out.primary = (void*)gemm_param.c.primary;
+                  relu_kernel( &relu_param );
+                }
+              }
             }
-            for (__i = 0; __i < (bn*bk)/(64/sizeof(DType)); __i++) {
-              _mm_clflush((DType*)my_B + bri * bk * bn + __i * (64/sizeof(DType)));
-            }
-          }
-          for (__i = 0; __i < (bm*bn)/(64/sizeof(DType)); __i++) {
-            _mm_clflush((DType*)my_C + __i * (64/sizeof(DType)));
-          }
-        },
-        [&]() {},
-        [&]() {});
-  }
-#endif
-  
-  // benchmark the GEMM
-  auto t_start = getTime();
-  for (long it = 0; it < n_iters; it++) {
-    for (i = 0; i < n_layers; i++) {
-      gemm_loop(
-          [&](int* ind) {
-            int i_k = ind[0], i_m = ind[1], i_n = ind[2];
+          } else {
             libxsmm_gemm_param gemm_param;
             gemm_param.op.tertiary = (void*)&brcount;
             gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
@@ -271,6 +328,71 @@ int gemm_benchmark(int argc, char** argv) {
               zero_kernel( &zero_param );
             }
             brgemm_kernel( &gemm_param );
+          }
+        },
+        [&]() {if (sizeof(DType) == 2) tileconfig_kernel(NULL);},
+        [&]() {if (sizeof(DType) == 2) tilerelease_kernel(NULL);});
+  }
+
+  // benchmark the GEMM
+  auto t_start = getTime();
+  for (long it = 0; it < n_iters; it++) {
+    for (i = 0; i < n_layers; i++) {
+      gemm_loop(
+          [&](int* ind) {
+            int i_k = ind[0], i_m = ind[1], i_n = ind[2];
+            if (fuse_bias > 0 || fuse_relu > 0) {
+              if (brcount == Kb) {
+                libxsmm_gemm_ext_param gemm_param_ext;
+                gemm_param_ext.op.tertiary = (void*)&brcount;
+                gemm_param_ext.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
+                gemm_param_ext.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
+                gemm_param_ext.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+                if (fuse_bias > 0) {
+                  gemm_param_ext.d.primary = (void*)((DType*)BIAS[i] + i_m * bm );
+                }
+                brgemm_kernel_fused( &gemm_param_ext );             
+              } else {
+                libxsmm_gemm_param gemm_param;
+                gemm_param.op.tertiary = (void*)&brcount;
+                gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
+                gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
+                gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+                if (i_k == 0) {
+                  if (fuse_bias > 0) {
+                    libxsmm_meltw_unary_param copy_colbias_param;
+                    copy_colbias_param.in.primary = (void*)(void*)((DType*)BIAS[i] + i_m * bm );
+                    copy_colbias_param.out.primary = (void*)gemm_param.c.primary;
+                    copy_colbias_kernel( &copy_colbias_param );
+                  } else {
+                    libxsmm_meltw_unary_param zero_param;
+                    zero_param.out.primary = (void*)gemm_param.c.primary;
+                    zero_kernel( &zero_param );
+                  }
+                }
+                brgemm_kernel( &gemm_param );
+                if (fuse_relu > 0) { 
+                  if (i_k + k_step >= Kb) {
+                    libxsmm_meltw_unary_param relu_param;
+                    relu_param.in.primary =  (void*)gemm_param.c.primary;
+                    relu_param.out.primary = (void*)gemm_param.c.primary;
+                    relu_kernel( &relu_param );
+                  }
+                }
+              }
+            } else {
+              libxsmm_gemm_param gemm_param;
+              gemm_param.op.tertiary = (void*)&brcount;
+              gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
+              gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
+              gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+              if ((i_k == 0) && (brcount != Kb)) {
+                libxsmm_meltw_unary_param zero_param;
+                zero_param.out.primary = (void*)gemm_param.c.primary;
+                zero_kernel( &zero_param );
+              }
+              brgemm_kernel( &gemm_param );
+            }
           },
           [&]() {if (sizeof(DType) == 2) tileconfig_kernel(NULL);},
           [&]() {if (sizeof(DType) == 2) tilerelease_kernel(NULL);});
@@ -367,11 +489,17 @@ int gemm_benchmark(int argc, char** argv) {
   for (i = 0; i < (n_layers+1); i++) {
     libxsmm_free(ACT[i]);
     if (i < n_layers) {
+      if (fuse_bias > 0) {
+        libxsmm_free(BIAS[i]);
+        libxsmm_free(naive_bias[i]);
+      }
       libxsmm_free(WGT[i]);
     }
   }
   free(ACT);
   free(WGT);
+  free(BIAS);
+  free(naive_bias);
 
   return 0;
 }
