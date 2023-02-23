@@ -97,8 +97,12 @@ int gemm_benchmark(int argc, char** argv) {
         BIAS[i] = (DType*) libxsmm_aligned_malloc(M*sizeof(DType), 2097152);
         naive_bias[i] = (float*) libxsmm_aligned_malloc(M*sizeof(float), 2097152);
         init_buf( naive_bias[i], M, 0, 0 );
-        if (sizeof(DType) == 2) {
-          libxsmm_rne_convert_fp32_bf16( naive_bias[i],     (libxsmm_bfloat16*)BIAS[i],   M );
+        if (sizeof(DType) == 1) {
+          libxsmm_rne_convert_fp32_bf8(  naive_bias[i],  (libxsmm_bfloat8*)BIAS[i], M );
+          libxsmm_convert_bf8_f32( (libxsmm_bfloat8*)BIAS[i], naive_bias[i], M);
+        } else if (sizeof(DType) == 2) {
+          libxsmm_rne_convert_fp32_bf16( naive_bias[i], (libxsmm_bfloat16*)BIAS[i], M );
+          libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)BIAS[i], naive_bias[i], M);
         } else {
           memcpy(BIAS[i], naive_bias[i], M*sizeof(float));
         }
@@ -120,10 +124,25 @@ int gemm_benchmark(int argc, char** argv) {
   init_buf( naive_input,     K*N, 0, 0 );
   init_buf( naive_output,    M*N, 0, 0 );
   init_buf( naive_filter,    M*K, 0, 0 );
-  if (sizeof(DType) == 2) {
+  if (sizeof(DType) == 1) {
+    libxsmm_rne_convert_fp32_bf8( naive_input,     (libxsmm_bfloat8*)naive_input_bf16,     N*K );
+    libxsmm_convert_bf8_f32( (libxsmm_bfloat8*)naive_input_bf16, naive_input, N*K);
+    libxsmm_rne_convert_fp32_bf8( naive_output,    (libxsmm_bfloat8*)naive_output_bf16,    N*M );
+    libxsmm_convert_bf8_f32( (libxsmm_bfloat8*)naive_output_bf16, naive_output, N*M);
+    libxsmm_rne_convert_fp32_bf8( naive_filter,    (libxsmm_bfloat8*)naive_filter_bf16,    M*K );
+    libxsmm_convert_bf8_f32( (libxsmm_bfloat8*)naive_filter_bf16, naive_filter, M*K);
+    matrix_copy_NC_to_NCNC_bf8(  (libxsmm_bfloat8*)naive_input_bf16,  (libxsmm_bfloat8*)ACT[0],     1, N, K, bn, bk );
+    matrix_copy_NC_to_NCNC_bf8(  (libxsmm_bfloat8*)naive_output_bf16, (libxsmm_bfloat8*)ACT[n_layers],     1, N, M, bn, bm );
+    for (i = 0; i < n_layers; i++) {
+      matrix_copy_KC_to_KCCK_bf8( (libxsmm_bfloat8*)naive_filter_bf16, (libxsmm_bfloat8*)WGT[i]       , K, M, bk, bm );
+    }
+  } else if (sizeof(DType) == 2) {
     libxsmm_rne_convert_fp32_bf16( naive_input,     (libxsmm_bfloat16*)naive_input_bf16,     N*K );
+    libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)naive_input_bf16, naive_input, N*K);
     libxsmm_rne_convert_fp32_bf16( naive_output,    (libxsmm_bfloat16*)naive_output_bf16,    N*M );
+    libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)naive_output_bf16, naive_output, N*M);
     libxsmm_rne_convert_fp32_bf16( naive_filter,    (libxsmm_bfloat16*)naive_filter_bf16,    M*K );
+    libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)naive_filter_bf16, naive_filter, M*K);
     matrix_copy_NC_to_NCNC_bf16(  (libxsmm_bfloat16*)naive_input_bf16,  (libxsmm_bfloat16*)ACT[0],     1, N, K, bn, bk );
     matrix_copy_NC_to_NCNC_bf16(  (libxsmm_bfloat16*)naive_output_bf16, (libxsmm_bfloat16*)ACT[n_layers],     1, N, M, bn, bm );
     for (i = 0; i < n_layers; i++) {
@@ -138,10 +157,10 @@ int gemm_benchmark(int argc, char** argv) {
   }
    
   // Setup TPP kernels
-  auto l_flags    = (sizeof(DType) == 2) ? ( LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG ) : LIBXSMM_GEMM_FLAGS('N', 'N');
-  auto l_tc_flags = (sizeof(DType) == 2) ? ( LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') ) : LIBXSMM_GEMM_FLAGS('N', 'N');
-  auto l_tr_flags = (sizeof(DType) == 2) ? ( LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') ) : LIBXSMM_GEMM_FLAGS('N', 'N');
-  auto dtype      = (sizeof(DType) == 2) ? LIBXSMM_DATATYPE_BF16 : LIBXSMM_DATATYPE_F32;
+  auto l_flags    = (sizeof(DType) == 2 || sizeof(DType) == 1) ? ( LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG ) : LIBXSMM_GEMM_FLAGS('N', 'N');
+  auto l_tc_flags = (sizeof(DType) == 2 || sizeof(DType) == 1) ? ( LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') ) : LIBXSMM_GEMM_FLAGS('N', 'N');
+  auto l_tr_flags = (sizeof(DType) == 2 || sizeof(DType) == 1) ? ( LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') ) : LIBXSMM_GEMM_FLAGS('N', 'N');
+  auto dtype      = (sizeof(DType) == 2) ? LIBXSMM_DATATYPE_BF16 : ((sizeof(DType) == 1) ? LIBXSMM_DATATYPE_BF8 : LIBXSMM_DATATYPE_F32);
   auto l_shape = libxsmm_create_gemm_shape( bm, bn, bk, bm, bk, bm, dtype, dtype, dtype, dtype );
   auto l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
   auto l_brconfig = libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, bm*bk*sizeof(DType), bk*bn*sizeof(DType), brcount );
@@ -210,8 +229,24 @@ int gemm_benchmark(int argc, char** argv) {
     for (i = 0; i < n_layers; i++) {
       if (i % 2 == 0) {
         naive_fullyconnected_fused_fp(&naive_param, naive_input, naive_output, naive_filter, (fuse_bias > 0) ? naive_bias[i] : NULL);
+        /* Also downconvert and upconvert reference  */
+        if (sizeof(DType) == 1) {
+          libxsmm_rne_convert_fp32_bf8( naive_output,     (libxsmm_bfloat8*)naive_output_bf16,     N*M );
+          libxsmm_convert_bf8_f32( (libxsmm_bfloat8*)naive_output_bf16, naive_output, N*M);
+        } else if (sizeof(DType) == 2) {
+          libxsmm_rne_convert_fp32_bf16( naive_output,     (libxsmm_bfloat16*)naive_output_bf16,     N*M );
+          libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)naive_output_bf16, naive_output, N*M);
+        } 
       } else {
         naive_fullyconnected_fused_fp(&naive_param, naive_output, naive_input, naive_filter, (fuse_bias > 0) ? naive_bias[i] : NULL);
+        /* Also downconvert and upconvert reference  */
+        if (sizeof(DType) == 1) {
+          libxsmm_rne_convert_fp32_bf8( naive_input,     (libxsmm_bfloat8*)naive_output_bf16,     N*M );
+          libxsmm_convert_bf8_f32( (libxsmm_bfloat8*)naive_output_bf16, naive_input, N*M);
+        } else if (sizeof(DType) == 2) {
+          libxsmm_rne_convert_fp32_bf16( naive_input,     (libxsmm_bfloat16*)naive_output_bf16,     N*M );
+          libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)naive_output_bf16, naive_input, N*M);
+        } 
       }
     }
   }
@@ -411,7 +446,10 @@ int gemm_benchmark(int argc, char** argv) {
     printf("##########################################\n");
   }
   if (check_correctness) {
-    if (sizeof(DType) == 2) {
+    if (sizeof(DType) == 1) {
+      matrix_copy_NCNC_to_NC_bf8( (libxsmm_bfloat8*)ACT[n_layers], (libxsmm_bfloat8*)naive_output_bf16, 1, N, M, bn, bm );
+      libxsmm_convert_bf8_f32( (libxsmm_bfloat8*)naive_output_bf16, naive_output_opt, N*M );
+    } else if (sizeof(DType) == 2) {
       matrix_copy_NCNC_to_NC_bf16( (libxsmm_bfloat16*)ACT[n_layers], (libxsmm_bfloat16*)naive_output_bf16, 1, N, M, bn, bm );
       libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)naive_output_bf16, naive_output_opt, N*M );
     } else {
@@ -506,14 +544,27 @@ int gemm_benchmark(int argc, char** argv) {
 
 int main(int argc, char** argv) {
   int use_prec_bf16 = 0;
+  int cl_precision = 4;
   const char* const env_prec_str = getenv("USE_BF16");
   if (0 == env_prec_str) {
     use_prec_bf16 = 0;
+    if (argc > 13) {
+      cl_precision = atoi(argv[13]);
+    }
   } else {
     use_prec_bf16 = atoi(env_prec_str);
+    if (argc > 13) {
+      cl_precision = atoi(argv[13]);
+    }
   }
   if (use_prec_bf16 == 0) {
-    return gemm_benchmark<float>(argc, argv);  
+    if (cl_precision == 4) {
+      return gemm_benchmark<float>(argc, argv);
+    } else if (cl_precision == 2) {
+      return gemm_benchmark<libxsmm_bfloat16>(argc, argv);
+    } else if (cl_precision == 1) {
+      return gemm_benchmark<libxsmm_bfloat8>(argc, argv);
+    }
   } else {
     return gemm_benchmark<libxsmm_bfloat16>(argc, argv);  
   }
