@@ -506,14 +506,25 @@ int gemm_benchmark(int argc, char** argv) {
 
 int main(int argc, char** argv) {
   int use_prec_bf16 = 0;
+  int cl_precision = 4;
   const char* const env_prec_str = getenv("USE_BF16");
   if (0 == env_prec_str) {
     use_prec_bf16 = 0;
+    if (argc > 13) {
+      cl_precision = atoi(argv[13]);
+    }
   } else {
     use_prec_bf16 = atoi(env_prec_str);
+    if (argc > 13) {
+      cl_precision = atoi(argv[13]);
+    }
   }
   if (use_prec_bf16 == 0) {
-    return gemm_benchmark<float>(argc, argv);  
+    if (cl_precision == 4) {
+      return gemm_benchmark<float>(argc, argv);
+    } else if (cl_precision == 2) {
+      return gemm_benchmark<libxsmm_bfloat16>(argc, argv);
+    }
   } else {
     return gemm_benchmark<libxsmm_bfloat16>(argc, argv);  
   }
