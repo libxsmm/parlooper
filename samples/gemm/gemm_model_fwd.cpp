@@ -24,6 +24,7 @@ int gemm_benchmark(int argc, char** argv) {
   long fuse_bias = 0;
   long fuse_relu = 0;
   long int8_gemm = 0;
+  long use_ping_pong_bufs = 0;
   // Setup model and trace
   int use_model = 0;
   const char* const env_use_model = getenv("USE_MODEL");
@@ -63,6 +64,9 @@ int gemm_benchmark(int argc, char** argv) {
     if (argc > 12) {
       fuse_relu = atoi(argv[12]);
     }
+    if (argc > 14) {
+      use_ping_pong_bufs = atoi(argv[14]);
+    }
   }
 
   if (sizeof(DType) == 1) {
@@ -96,10 +100,22 @@ int gemm_benchmark(int argc, char** argv) {
   DType **BIAS = (DType**) malloc((n_layers)*sizeof(DType*));
   DType **WGT = (DType**) malloc(n_layers    *sizeof(DType*));
   for (i = 0; i < (n_layers+1); i++) {
-    if (i % 2 == 0) {
-      ACT[i] = (DType*) libxsmm_aligned_malloc(N*K*sizeof(DType), 2097152);
+    if (use_ping_pong_bufs == 0) {
+      if (i % 2 == 0) {
+        ACT[i] = (DType*) libxsmm_aligned_malloc(N*K*sizeof(DType), 2097152);
+      } else {
+        ACT[i] = (DType*) libxsmm_aligned_malloc(M*N*sizeof(DType), 2097152);
+      }
     } else {
-      ACT[i] = (DType*) libxsmm_aligned_malloc(M*N*sizeof(DType), 2097152);
+      if (i < 2) {
+        if (i % 2 == 0) {
+          ACT[i] = (DType*) libxsmm_aligned_malloc(N*K*sizeof(DType), 2097152);
+        } else {
+          ACT[i] = (DType*) libxsmm_aligned_malloc(M*N*sizeof(DType), 2097152);
+        }   
+      } else {
+        ACT[i] = ACT[i-2];
+      }
     }
     if (i < n_layers) {
       WGT[i] = (DType*) libxsmm_aligned_malloc(M*K*sizeof(DType), 2097152);
@@ -107,7 +123,9 @@ int gemm_benchmark(int argc, char** argv) {
         BIAS[i] = (DType*) libxsmm_aligned_malloc(M*sizeof(DType), 2097152);
         naive_bias[i] = (float*) libxsmm_aligned_malloc(M*sizeof(float), 2097152);
         init_buf( naive_bias[i], M, 0, 0 );
-        if ((sizeof(DType) == 1) && (int8_gemm == 0)) {
+        if (int8_gemm > 0) {
+          /* DO nothing, will be using the f32 bias  */
+        } else if ((sizeof(DType) == 1) && (int8_gemm == 0)) {
           libxsmm_rne_convert_fp32_bf8(  naive_bias[i],  (libxsmm_bfloat8*)BIAS[i], M );
           libxsmm_convert_bf8_f32( (libxsmm_bfloat8*)BIAS[i], naive_bias[i], M);
         } else if (sizeof(DType) == 2) {
@@ -150,7 +168,7 @@ int gemm_benchmark(int argc, char** argv) {
     for (i = 0; i < M*K; i++) naive_filter_i8[i] = (char) (get_random_posneg_p5_num() * 40.0);
     /* Use the following 8-bit formating routines */
     matrix_copy_NC_to_NCNC_bf8(  (libxsmm_bfloat8*)naive_input_i8,  (libxsmm_bfloat8*)ACT[0],     1, N, K, bn, bk );
-    matrix_copy_NC_to_NCNC_bf8(  (libxsmm_bfloat8*)naive_output_i8, (libxsmm_bfloat8*)ACT[n_layers],     1, N, M, bn, bm );
+    //matrix_copy_NC_to_NCNC_bf8(  (libxsmm_bfloat8*)naive_output_i8, (libxsmm_bfloat8*)ACT[n_layers],     1, N, M, bn, bm );
     for (i = 0; i < n_layers; i++) {
       matrix_copy_KC_to_KCCK_bf8( (libxsmm_bfloat8*)naive_filter_i8, (libxsmm_bfloat8*)WGT[i]       , K, M, bk, bm );
     }
@@ -162,7 +180,7 @@ int gemm_benchmark(int argc, char** argv) {
     libxsmm_rne_convert_fp32_bf8( naive_filter,    (libxsmm_bfloat8*)naive_filter_bf16,    M*K );
     libxsmm_convert_bf8_f32( (libxsmm_bfloat8*)naive_filter_bf16, naive_filter, M*K);
     matrix_copy_NC_to_NCNC_bf8(  (libxsmm_bfloat8*)naive_input_bf16,  (libxsmm_bfloat8*)ACT[0],     1, N, K, bn, bk );
-    matrix_copy_NC_to_NCNC_bf8(  (libxsmm_bfloat8*)naive_output_bf16, (libxsmm_bfloat8*)ACT[n_layers],     1, N, M, bn, bm );
+    //matrix_copy_NC_to_NCNC_bf8(  (libxsmm_bfloat8*)naive_output_bf16, (libxsmm_bfloat8*)ACT[n_layers],     1, N, M, bn, bm );
     for (i = 0; i < n_layers; i++) {
       matrix_copy_KC_to_KCCK_bf8( (libxsmm_bfloat8*)naive_filter_bf16, (libxsmm_bfloat8*)WGT[i]       , K, M, bk, bm );
     }
@@ -174,13 +192,13 @@ int gemm_benchmark(int argc, char** argv) {
     libxsmm_rne_convert_fp32_bf16( naive_filter,    (libxsmm_bfloat16*)naive_filter_bf16,    M*K );
     libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)naive_filter_bf16, naive_filter, M*K);
     matrix_copy_NC_to_NCNC_bf16(  (libxsmm_bfloat16*)naive_input_bf16,  (libxsmm_bfloat16*)ACT[0],     1, N, K, bn, bk );
-    matrix_copy_NC_to_NCNC_bf16(  (libxsmm_bfloat16*)naive_output_bf16, (libxsmm_bfloat16*)ACT[n_layers],     1, N, M, bn, bm );
+    //matrix_copy_NC_to_NCNC_bf16(  (libxsmm_bfloat16*)naive_output_bf16, (libxsmm_bfloat16*)ACT[n_layers],     1, N, M, bn, bm );
     for (i = 0; i < n_layers; i++) {
       matrix_copy_KC_to_KCCK_bf16( (libxsmm_bfloat16*)naive_filter_bf16, (libxsmm_bfloat16*)WGT[i]       , K, M, bk, bm );
     }
   } else {
     matrix_copy_NC_to_NCNC( naive_input,     (float*)ACT[0],     1, N, K, bn, bk );
-    matrix_copy_NC_to_NCNC( naive_output,    (float*)ACT[n_layers],     1, N, M, bn, bm );
+    //matrix_copy_NC_to_NCNC( naive_output,    (float*)ACT[n_layers],     1, N, M, bn, bm );
     for (i = 0; i < n_layers; i++) {
       matrix_copy_KC_to_KCCK( naive_filter,    (float*)WGT[i]       , K, M, bk, bm );
     }
@@ -477,9 +495,57 @@ int gemm_benchmark(int argc, char** argv) {
               quant_kernel( &quant_param );
             }
           },
-          [&]() {if (sizeof(DType) == 2) tileconfig_kernel(NULL);},
-          [&]() {if (sizeof(DType) == 2) tilerelease_kernel(NULL);});
+          [&]() {tileconfig_kernel(NULL);},
+          [&]() {tilerelease_kernel(NULL);});
     }
+  }
+
+  // Check correctness if requested
+  if (n_layers == 1) {
+    printf("##########################################\n");
+    printf("#  GEMM %d x %d x %d  (M x N x K)        \n", M, N, K);
+    printf("##########################################\n");
+  } else {
+    printf("##########################################\n");
+    printf("#  %d Layer MLP with sizes  %d x %d x %d  (M x N x K)  \n", n_layers, M, N, K);
+    printf("##########################################\n");
+  }
+  if (check_correctness) {
+    if (int8_gemm > 0) {
+      matrix_copy_NCNC_to_NC_bf8( (libxsmm_bfloat8*)ACT[n_layers], (libxsmm_bfloat8*)naive_output_opt_i8, 1, N, M, bn, bm );
+    } else if (sizeof(DType) == 1) {
+      matrix_copy_NCNC_to_NC_bf8( (libxsmm_bfloat8*)ACT[n_layers], (libxsmm_bfloat8*)naive_output_bf16, 1, N, M, bn, bm );
+      libxsmm_convert_bf8_f32( (libxsmm_bfloat8*)naive_output_bf16, naive_output_opt, N*M );
+    } else if (sizeof(DType) == 2) {
+      matrix_copy_NCNC_to_NC_bf16( (libxsmm_bfloat16*)ACT[n_layers], (libxsmm_bfloat16*)naive_output_bf16, 1, N, M, bn, bm );
+      libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)naive_output_bf16, naive_output_opt, N*M );
+    } else {
+      matrix_copy_NCNC_to_NC( (float*)ACT[n_layers], naive_output_opt, 1, N, M, bn, bm );
+    }
+    printf("##########################################\n");
+    printf("#           Correctness                  #\n");
+    printf("##########################################\n");
+    if (int8_gemm == 0) {
+      if (n_layers % 2 == 1) {
+        libxsmm_matdiff(&norms, LIBXSMM_DATATYPE_F32, N*M, 1, naive_output, naive_output_opt, 0, 0);
+      } else {
+        libxsmm_matdiff(&norms, LIBXSMM_DATATYPE_F32, N*M, 1, naive_input, naive_output_opt, 0, 0);
+      }
+    } else {
+      if (n_layers % 2 == 1) {
+        libxsmm_matdiff(&norms, LIBXSMM_DATATYPE_I8, N*M, 1, naive_output_i8, naive_output_opt_i8, 0, 0);
+      } else {
+        libxsmm_matdiff(&norms, LIBXSMM_DATATYPE_I8, N*M, 1, naive_input_i8, naive_output_opt_i8, 0, 0);
+      }
+    }
+    printf("L1 reference  : %.25g\n", norms.l1_ref);
+    printf("L1 test       : %.25g\n", norms.l1_tst);
+    printf("L2 abs.error  : %.24f\n", norms.l2_abs);
+    printf("L2 rel.error  : %.24f\n", norms.l2_rel);
+    printf("Linf abs.error: %.24f\n", norms.linf_abs);
+    printf("Linf rel.error: %.24f\n", norms.linf_rel);
+    printf("Check-norm    : %.24f\n", norms.normf_rel);
+    libxsmm_matdiff_reduce(&diff, &norms);
   }
 
   // benchmark the GEMM
@@ -590,61 +656,13 @@ int gemm_benchmark(int argc, char** argv) {
                 quant_kernel( &quant_param );
               }
             },
-            [&]() {if (sizeof(DType) == 2) tileconfig_kernel(NULL);},
-            [&]() {if (sizeof(DType) == 2) tilerelease_kernel(NULL);});
+            [&]() {tileconfig_kernel(NULL);},
+            [&]() {tilerelease_kernel(NULL);});
       }
     }
   }
   auto t_end = getTime();
- 
-  // Check correctness if requested
-  if (n_layers == 1) {
-    printf("##########################################\n");
-    printf("#  GEMM %d x %d x %d  (M x N x K)        \n", M, N, K);
-    printf("##########################################\n");
-  } else {
-    printf("##########################################\n");
-    printf("#  %d Layer MLP with sizes  %d x %d x %d  (M x N x K)  \n", n_layers, M, N, K);
-    printf("##########################################\n");
-  }
-  if (check_correctness) {
-    if (int8_gemm > 0) {
-      matrix_copy_NCNC_to_NC_bf8( (libxsmm_bfloat8*)ACT[n_layers], (libxsmm_bfloat8*)naive_output_opt_i8, 1, N, M, bn, bm );
-    } else if (sizeof(DType) == 1) {
-      matrix_copy_NCNC_to_NC_bf8( (libxsmm_bfloat8*)ACT[n_layers], (libxsmm_bfloat8*)naive_output_bf16, 1, N, M, bn, bm );
-      libxsmm_convert_bf8_f32( (libxsmm_bfloat8*)naive_output_bf16, naive_output_opt, N*M );
-    } else if (sizeof(DType) == 2) {
-      matrix_copy_NCNC_to_NC_bf16( (libxsmm_bfloat16*)ACT[n_layers], (libxsmm_bfloat16*)naive_output_bf16, 1, N, M, bn, bm );
-      libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)naive_output_bf16, naive_output_opt, N*M );
-    } else {
-      matrix_copy_NCNC_to_NC( (float*)ACT[n_layers], naive_output_opt, 1, N, M, bn, bm );
-    }
-    printf("##########################################\n");
-    printf("#           Correctness                  #\n");
-    printf("##########################################\n");
-    if (int8_gemm == 0) {
-      if (n_layers % 2 == 1) {
-        libxsmm_matdiff(&norms, LIBXSMM_DATATYPE_F32, N*M, 1, naive_output, naive_output_opt, 0, 0);
-      } else {
-        libxsmm_matdiff(&norms, LIBXSMM_DATATYPE_F32, N*M, 1, naive_input, naive_output_opt, 0, 0);
-      }
-    } else {
-      if (n_layers % 2 == 1) {
-        libxsmm_matdiff(&norms, LIBXSMM_DATATYPE_I8, N*M, 1, naive_output_i8, naive_output_opt_i8, 0, 0);
-      } else {
-        libxsmm_matdiff(&norms, LIBXSMM_DATATYPE_I8, N*M, 1, naive_input_i8, naive_output_opt_i8, 0, 0);
-      }
-    }
-    printf("L1 reference  : %.25g\n", norms.l1_ref);
-    printf("L1 test       : %.25g\n", norms.l1_tst);
-    printf("L2 abs.error  : %.24f\n", norms.l2_abs);
-    printf("L2 rel.error  : %.24f\n", norms.l2_rel);
-    printf("Linf abs.error: %.24f\n", norms.linf_abs);
-    printf("Linf rel.error: %.24f\n", norms.linf_rel);
-    printf("Check-norm    : %.24f\n", norms.normf_rel);
-    libxsmm_matdiff_reduce(&diff, &norms);
-  }
-
+  
   // Model GEMM
   auto t_trace_start = getTime();
   double modeled_time = 0.0;
@@ -698,7 +716,13 @@ int gemm_benchmark(int argc, char** argv) {
   libxsmm_free(naive_output_bf16);
   libxsmm_free(naive_filter_bf16);
   for (i = 0; i < (n_layers+1); i++) {
-    libxsmm_free(ACT[i]);
+    if (use_ping_pong_bufs == 0) { 
+      libxsmm_free(ACT[i]);
+    } else {
+      if (i < 2) {
+        libxsmm_free(ACT[i]);
+      }
+    }
     if (i < n_layers) {
       if (fuse_bias > 0) {
         libxsmm_free(BIAS[i]);
