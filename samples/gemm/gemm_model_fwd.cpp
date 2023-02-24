@@ -8,6 +8,7 @@
 ******************************************************************************/
 #include "common_utils.h"
 #include "threaded_loops.h"
+#include "gemm_common_utils.h"
 
 template<typename DType>
 int gemm_benchmark(int argc, char** argv) {
@@ -22,6 +23,7 @@ int gemm_benchmark(int argc, char** argv) {
   long i;
   long fuse_bias = 0;
   long fuse_relu = 0;
+  long int8_gemm = 0;
   // Setup model and trace
   int use_model = 0;
   const char* const env_use_model = getenv("USE_MODEL");
@@ -63,6 +65,13 @@ int gemm_benchmark(int argc, char** argv) {
     }
   }
 
+  if (sizeof(DType) == 1) {
+    int cl_precision = atoi(argv[13]);
+    if (cl_precision == 5) {
+      int8_gemm = 1;
+    }
+  }
+
   if ((n_layers > 1) && !(M == K && bm == bk && bk == bn) ) {
     printf("MLP support only for M == K and bm == bn == bk\n");
     return 1;
@@ -82,6 +91,7 @@ int gemm_benchmark(int argc, char** argv) {
 
   // Allocate buffers
   float **naive_bias = (float**) malloc((n_layers+1)*sizeof(float*));
+  float  *scf_quant = (float*) malloc(n_layers*sizeof(float));
   DType **ACT = (DType**) malloc((n_layers+1)*sizeof(DType*));
   DType **BIAS = (DType**) malloc((n_layers)*sizeof(DType*));
   DType **WGT = (DType**) malloc(n_layers    *sizeof(DType*));
@@ -97,7 +107,7 @@ int gemm_benchmark(int argc, char** argv) {
         BIAS[i] = (DType*) libxsmm_aligned_malloc(M*sizeof(DType), 2097152);
         naive_bias[i] = (float*) libxsmm_aligned_malloc(M*sizeof(float), 2097152);
         init_buf( naive_bias[i], M, 0, 0 );
-        if (sizeof(DType) == 1) {
+        if ((sizeof(DType) == 1) && (int8_gemm == 0)) {
           libxsmm_rne_convert_fp32_bf8(  naive_bias[i],  (libxsmm_bfloat8*)BIAS[i], M );
           libxsmm_convert_bf8_f32( (libxsmm_bfloat8*)BIAS[i], naive_bias[i], M);
         } else if (sizeof(DType) == 2) {
@@ -109,6 +119,7 @@ int gemm_benchmark(int argc, char** argv) {
       }
     }
   }
+  float *itm_f32_out  = (float*)libxsmm_aligned_malloc( M*N*sizeof(float), 2097152);
   float *naive_input  = (float*)libxsmm_aligned_malloc( K*N*sizeof(float), 2097152);
   float *naive_output = (float*)libxsmm_aligned_malloc( M*N*sizeof(float), 2097152);
   float *naive_output_opt = (float*)libxsmm_aligned_malloc( M*N*sizeof(float), 2097152);
@@ -116,6 +127,11 @@ int gemm_benchmark(int argc, char** argv) {
   DType *naive_input_bf16  = (DType*)libxsmm_aligned_malloc( K*N*sizeof(DType), 2097152);
   DType *naive_output_bf16 = (DType*)libxsmm_aligned_malloc( M*N*sizeof(DType), 2097152);
   DType *naive_filter_bf16 = (DType*)libxsmm_aligned_malloc( M*K*sizeof(DType), 2097152);
+  unsigned char *naive_input_i8;
+  unsigned char *naive_output_i8;
+  unsigned char *naive_output_opt_i8;
+  char *naive_filter_i8;
+
   libxsmm_matdiff_info norms, diff;
   libxsmm_matdiff_clear(&norms);
   libxsmm_matdiff_clear(&diff);
@@ -124,7 +140,21 @@ int gemm_benchmark(int argc, char** argv) {
   init_buf( naive_input,     K*N, 0, 0 );
   init_buf( naive_output,    M*N, 0, 0 );
   init_buf( naive_filter,    M*K, 0, 0 );
-  if (sizeof(DType) == 1) {
+  if (int8_gemm > 0) {
+    naive_input_i8  = (unsigned char*)libxsmm_aligned_malloc( K*N*sizeof(unsigned char ), 2097152);
+    naive_output_i8 = (unsigned char*)libxsmm_aligned_malloc( M*N*sizeof(unsigned char ), 2097152);
+    naive_output_opt_i8 = (unsigned char*)libxsmm_aligned_malloc( M*N*sizeof(unsigned char ), 2097152);
+    naive_filter_i8 = (char*)libxsmm_aligned_malloc( M*K*sizeof(float), 2097152);
+    for (i = 0; i < K*N; i++) naive_input_i8[i] = (unsigned char) (get_random_pos_p5_num() * 20.0);
+    for (i = 0; i < M*N; i++) naive_output_i8[i] = (unsigned char) (get_random_pos_p5_num() * 20.0);
+    for (i = 0; i < M*K; i++) naive_filter_i8[i] = (char) (get_random_posneg_p5_num() * 40.0);
+    /* Use the following 8-bit formating routines */
+    matrix_copy_NC_to_NCNC_bf8(  (libxsmm_bfloat8*)naive_input_i8,  (libxsmm_bfloat8*)ACT[0],     1, N, K, bn, bk );
+    matrix_copy_NC_to_NCNC_bf8(  (libxsmm_bfloat8*)naive_output_i8, (libxsmm_bfloat8*)ACT[n_layers],     1, N, M, bn, bm );
+    for (i = 0; i < n_layers; i++) {
+      matrix_copy_KC_to_KCCK_bf8( (libxsmm_bfloat8*)naive_filter_i8, (libxsmm_bfloat8*)WGT[i]       , K, M, bk, bm );
+    }
+  } else if ((sizeof(DType) == 1) && (int8_gemm == 0)) {
     libxsmm_rne_convert_fp32_bf8( naive_input,     (libxsmm_bfloat8*)naive_input_bf16,     N*K );
     libxsmm_convert_bf8_f32( (libxsmm_bfloat8*)naive_input_bf16, naive_input, N*K);
     libxsmm_rne_convert_fp32_bf8( naive_output,    (libxsmm_bfloat8*)naive_output_bf16,    N*M );
@@ -160,54 +190,82 @@ int gemm_benchmark(int argc, char** argv) {
   auto l_flags    = (sizeof(DType) == 2 || sizeof(DType) == 1) ? ( LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG ) : LIBXSMM_GEMM_FLAGS('N', 'N');
   auto l_tc_flags = (sizeof(DType) == 2 || sizeof(DType) == 1) ? ( LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') ) : LIBXSMM_GEMM_FLAGS('N', 'N');
   auto l_tr_flags = (sizeof(DType) == 2 || sizeof(DType) == 1) ? ( LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') ) : LIBXSMM_GEMM_FLAGS('N', 'N');
-  auto dtype      = (sizeof(DType) == 2) ? LIBXSMM_DATATYPE_BF16 : ((sizeof(DType) == 1) ? LIBXSMM_DATATYPE_BF8 : LIBXSMM_DATATYPE_F32);
+  
+  auto dtype      = (sizeof(DType) == 2) ? LIBXSMM_DATATYPE_BF16 : ((sizeof(DType) == 1) ? ((int8_gemm == 0) ? LIBXSMM_DATATYPE_BF8 : LIBXSMM_DATATYPE_I8) : LIBXSMM_DATATYPE_F32);
   auto l_shape = libxsmm_create_gemm_shape( bm, bn, bk, bm, bk, bm, dtype, dtype, dtype, dtype );
   auto l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
   auto l_brconfig = libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, bm*bk*sizeof(DType), bk*bn*sizeof(DType), brcount );
   auto l_unary_shape = libxsmm_create_meltw_unary_shape(bm*bn, 1, bm*bn, bm*bn, dtype, dtype, dtype);
 
+  if (int8_gemm > 0) {
+    l_flags = LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_FLAG_B_UNSIGNED;
+    l_shape = libxsmm_create_gemm_shape( bm, bn, bk, bm, bk, bm, LIBXSMM_DATATYPE_I8, LIBXSMM_DATATYPE_I8, LIBXSMM_DATATYPE_F32, LIBXSMM_DATATYPE_F32 );
+    l_unary_shape = libxsmm_create_meltw_unary_shape(bm*bn, 1, bm*bn, bm*bn, LIBXSMM_DATATYPE_F32, LIBXSMM_DATATYPE_F32, LIBXSMM_DATATYPE_F32);
+  } else {
+    if (brcount == Kb) l_flags |= LIBXSMM_GEMM_FLAG_BETA_0;
+  }
+
   auto zero_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);  
   auto tileconfig_kernel  = libxsmm_dispatch_gemm_v2( l_shape, l_tc_flags, l_prefetch_flags );
   auto tilerelease_kernel = libxsmm_dispatch_gemm_v2( l_shape, l_tr_flags, l_prefetch_flags );
-  if (brcount == Kb) l_flags |= LIBXSMM_GEMM_FLAG_BETA_0;
-  auto brgemm_kernel       = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
+  auto brgemm_kernel      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
   
   // Setup fused TPP kernels
   libxsmm_gemmfunction_ext brgemm_kernel_fused;
   libxsmm_meltwfunction_unary copy_colbias_kernel;
   libxsmm_meltwfunction_unary relu_kernel;
-  if (fuse_bias > 0) {
-    auto l_colbias_unary_shape = libxsmm_create_meltw_unary_shape(bm, bn, bm, bm, dtype, dtype, dtype);
-    // Create copy colbias TPP
-    copy_colbias_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_IDENTITY, l_colbias_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_BCAST_COL);  
-  }
+  libxsmm_meltwfunction_unary quant_kernel;
 
-  if (fuse_relu > 0) {
-    auto l_relu_unary_shape = libxsmm_create_meltw_unary_shape(bm, bn, bm, bm, dtype, dtype, LIBXSMM_DATATYPE_F32);
-    // Create relu TPP
-    relu_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_RELU, l_relu_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);  
-  }
+  if (int8_gemm > 0) {
+    auto l_quant_unary_shape = libxsmm_create_meltw_unary_shape(bm, bn, bm, bm, LIBXSMM_DATATYPE_F32, LIBXSMM_DATATYPE_I8, LIBXSMM_DATATYPE_F32);
+    // Create quant TPP
+    quant_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_QUANT, l_quant_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
 
-  if (fuse_bias > 0 || fuse_relu > 0) {
-    libxsmm_gemm_ext_unary_argops   l_argops;
-    libxsmm_gemm_ext_binary_postops l_postops;
-    auto l_flags_new = l_flags;
-    // Create fused GEMM TPP
-    l_flags_new |= LIBXSMM_GEMM_FLAG_BETA_0;
-    memset( &l_argops,  0, sizeof(libxsmm_gemm_ext_unary_argops  ) );
-    memset( &l_postops, 0, sizeof(libxsmm_gemm_ext_binary_postops) );
     if (fuse_bias > 0) {
-      l_postops.d_in_type      = dtype;
-      l_postops.d_binary_flags = LIBXSMM_MELTW_FLAG_BINARY_BCAST_COL_IN_0;
-      l_postops.d_binary_type  = LIBXSMM_MELTW_TYPE_BINARY_ADD;
-      l_postops.ldd            = bm;
+      auto l_colbias_unary_shape = libxsmm_create_meltw_unary_shape(bm, bn, bm, bm, LIBXSMM_DATATYPE_F32, LIBXSMM_DATATYPE_F32, LIBXSMM_DATATYPE_F32);
+      // Create copy colbias TPP
+      copy_colbias_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_IDENTITY, l_colbias_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_BCAST_COL);  
     }
+
     if (fuse_relu > 0) {
-      l_argops.cp_unary_flags   = LIBXSMM_MELTW_FLAG_UNARY_NONE;
-      l_argops.cp_unary_type    = LIBXSMM_MELTW_TYPE_UNARY_RELU;
-      l_argops.ldcp             = bm;
+      auto l_relu_unary_shape = libxsmm_create_meltw_unary_shape(bm, bn, bm, bm, LIBXSMM_DATATYPE_F32, LIBXSMM_DATATYPE_F32, LIBXSMM_DATATYPE_F32);
+      // Create relu TPP
+      relu_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_RELU, l_relu_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);  
     }
-    brgemm_kernel_fused = libxsmm_dispatch_brgemm_ext_v2( l_shape, l_flags_new, l_prefetch_flags, l_brconfig, l_argops, l_postops );
+  } else {
+    if (fuse_bias > 0) {
+      auto l_colbias_unary_shape = libxsmm_create_meltw_unary_shape(bm, bn, bm, bm, dtype, dtype, dtype);
+      // Create copy colbias TPP
+      copy_colbias_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_IDENTITY, l_colbias_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_BCAST_COL);  
+    }
+
+    if (fuse_relu > 0) {
+      auto l_relu_unary_shape = libxsmm_create_meltw_unary_shape(bm, bn, bm, bm, dtype, dtype, LIBXSMM_DATATYPE_F32);
+      // Create relu TPP
+      relu_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_RELU, l_relu_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);  
+    }
+
+    if (fuse_bias > 0 || fuse_relu > 0) {
+      libxsmm_gemm_ext_unary_argops   l_argops;
+      libxsmm_gemm_ext_binary_postops l_postops;
+      auto l_flags_new = l_flags;
+      // Create fused GEMM TPP
+      l_flags_new |= LIBXSMM_GEMM_FLAG_BETA_0;
+      memset( &l_argops,  0, sizeof(libxsmm_gemm_ext_unary_argops  ) );
+      memset( &l_postops, 0, sizeof(libxsmm_gemm_ext_binary_postops) );
+      if (fuse_bias > 0) {
+        l_postops.d_in_type      = dtype;
+        l_postops.d_binary_flags = LIBXSMM_MELTW_FLAG_BINARY_BCAST_COL_IN_0;
+        l_postops.d_binary_type  = LIBXSMM_MELTW_TYPE_BINARY_ADD;
+        l_postops.ldd            = bm;
+      }
+      if (fuse_relu > 0) {
+        l_argops.cp_unary_flags   = LIBXSMM_MELTW_FLAG_UNARY_NONE;
+        l_argops.cp_unary_type    = LIBXSMM_MELTW_TYPE_UNARY_RELU;
+        l_argops.ldcp             = bm;
+      }
+      brgemm_kernel_fused = libxsmm_dispatch_brgemm_ext_v2( l_shape, l_flags_new, l_prefetch_flags, l_brconfig, l_argops, l_postops );
+    }
   }
 
   // Compute reference if requested
@@ -227,26 +285,34 @@ int gemm_benchmark(int argc, char** argv) {
       naive_param.fuse_type = 3;
     }
     for (i = 0; i < n_layers; i++) {
-      if (i % 2 == 0) {
-        naive_fullyconnected_fused_fp(&naive_param, naive_input, naive_output, naive_filter, (fuse_bias > 0) ? naive_bias[i] : NULL);
-        /* Also downconvert and upconvert reference  */
-        if (sizeof(DType) == 1) {
-          libxsmm_rne_convert_fp32_bf8( naive_output,     (libxsmm_bfloat8*)naive_output_bf16,     N*M );
-          libxsmm_convert_bf8_f32( (libxsmm_bfloat8*)naive_output_bf16, naive_output, N*M);
-        } else if (sizeof(DType) == 2) {
-          libxsmm_rne_convert_fp32_bf16( naive_output,     (libxsmm_bfloat16*)naive_output_bf16,     N*M );
-          libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)naive_output_bf16, naive_output, N*M);
-        } 
+      if (int8_gemm > 0) {
+        if (i % 2 == 0) {
+          naive_fullyconnected_fused_int8(&naive_param, naive_input_i8, naive_output_i8, naive_filter_i8, (fuse_bias > 0) ? naive_bias[i] : NULL, &scf_quant[i], itm_f32_out );
+        } else {
+          naive_fullyconnected_fused_int8(&naive_param, naive_output_i8, naive_input_i8, naive_filter_i8, (fuse_bias > 0) ? naive_bias[i] : NULL, &scf_quant[i], itm_f32_out );
+        }
       } else {
-        naive_fullyconnected_fused_fp(&naive_param, naive_output, naive_input, naive_filter, (fuse_bias > 0) ? naive_bias[i] : NULL);
-        /* Also downconvert and upconvert reference  */
-        if (sizeof(DType) == 1) {
-          libxsmm_rne_convert_fp32_bf8( naive_input,     (libxsmm_bfloat8*)naive_output_bf16,     N*M );
-          libxsmm_convert_bf8_f32( (libxsmm_bfloat8*)naive_output_bf16, naive_input, N*M);
-        } else if (sizeof(DType) == 2) {
-          libxsmm_rne_convert_fp32_bf16( naive_input,     (libxsmm_bfloat16*)naive_output_bf16,     N*M );
-          libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)naive_output_bf16, naive_input, N*M);
-        } 
+        if (i % 2 == 0) {
+          naive_fullyconnected_fused_fp(&naive_param, naive_input, naive_output, naive_filter, (fuse_bias > 0) ? naive_bias[i] : NULL);
+          /* Also downconvert and upconvert reference  */
+          if (sizeof(DType) == 1) {
+            libxsmm_rne_convert_fp32_bf8( naive_output,     (libxsmm_bfloat8*)naive_output_bf16,     N*M );
+            libxsmm_convert_bf8_f32( (libxsmm_bfloat8*)naive_output_bf16, naive_output, N*M);
+          } else if (sizeof(DType) == 2) {
+            libxsmm_rne_convert_fp32_bf16( naive_output,     (libxsmm_bfloat16*)naive_output_bf16,     N*M );
+            libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)naive_output_bf16, naive_output, N*M);
+          } 
+        } else {
+          naive_fullyconnected_fused_fp(&naive_param, naive_output, naive_input, naive_filter, (fuse_bias > 0) ? naive_bias[i] : NULL);
+          /* Also downconvert and upconvert reference  */
+          if (sizeof(DType) == 1) {
+            libxsmm_rne_convert_fp32_bf8( naive_input,     (libxsmm_bfloat8*)naive_output_bf16,     N*M );
+            libxsmm_convert_bf8_f32( (libxsmm_bfloat8*)naive_output_bf16, naive_input, N*M);
+          } else if (sizeof(DType) == 2) {
+            libxsmm_rne_convert_fp32_bf16( naive_input,     (libxsmm_bfloat16*)naive_output_bf16,     N*M );
+            libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)naive_output_bf16, naive_input, N*M);
+          } 
+        }
       }
     }
   }
@@ -308,70 +374,7 @@ int gemm_benchmark(int argc, char** argv) {
   auto t1 = getTime();
 
   // Warmup iteration for i-caches
-  for (i = 0; i < n_layers; i++) {
-    gemm_loop(
-        [&](int* ind) {
-          int i_k = ind[0], i_m = ind[1], i_n = ind[2];
-          if (fuse_bias > 0 || fuse_relu > 0) {
-            if (brcount == Kb) {
-              libxsmm_gemm_ext_param gemm_param_ext;
-              gemm_param_ext.op.tertiary = (void*)&brcount;
-              gemm_param_ext.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
-              gemm_param_ext.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
-              gemm_param_ext.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
-              if (fuse_bias > 0) {
-                gemm_param_ext.d.primary = (void*)((DType*)BIAS[i] + i_m * bm );
-              }
-              brgemm_kernel_fused( &gemm_param_ext );             
-            } else {
-              libxsmm_gemm_param gemm_param;
-              gemm_param.op.tertiary = (void*)&brcount;
-              gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
-              gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
-              gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
-              if (i_k == 0) {
-                if (fuse_bias > 0) {
-                  libxsmm_meltw_unary_param copy_colbias_param;
-                  copy_colbias_param.in.primary = (void*)(void*)((DType*)BIAS[i] + i_m * bm );
-                  copy_colbias_param.out.primary = (void*)gemm_param.c.primary;
-                  copy_colbias_kernel( &copy_colbias_param );
-                } else {
-                  libxsmm_meltw_unary_param zero_param;
-                  zero_param.out.primary = (void*)gemm_param.c.primary;
-                  zero_kernel( &zero_param );
-                }
-              }
-              brgemm_kernel( &gemm_param );
-              if (fuse_relu > 0) {
-                if (i_k + k_step >= Kb) {
-                  libxsmm_meltw_unary_param relu_param;
-                  relu_param.in.primary =  (void*)gemm_param.c.primary;
-                  relu_param.out.primary = (void*)gemm_param.c.primary;
-                  relu_kernel( &relu_param );
-                }
-              }
-            }
-          } else {
-            libxsmm_gemm_param gemm_param;
-            gemm_param.op.tertiary = (void*)&brcount;
-            gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
-            gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
-            gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
-            if ((i_k == 0) && (brcount != Kb)) {
-              libxsmm_meltw_unary_param zero_param;
-              zero_param.out.primary = (void*)gemm_param.c.primary;
-              zero_kernel( &zero_param );
-            }
-            brgemm_kernel( &gemm_param );
-          }
-        },
-        [&]() {if (sizeof(DType) == 2) tileconfig_kernel(NULL);},
-        [&]() {if (sizeof(DType) == 2) tilerelease_kernel(NULL);});
-  }
-
-  // benchmark the GEMM
-  auto t_start = getTime();
-  for (long it = 0; it < n_iters; it++) {
+  if (int8_gemm == 0) {
     for (i = 0; i < n_layers; i++) {
       gemm_loop(
           [&](int* ind) {
@@ -406,7 +409,7 @@ int gemm_benchmark(int argc, char** argv) {
                   }
                 }
                 brgemm_kernel( &gemm_param );
-                if (fuse_relu > 0) { 
+                if (fuse_relu > 0) {
                   if (i_k + k_step >= Kb) {
                     libxsmm_meltw_unary_param relu_param;
                     relu_param.in.primary =  (void*)gemm_param.c.primary;
@@ -432,6 +435,165 @@ int gemm_benchmark(int argc, char** argv) {
           [&]() {if (sizeof(DType) == 2) tileconfig_kernel(NULL);},
           [&]() {if (sizeof(DType) == 2) tilerelease_kernel(NULL);});
     }
+  } else {
+    for (i = 0; i < n_layers; i++) {
+      gemm_loop(
+          [&](int* ind) {
+            int i_k = ind[0], i_m = ind[1], i_n = ind[2];
+            const float float_one = 1.0f;
+            libxsmm_gemm_param gemm_param;
+            gemm_param.op.tertiary = (void*)&brcount;
+            gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
+            gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
+            gemm_param.c.primary = (void*)((float*)itm_f32_out + i_n * M * bn + i_m * bn * bm );
+            gemm_param.c.tertiary = (void*)&float_one;
+            if (i_k == 0) {
+              if (fuse_bias > 0) {
+                libxsmm_meltw_unary_param copy_colbias_param;
+                copy_colbias_param.in.primary = (void*)((float*)naive_bias[i] + i_m * bm );
+                copy_colbias_param.out.primary = (void*)gemm_param.c.primary;
+                copy_colbias_kernel( &copy_colbias_param );
+              } else {
+                libxsmm_meltw_unary_param zero_param;
+                zero_param.out.primary = (void*)gemm_param.c.primary;
+                zero_kernel( &zero_param );
+              }
+            }
+            brgemm_kernel( &gemm_param );
+            if (fuse_relu > 0) {
+              if (i_k + k_step >= Kb) {
+                libxsmm_meltw_unary_param relu_param;
+                relu_param.in.primary =  (void*)gemm_param.c.primary;
+                relu_param.out.primary = (void*)gemm_param.c.primary;
+                relu_kernel( &relu_param );
+              }
+            }
+            /* Quantize output to i8*/
+            if (i_k + k_step >= Kb) {
+              libxsmm_meltw_unary_param quant_param;
+              quant_param.in.primary  = (void*)gemm_param.c.primary;
+              quant_param.in.secondary= (void*)&scf_quant[i];
+              quant_param.out.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+              quant_kernel( &quant_param );
+            }
+          },
+          [&]() {if (sizeof(DType) == 2) tileconfig_kernel(NULL);},
+          [&]() {if (sizeof(DType) == 2) tilerelease_kernel(NULL);});
+    }
+  }
+
+  // benchmark the GEMM
+  auto t_start = getTime();
+  if (int8_gemm == 0) {
+    for (long it = 0; it < n_iters; it++) {
+      for (i = 0; i < n_layers; i++) {
+        gemm_loop(
+            [&](int* ind) {
+              int i_k = ind[0], i_m = ind[1], i_n = ind[2];
+              if (fuse_bias > 0 || fuse_relu > 0) {
+                if (brcount == Kb) {
+                  libxsmm_gemm_ext_param gemm_param_ext;
+                  gemm_param_ext.op.tertiary = (void*)&brcount;
+                  gemm_param_ext.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
+                  gemm_param_ext.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
+                  gemm_param_ext.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+                  if (fuse_bias > 0) {
+                    gemm_param_ext.d.primary = (void*)((DType*)BIAS[i] + i_m * bm );
+                  }
+                  brgemm_kernel_fused( &gemm_param_ext );             
+                } else {
+                  libxsmm_gemm_param gemm_param;
+                  gemm_param.op.tertiary = (void*)&brcount;
+                  gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
+                  gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
+                  gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+                  if (i_k == 0) {
+                    if (fuse_bias > 0) {
+                      libxsmm_meltw_unary_param copy_colbias_param;
+                      copy_colbias_param.in.primary = (void*)(void*)((DType*)BIAS[i] + i_m * bm );
+                      copy_colbias_param.out.primary = (void*)gemm_param.c.primary;
+                      copy_colbias_kernel( &copy_colbias_param );
+                    } else {
+                      libxsmm_meltw_unary_param zero_param;
+                      zero_param.out.primary = (void*)gemm_param.c.primary;
+                      zero_kernel( &zero_param );
+                    }
+                  }
+                  brgemm_kernel( &gemm_param );
+                  if (fuse_relu > 0) { 
+                    if (i_k + k_step >= Kb) {
+                      libxsmm_meltw_unary_param relu_param;
+                      relu_param.in.primary =  (void*)gemm_param.c.primary;
+                      relu_param.out.primary = (void*)gemm_param.c.primary;
+                      relu_kernel( &relu_param );
+                    }
+                  }
+                }
+              } else {
+                libxsmm_gemm_param gemm_param;
+                gemm_param.op.tertiary = (void*)&brcount;
+                gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
+                gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
+                gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+                if ((i_k == 0) && (brcount != Kb)) {
+                  libxsmm_meltw_unary_param zero_param;
+                  zero_param.out.primary = (void*)gemm_param.c.primary;
+                  zero_kernel( &zero_param );
+                }
+                brgemm_kernel( &gemm_param );
+              }
+            },
+            [&]() {if (sizeof(DType) == 2) tileconfig_kernel(NULL);},
+            [&]() {if (sizeof(DType) == 2) tilerelease_kernel(NULL);});
+      }
+    }
+  } else {
+    for (long it = 0; it < n_iters; it++) {
+      for (i = 0; i < n_layers; i++) {
+        gemm_loop(
+            [&](int* ind) {
+              int i_k = ind[0], i_m = ind[1], i_n = ind[2];
+              const float float_one = 1.0f;
+              libxsmm_gemm_param gemm_param;
+              gemm_param.op.tertiary = (void*)&brcount;
+              gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
+              gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
+              gemm_param.c.primary = (void*)((float*)itm_f32_out + i_n * M * bn + i_m * bn * bm );
+              gemm_param.c.tertiary = (void*)&float_one;
+              if (i_k == 0) {
+                if (fuse_bias > 0) {
+                  libxsmm_meltw_unary_param copy_colbias_param;
+                  copy_colbias_param.in.primary = (void*)((float*)naive_bias[i] + i_m * bm );
+                  copy_colbias_param.out.primary = (void*)gemm_param.c.primary;
+                  copy_colbias_kernel( &copy_colbias_param );
+                } else {
+                  libxsmm_meltw_unary_param zero_param;
+                  zero_param.out.primary = (void*)gemm_param.c.primary;
+                  zero_kernel( &zero_param );
+                }
+              }
+              brgemm_kernel( &gemm_param );
+              if (fuse_relu > 0) {
+                if (i_k + k_step >= Kb) {
+                  libxsmm_meltw_unary_param relu_param;
+                  relu_param.in.primary =  (void*)gemm_param.c.primary;
+                  relu_param.out.primary = (void*)gemm_param.c.primary;
+                  relu_kernel( &relu_param );
+                }
+              }
+              /* Quantize output to i8*/
+              if (i_k + k_step >= Kb) {
+                libxsmm_meltw_unary_param quant_param;
+                quant_param.in.primary  = (void*)gemm_param.c.primary;
+                quant_param.in.secondary= (void*)&scf_quant[i];
+                quant_param.out.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+                quant_kernel( &quant_param );
+              }
+            },
+            [&]() {if (sizeof(DType) == 2) tileconfig_kernel(NULL);},
+            [&]() {if (sizeof(DType) == 2) tilerelease_kernel(NULL);});
+      }
+    }
   }
   auto t_end = getTime();
  
@@ -446,7 +608,9 @@ int gemm_benchmark(int argc, char** argv) {
     printf("##########################################\n");
   }
   if (check_correctness) {
-    if (sizeof(DType) == 1) {
+    if (int8_gemm > 0) {
+      matrix_copy_NCNC_to_NC_bf8( (libxsmm_bfloat8*)ACT[n_layers], (libxsmm_bfloat8*)naive_output_opt_i8, 1, N, M, bn, bm );
+    } else if (sizeof(DType) == 1) {
       matrix_copy_NCNC_to_NC_bf8( (libxsmm_bfloat8*)ACT[n_layers], (libxsmm_bfloat8*)naive_output_bf16, 1, N, M, bn, bm );
       libxsmm_convert_bf8_f32( (libxsmm_bfloat8*)naive_output_bf16, naive_output_opt, N*M );
     } else if (sizeof(DType) == 2) {
@@ -458,10 +622,18 @@ int gemm_benchmark(int argc, char** argv) {
     printf("##########################################\n");
     printf("#           Correctness                  #\n");
     printf("##########################################\n");
-    if (n_layers % 2 == 1) {
-      libxsmm_matdiff(&norms, LIBXSMM_DATATYPE_F32, N*M, 1, naive_output, naive_output_opt, 0, 0);
+    if (int8_gemm == 0) {
+      if (n_layers % 2 == 1) {
+        libxsmm_matdiff(&norms, LIBXSMM_DATATYPE_F32, N*M, 1, naive_output, naive_output_opt, 0, 0);
+      } else {
+        libxsmm_matdiff(&norms, LIBXSMM_DATATYPE_F32, N*M, 1, naive_input, naive_output_opt, 0, 0);
+      }
     } else {
-      libxsmm_matdiff(&norms, LIBXSMM_DATATYPE_F32, N*M, 1, naive_input, naive_output_opt, 0, 0);
+      if (n_layers % 2 == 1) {
+        libxsmm_matdiff(&norms, LIBXSMM_DATATYPE_I8, N*M, 1, naive_output_i8, naive_output_opt_i8, 0, 0);
+      } else {
+        libxsmm_matdiff(&norms, LIBXSMM_DATATYPE_I8, N*M, 1, naive_input_i8, naive_output_opt_i8, 0, 0);
+      }
     }
     printf("L1 reference  : %.25g\n", norms.l1_ref);
     printf("L1 test       : %.25g\n", norms.l1_tst);
@@ -517,6 +689,7 @@ int gemm_benchmark(int argc, char** argv) {
   printf("MEASURE %.5g %s_%d_%d_%d_%d_%d_%d_bf%d_threads%d\n", gflop/((t_end-t_start)/(1.0*n_iters)), loop_specs_str, M, N, K, bm, bn, bk, kbf, omp_get_max_threads());
 
   // Free buffers
+  libxsmm_free(itm_f32_out);
   libxsmm_free(naive_input);
   libxsmm_free(naive_output);
   libxsmm_free(naive_filter);
@@ -534,10 +707,17 @@ int gemm_benchmark(int argc, char** argv) {
       libxsmm_free(WGT[i]);
     }
   }
+  if ((sizeof(DType) == 1) && (int8_gemm == 1)) {
+    libxsmm_free(naive_input_i8);
+    libxsmm_free(naive_output_i8);
+    libxsmm_free(naive_output_opt_i8);
+    libxsmm_free(naive_filter_i8);
+  }
   free(ACT);
   free(WGT);
   free(BIAS);
   free(naive_bias);
+  free(scf_quant);
 
   return 0;
 }
@@ -558,7 +738,9 @@ int main(int argc, char** argv) {
     }
   }
   if (use_prec_bf16 == 0) {
-    if (cl_precision == 4) {
+    if (cl_precision == 5) {
+      return gemm_benchmark<char>(argc, argv);
+    } else if (cl_precision == 4) {
       return gemm_benchmark<float>(argc, argv);
     } else if (cl_precision == 2) {
       return gemm_benchmark<libxsmm_bfloat16>(argc, argv);
