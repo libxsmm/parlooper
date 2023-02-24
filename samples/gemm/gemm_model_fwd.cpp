@@ -495,8 +495,8 @@ int gemm_benchmark(int argc, char** argv) {
               quant_kernel( &quant_param );
             }
           },
-          [&]() {if (sizeof(DType) == 2) tileconfig_kernel(NULL);},
-          [&]() {if (sizeof(DType) == 2) tilerelease_kernel(NULL);});
+          [&]() {tileconfig_kernel(NULL);},
+          [&]() {tilerelease_kernel(NULL);});
     }
   }
 
@@ -656,8 +656,8 @@ int gemm_benchmark(int argc, char** argv) {
                 quant_kernel( &quant_param );
               }
             },
-            [&]() {if (sizeof(DType) == 2) tileconfig_kernel(NULL);},
-            [&]() {if (sizeof(DType) == 2) tilerelease_kernel(NULL);});
+            [&]() {tileconfig_kernel(NULL);},
+            [&]() {tilerelease_kernel(NULL);});
       }
     }
   }
