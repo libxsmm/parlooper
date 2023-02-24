@@ -75,7 +75,7 @@ void naive_fullyconnected_fused_int8( naive_fullyconnected_t* param, const unsig
   float l_scf_quant = 0.0f;
   LIBXSMM_VLA_DECL(2, const unsigned char, input,  input_ptr,  nIFm);
   LIBXSMM_VLA_DECL(2, const char, filter, filter_ptr, nIFm);
-  LIBXSMM_VLA_DECL(2,       char, output, output_ptr, nOFm);
+  LIBXSMM_VLA_DECL(2, unsigned char, output, output_ptr, nOFm);
   LIBXSMM_VLA_DECL(2,      float, output_f32, tmp_f32_output_ptr, nOFm);
   auto l_quant_unary_shape = libxsmm_create_meltw_unary_shape(1, 1, 1, 1, LIBXSMM_DATATYPE_F32, LIBXSMM_DATATYPE_I8, LIBXSMM_DATATYPE_F32);
   auto quant_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_QUANT, l_quant_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
