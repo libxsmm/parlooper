@@ -72,8 +72,7 @@ int gemm_benchmark(int argc, char** argv) {
   }
 
   if (sizeof(DType) == 1) {
-    int cl_precision = atoi(argv[13]);
-    if (cl_precision == 5) {
+    if (strcmp(argv[13], "INT8") == 0) {
       int8_gemm = 1;
     }
   }
@@ -776,11 +775,24 @@ int gemm_benchmark(int argc, char** argv) {
 int main(int argc, char** argv) {
   int use_prec_bf16 = 0;
   int cl_precision = 4;
+  char cl_str_precision[256];
   const char* const env_prec_str = getenv("USE_BF16");
   if (0 == env_prec_str) {
     use_prec_bf16 = 0;
     if (argc > 13) {
-      cl_precision = atoi(argv[13]);
+      sprintf(cl_str_precision, "%s", argv[13]);
+      if (strcmp(cl_str_precision, "FP32") == 0) {
+        cl_precision = 4;
+      } else if (strcmp(cl_str_precision, "BF16") == 0) {
+        cl_precision = 2;
+      } else if (strcmp(cl_str_precision, "BF8") == 0) {
+        cl_precision = 1;
+      } else if (strcmp(cl_str_precision, "INT8") == 0) {
+        cl_precision = 5;
+      } else {
+        printf("Unsupported precision... Supported precisions are FP32, BF16, BF8, INT8. Exiting...\n");
+        return 0;
+      }
     }
   } else {
     use_prec_bf16 = atoi(env_prec_str);
