@@ -25,6 +25,8 @@ int gemm_benchmark(int argc, char** argv) {
   long fuse_relu = 0;
   long int8_gemm = 0;
   long use_ping_pong_bufs = 0;
+  char prec_string[255];
+  char fuse_string[255];
   // Setup model and trace
   int use_model = 0;
   const char* const env_use_model = getenv("USE_MODEL");
@@ -76,6 +78,28 @@ int gemm_benchmark(int argc, char** argv) {
     }
   }
 
+  if (int8_gemm > 0) {
+    sprintf(prec_string, "INT8");
+  } else if (sizeof(DType) == 1) {
+    sprintf(prec_string, "BF8");
+  } else if (sizeof(DType) == 2) {
+    sprintf(prec_string, "BF16");
+  } else if (sizeof(DType) == 4) {
+    sprintf(prec_string, "FP32");
+  }
+
+  if (fuse_bias == 0 && fuse_relu == 0) {
+    sprintf(fuse_string, "NONE");
+  } else if (fuse_bias == 1 && fuse_relu == 0) {
+    sprintf(fuse_string, "BIAS");
+  } else if (fuse_bias == 0 && fuse_relu == 1) {
+    sprintf(fuse_string, "RELU");
+  } else if (fuse_bias == 1 && fuse_relu == 1) {
+    sprintf(fuse_string, "BIAS + RELU");
+  } else {
+    sprintf(fuse_string, "NONE");
+  }
+  
   if ((n_layers > 1) && !(M == K && bm == bk && bk == bn) ) {
     printf("MLP support only for M == K and bm == bn == bk\n");
     return 1;
@@ -506,10 +530,13 @@ int gemm_benchmark(int argc, char** argv) {
     printf("#  GEMM %d x %d x %d  (M x N x K)        \n", M, N, K);
     printf("##########################################\n");
   } else {
-    printf("##########################################\n");
-    printf("#  %d Layer MLP with sizes  %d x %d x %d  (M x N x K)  \n", n_layers, M, N, K);
-    printf("##########################################\n");
+    printf("##############################################################\n");
+    printf("    %d Layer MLP with sizes  %d x %d x %d  (M x N x K)  \n", n_layers, M, N, K);
+    printf("##############################################################\n");
   }
+  printf("Precision  : %s\n", prec_string);
+  printf("Activation : %s\n", fuse_string);
+  printf("Ring buffer: %d\n", use_ping_pong_bufs);
   if (check_correctness) {
     if (int8_gemm > 0) {
       matrix_copy_NCNC_to_NC_bf8( (libxsmm_bfloat8*)ACT[n_layers], (libxsmm_bfloat8*)naive_output_opt_i8, 1, N, M, bn, bm );
