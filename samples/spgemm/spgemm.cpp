@@ -9,6 +9,8 @@
 #include "common_utils.h"
 #include "threaded_loops.h"
 
+#define HARDWIRED_SPARSITY_KNOB
+
 template<typename DType>
 int spgemm_benchmark(int argc, char** argv) {
   // Setup default SPGEMM sizes
@@ -26,6 +28,7 @@ int spgemm_benchmark(int argc, char** argv) {
   unsigned int bcsc_bn = 2;
   unsigned int sparse_block_bk = 4;
   unsigned int sparse_block_bn = 2;
+  unsigned int hardwired_sparsity = 1;
   long k_block_size = (K/bcsc_bk)/Kb;
   unsigned int n_iters = 1;
   unsigned int use_ac_vnni = (use_bcsc > 0) ? 1 : 0;
@@ -57,18 +60,35 @@ int spgemm_benchmark(int argc, char** argv) {
     bcsc_bn = atoi(argv[12]);
     sparse_block_bk = atoi(argv[13]);
     sparse_block_bn = atoi(argv[14]);
-    n_iters = atoi(argv[15]);
+    hardwired_sparsity = atoi(argv[15]);
+    n_iters = atoi(argv[16]);
     use_ac_vnni = (use_bcsc > 0) ? 1 : 0;
     vnni_block_size = (use_ac_vnni > 0) ? libxsmm_cpuid_dot_pack_factor(LIBXSMM_DATATYPE_BF16) : 1;
     Mb = M/bm;
+#ifdef HARDWIRED_SPARSITY_KNOB
+    if (hardwired_sparsity == 0) {
+      Kb = 1;
+    }
+#endif
     k_block_size = (K/bcsc_bk)/Kb;
   }
 
   // Kernel management specifics
-  const libxsmm_bitfield l_flags = (use_bf16 == 1) ? LIBXSMM_GEMM_FLAGS('N', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG : LIBXSMM_GEMM_FLAGS('N', 'N') ;
-  const libxsmm_bitfield l_tc_flags = (use_bf16 == 1) ? LIBXSMM_GEMM_FLAGS('N', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG : LIBXSMM_GEMM_FLAGS('N', 'N') ;
-  const libxsmm_bitfield l_tr_flags = (use_bf16 == 1) ? LIBXSMM_GEMM_FLAGS('N', 'N') | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG : LIBXSMM_GEMM_FLAGS('N', 'N') ;
-  const libxsmm_bitfield l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
+  libxsmm_bitfield l_flags = (use_bf16 == 1) ? LIBXSMM_GEMM_FLAGS('N', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG : LIBXSMM_GEMM_FLAGS('N', 'N') ;
+  libxsmm_bitfield l_tc_flags = (use_bf16 == 1) ? LIBXSMM_GEMM_FLAGS('N', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG : LIBXSMM_GEMM_FLAGS('N', 'N') ;
+  libxsmm_bitfield l_tr_flags = (use_bf16 == 1) ? LIBXSMM_GEMM_FLAGS('N', 'N') | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG : LIBXSMM_GEMM_FLAGS('N', 'N') ;
+  libxsmm_bitfield l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
+  
+  if (hardwired_sparsity == 0) {
+#ifdef HARDWIRED_SPARSITY_KNOB
+    l_flags |=  LIBXSMM_GEMM_FLAG_NO_HARDWIRED_SPARSITY;
+    l_tc_flags |= LIBXSMM_GEMM_FLAG_NO_HARDWIRED_SPARSITY;
+    l_tr_flags |= LIBXSMM_GEMM_FLAG_NO_HARDWIRED_SPARSITY;
+#else
+    hardwired_sparsity = 1;
+#endif
+  }
+
   libxsmm_gemmfunction kernels_csc[(N_target_blocks+1)*Kb];
   //libxsmm_gemmfunction kernels_csc[N_target_blocks+1][Kb];
   libxsmm_gemmfunction tc_kernel;
@@ -440,7 +460,7 @@ int spgemm_benchmark(int argc, char** argv) {
 
           if (use_bf16 == 0) {
             gemm_param.a.primary = LIBXSMM_ACCESS_RAW(3, sizeof(float), l_a, i_m, i_k, 0, K, bm);
-            gemm_param.b.primary = l_b_sp_csc;
+            gemm_param.b.primary = l_b_sp_csc;         
             gemm_param.c.primary = LIBXSMM_ACCESS_RAW(3, sizeof(float), l_c_asm_csc, i_m, Nblocks_offsets[i_n], 0, N, bm);
           } else {
             if (use_bcsc == 0) {
@@ -450,6 +470,8 @@ int spgemm_benchmark(int argc, char** argv) {
             } else {
               gemm_param.a.primary = LIBXSMM_ACCESS_RAW(4, sizeof(libxsmm_bfloat16), l_a_vnni_bf16, i_m, i_k/vnni_block_size, 0, i_k%vnni_block_size, K/vnni_block_size, bm, vnni_block_size);
               gemm_param.b.primary = l_b_sp_bcsc_bf16;
+              gemm_param.b.secondary = &l_colptr[Nblocks_offsets[i_n]/bcsc_bn];
+              gemm_param.b.tertiary  = l_rowidx;
               gemm_param.c.primary = LIBXSMM_ACCESS_RAW(4, sizeof(libxsmm_bfloat16), l_c_vnni_asm_csc_bf16, i_m, Nblocks_offsets[i_n]/vnni_block_size, 0, Nblocks_offsets[i_n]%vnni_block_size, N/vnni_block_size, bm, vnni_block_size);              
             }
           }
@@ -509,6 +531,8 @@ int spgemm_benchmark(int argc, char** argv) {
             } else {
               gemm_param.a.primary = LIBXSMM_ACCESS_RAW(4, sizeof(libxsmm_bfloat16), l_a_vnni_bf16, i_m, i_k/vnni_block_size, 0, i_k%vnni_block_size, K/vnni_block_size, bm, vnni_block_size);
               gemm_param.b.primary = l_b_sp_bcsc_bf16;
+              gemm_param.b.secondary = &l_colptr[Nblocks_offsets[i_n]/bcsc_bn];
+              gemm_param.b.tertiary  = l_rowidx;    
               gemm_param.c.primary = LIBXSMM_ACCESS_RAW(4, sizeof(libxsmm_bfloat16), l_c_vnni_asm_csc_bf16, i_m, Nblocks_offsets[i_n]/vnni_block_size, 0, Nblocks_offsets[i_n]%vnni_block_size, N/vnni_block_size, bm, vnni_block_size);              
             }
           }
@@ -543,6 +567,8 @@ int spgemm_benchmark(int argc, char** argv) {
             } else {
               gemm_param.a.primary = LIBXSMM_ACCESS_RAW(4, sizeof(libxsmm_bfloat16), l_a_vnni_bf16, i_m, i_k/vnni_block_size, 0, i_k%vnni_block_size, K/vnni_block_size, bm, vnni_block_size);
               gemm_param.b.primary = l_b_sp_bcsc_bf16;
+              gemm_param.b.secondary = &l_colptr[Nblocks_offsets[i_n]/bcsc_bn];
+              gemm_param.b.tertiary  = l_rowidx;
               gemm_param.c.primary = LIBXSMM_ACCESS_RAW(4, sizeof(libxsmm_bfloat16), l_c_vnni_asm_csc_bf16, i_m, Nblocks_offsets[i_n]/vnni_block_size, 0, Nblocks_offsets[i_n]%vnni_block_size, N/vnni_block_size, bm, vnni_block_size);              
             }
           }
