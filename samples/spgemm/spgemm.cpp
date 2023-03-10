@@ -11,6 +11,32 @@
 
 #define HARDWIRED_SPARSITY_KNOB
 
+void shuffle_array(unsigned long long *array, int n) {
+  if (n > 1)
+  {
+    int i;
+    for (i = 0; i < n - 1; i++)
+    {
+      int j = i + rand() / (RAND_MAX / (n - i) + 1);
+      unsigned long long t = array[j];
+      array[j] = array[i];
+      array[i] = t;
+    }
+  }
+}
+
+int is_dense_grid_point(unsigned long long grid_point_id, int n_dense_grid_points, unsigned long long *grid_point_array) {
+  int result = 0;
+  int i = 0;
+  for (i = 0; i < n_dense_grid_points; i++) {
+    if (grid_point_array[i] == grid_point_id) {
+      return 1;
+    }
+  } 
+
+  return result;
+}
+
 template<typename DType>
 int spgemm_benchmark(int argc, char** argv) {
   // Setup default SPGEMM sizes
@@ -21,6 +47,7 @@ int spgemm_benchmark(int argc, char** argv) {
   long Mb = M/bm;
   long Nb = N_target_blocks;
   long Kb = 1;
+  long long n_grid_points = 0, n_dense_grid_points = 0;
   double sparse_frac = 0.8;
   unsigned int use_bf16 = 1;
   unsigned int use_bcsc = 1;
@@ -37,6 +64,7 @@ int spgemm_benchmark(int argc, char** argv) {
   long i;
   unsigned long long l_start, l_end;
   double l_total;
+  unsigned long long *grid_point_array;
 
   libxsmm_matdiff_info norms_csc, diff;
   libxsmm_matdiff_clear(&norms_csc);
@@ -72,6 +100,15 @@ int spgemm_benchmark(int argc, char** argv) {
 #endif
     k_block_size = (K/bcsc_bk)/Kb;
   }
+
+  n_grid_points = (N/sparse_block_bn) * (K/sparse_block_bk);
+  grid_point_array = (unsigned long long *) malloc(n_grid_points * sizeof(unsigned long long));
+  n_dense_grid_points = (long long) ((double)(1.0-sparse_frac) * n_grid_points);
+  for (i = 0; i < n_grid_points; i++) {
+    grid_point_array[i] = i;
+  }
+  /* Pemute array of n grid points and consider densifying on the ones with id <= n_dense_grid_points */
+  shuffle_array(grid_point_array, n_grid_points);
 
   // Kernel management specifics
   libxsmm_bitfield l_flags = (use_bf16 == 1) ? LIBXSMM_GEMM_FLAGS('N', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG : LIBXSMM_GEMM_FLAGS('N', 'N') ;
@@ -154,23 +191,22 @@ int spgemm_benchmark(int argc, char** argv) {
     nnz = 0;
     for ( l_i = 0; l_i < N/sparse_block_bn; l_i++ ) {
       for ( l_j = 0; l_j < K/sparse_block_bk; l_j++ ) {
-        if (LIBXSMM_VLA_ACCESS(2, l_p_b_de, l_i, l_j, K) == 0) {
-          float tmp = (float)libxsmm_rng_f64();
-          if (tmp >= sparse_frac) {
-            unsigned int l_ui = l_i * sparse_block_bn;
-            unsigned int l_uj = l_j * sparse_block_bk;
-            unsigned int l_di = 0, l_dj = 0;
-            for (l_di = 0; l_di < sparse_block_bn; l_di++) {
-              for (l_dj = 0; l_dj < sparse_block_bk; l_dj++) {
-                float val = (float)libxsmm_rng_f64();
-                while (val == 0) {
-                  val = (float)libxsmm_rng_f64();
-                }
-                LIBXSMM_VLA_ACCESS(2, l_p_b_de, l_ui+l_di, l_uj+l_dj, K) = val;
+        /* float tmp = (float)libxsmm_rng_f64();
+        if (tmp >= sparse_frac) {*/
+        if (is_dense_grid_point(l_i * (K/sparse_block_bk) + l_j, n_dense_grid_points, grid_point_array)) {
+          unsigned int l_ui = l_i * sparse_block_bn;
+          unsigned int l_uj = l_j * sparse_block_bk;
+          unsigned int l_di = 0, l_dj = 0;
+          for (l_di = 0; l_di < sparse_block_bn; l_di++) {
+            for (l_dj = 0; l_dj < sparse_block_bk; l_dj++) {
+              float val = (float)libxsmm_rng_f64();
+              while (val == 0) {
+                val = (float)libxsmm_rng_f64();
               }
+              LIBXSMM_VLA_ACCESS(2, l_p_b_de, l_ui+l_di, l_uj+l_dj, K) = val;
             }
-            nnz += sparse_block_bn*sparse_block_bk;
           }
+          nnz += sparse_block_bn*sparse_block_bk;
         }
       }
     }
@@ -607,6 +643,7 @@ int spgemm_benchmark(int argc, char** argv) {
   libxsmm_free( l_colptr );
   libxsmm_free( l_rowidx );
   libxsmm_free( l_rowidx_tmp );
+  free( grid_point_array );
 
   return 0;
 }
