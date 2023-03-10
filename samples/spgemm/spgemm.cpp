@@ -614,7 +614,7 @@ int spgemm_benchmark(int argc, char** argv) {
 int main(int argc, char** argv) {
   int use_prec_bf16 = 0;
   if (argc > 2) {
-    use_prec_bf16 = atoi(argv[8]);
+    use_prec_bf16 = atoi(argv[9]);
   }
   if (use_prec_bf16 == 0) {
     return spgemm_benchmark<float>(argc, argv);  
