@@ -10,7 +10,11 @@
 #include <string>
 #include <unordered_map>
 #include "threaded_loops.h"
+//#define EXTENDED_COMMON_LOOPS
 
+#ifdef EXTENDED_COMMON_LOOPS
+#include "common_loops_extended.cpp"
+#else
 void par_nested_loops_A(
     LoopSpecs* loopSpecs,
     std::function<void(int*)> body_func,
@@ -211,3 +215,4 @@ std::unordered_map<std::string, par_loop_kernel> pre_defined_loops = {
     {"aBC", par_nested_loops_aBC},
     {"acB", par_nested_loops_acB},
 };
+#endif

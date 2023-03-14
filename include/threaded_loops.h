@@ -210,7 +210,7 @@ class LoopingScheme {
     }
 #endif
     auto search = pre_defined_loops.find(scheme);
-    if (search != pre_defined_loops.end() && 0) {
+    if (search != pre_defined_loops.end()) {
       test_kernel = search->second;
     } else {
       std::string gen_code = loop_generator(scheme.c_str());
