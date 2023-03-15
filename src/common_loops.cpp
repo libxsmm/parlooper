@@ -13,6 +13,7 @@
 //#define EXTENDED_COMMON_LOOPS
 
 #ifdef EXTENDED_COMMON_LOOPS
+#include <omp.h>
 #include "common_loops_extended.cpp"
 #else
 void par_nested_loops_A(
