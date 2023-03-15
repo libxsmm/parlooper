@@ -18,6 +18,7 @@
 #include "threaded_loops.h"
 
 #define MAX_CODE_SIZE 1048576
+//#define GENERATE_COMMON_LOOPS
 //#define STAND_ALONE
 
 typedef struct {
@@ -323,6 +324,9 @@ void emit_loop_header(loop_code* i_code, loop_param_t* i_loop_param) {
 }
 
 void emit_func_signature(
+#ifdef GENERATE_COMMON_LOOPS
+    const char *loopname,
+#endif
     loop_code* i_code,
     char* spec_func_name,
     char* body_func_name,
@@ -333,7 +337,12 @@ void emit_func_signature(
   align_line(i_code);
   sprintf(
       tmp_buf,
+#ifdef GENERATE_COMMON_LOOPS
+      "void par_nested_loops_%s(LoopSpecs *%s, std::function<void(int *)> %s, std::function<void()> %s, std::function<void()> %s) {\n",
+      loopname,
+#else
       "#include <omp.h>\nextern \"C\" void par_nested_loops(loop_rt_spec_t *%s, std::function<void(int *)> %s, std::function<void()> %s, std::function<void()> %s) {\n",
+#endif
       spec_func_name,
       body_func_name,
       init_func_name,
@@ -753,7 +762,11 @@ std::string loop_generator(const char* ____loop_nest_desc_extended) {
   char body_func_name[64] = "body_func";
   char init_func_name[64] = "init_func";
   char term_func_name[64] = "term_func";
+#ifdef GENERATE_COMMON_LOOPS
+  char spec_func_name[64] = "loopSpecs";
+#else
   char spec_func_name[64] = "loop_rt_spec";
+#endif
   char loop_map[256];
   char occurence_map[256];
   loop_code l_code;
@@ -995,6 +1008,9 @@ std::string loop_generator(const char* ____loop_nest_desc_extended) {
 
   /* Emit function signature  */
   emit_func_signature(
+#ifdef GENERATE_COMMON_LOOPS
+      ____loop_nest_desc_extended, 
+#endif
       &l_code, spec_func_name, body_func_name, init_func_name, term_func_name);
 
   /* Emit loop function header */
@@ -1059,6 +1075,53 @@ std::string loop_generator(const char* ____loop_nest_desc_extended) {
 }
 
 #ifdef STAND_ALONE
+#ifdef GENERATE_COMMON_LOOPS
+int main(int argc, char** argv) {
+  FILE* my_prog;
+  FILE* inputs;
+  char *line = NULL;
+  size_t len = 0;
+  ssize_t read;
+  unsigned int n_lines = 0;
+  char input_name[128] = "tuner_config.txt";
+  char output_name[128] = "nested_loops.c";
+  if (argc > 1) {
+    sprintf(input_name, "%s", argv[1]);
+  }
+  if (argc > 2) {
+    sprintf(output_name, "%s", argv[2]);
+  }
+
+  my_prog = fopen(output_name, "w");
+  inputs = fopen(input_name, "r");
+
+  while ((read = getline(&line, &len, inputs)) != -1) {
+    int le = strlen(line);
+    line[le-1] ='\0';
+    std::string result_code = loop_generator(line);
+    fprintf(my_prog, "%s\n", result_code.c_str());
+    n_lines++;
+  }
+  fclose(inputs);
+  inputs = fopen(input_name, "r");
+  fprintf(my_prog, "std::unordered_map<std::string, par_loop_kernel> pre_defined_loops = {\n");
+  while ((read = getline(&line, &len, inputs)) != -1) {
+    int le = strlen(line);
+    line[le-1] ='\0';
+    n_lines--;
+    if (n_lines == 0) {
+      fprintf(my_prog, "\t{\"%s\", par_nested_loops_%s} ", line, line);
+    } else {
+      fprintf(my_prog, "\t{\"%s\", par_nested_loops_%s},\n", line, line);
+    }
+  }
+  fprintf(my_prog, "};\n");
+  fclose(inputs);
+  fclose(my_prog);
+
+  return 0;
+}
+#else
 int main(int argc, char** argv) {
   FILE* my_prog;
   char loop_nest_desc[64] = "dcdABa";
@@ -1076,4 +1139,5 @@ int main(int argc, char** argv) {
   fclose(my_prog);
   return 0;
 }
+#endif
 #endif
