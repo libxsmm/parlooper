@@ -39,6 +39,8 @@ int conv_benchmark(int argc, char** argv) {
   tensor_metadata_t tensor_metadata;
   set_platform_specs( CLX, omp_get_max_threads(), &my_platform);
 
+  printf("argc = %d \n", argc);
+
   if (argc > 1) {
     sprintf(loop_specs_str, "%s", argv[1]);
   }
@@ -76,11 +78,6 @@ int conv_benchmark(int argc, char** argv) {
           pad_w_in  = atoi(argv[25]);
           pad_h_out = atoi(argv[26]);
           pad_w_out = atoi(argv[27]);
-        } else {
-          pad_h_in = (logical_padding == 0 ? pad_h : 0);
-          pad_w_in = (logical_padding == 0 ? pad_w : 0);
-          pad_h_out = (logical_padding == 0 ? pad_h : 0);
-          pad_w_out = (logical_padding == 0 ? pad_w : 0);
         }
         if (argc > 28) {
           zero_output_rims = atoi(argv[28]);
@@ -92,6 +89,11 @@ int conv_benchmark(int argc, char** argv) {
       }
     }
   }
+
+  pad_h_in = (logical_padding == 0 ? pad_h : 0);
+  pad_w_in = (logical_padding == 0 ? pad_w : 0);
+  pad_h_out = (logical_padding == 0 ? pad_h : 0);
+  pad_w_out = (logical_padding == 0 ? pad_w : 0);
 
   if ( (h_in_gemm > 1) && (w_block != 1) ) {
     printf("Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...\n");
