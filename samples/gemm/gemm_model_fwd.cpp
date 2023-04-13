@@ -10,6 +10,25 @@
 #include "threaded_loops.h"
 #include "gemm_common_utils.h"
 
+int print_bw_iters(int *data, int n_vals) {
+  int i, j, max_value = 0;
+  for (i = 0; i < n_vals; i++) {
+    data[i] = data[i]/10;
+    if (data[i] > max_value) max_value = data[i];
+  }
+  for (i = max_value; i >= 0; --i) {
+    for (j = 0; j < n_vals; ++j) {
+      if (data[j] >= i) {
+        printf("x ");
+      } else {
+        printf("  ");
+      }
+    }
+    printf("\n");
+  }
+  return 0;
+}
+
 template<typename DType>
 int gemm_benchmark(int argc, char** argv) {
   // Setup default GEMM sizes
@@ -28,6 +47,7 @@ int gemm_benchmark(int argc, char** argv) {
   char prec_string[255];
   char fuse_string[255];
   double *iter_times;
+  int    *iter_bw;
   // Setup model and trace
   int use_model = 0;
   const char* const env_use_model = getenv("USE_MODEL");
@@ -115,6 +135,7 @@ int gemm_benchmark(int argc, char** argv) {
   brcount = Kb/kbf;
 
   iter_times = (double*) malloc(n_iters*sizeof(double));
+  iter_bw = (int*) malloc(n_iters*sizeof(int));
 
   /* Early exit to avoid testing the same combos since in this case the "a" loop has trip count 1 */
   if (kbf == 1 && loop_specs_str[0] != 'a') {
@@ -752,6 +773,7 @@ int gemm_benchmark(int argc, char** argv) {
   long argmin = 0;
   long argmax = 0;
   for (long it = 0; it < n_iters; it++) {
+    iter_bw[it] = (int)(data_size_moved/iter_times[it]);
     if (iter_times[it] < min_time) {
       min_time = iter_times[it];
       argmin = it;
@@ -764,6 +786,8 @@ int gemm_benchmark(int argc, char** argv) {
   }
   avg_time = avg_time/(double)n_iters;
   printf("Effective BW across iters: MAX %.5g (iter %ld), MIN %.5g (iter %ld), AVG %.5g\n", data_size_moved/min_time, argmin,  data_size_moved/max_time, argmax, data_size_moved/avg_time);
+
+  /*print_bw_iters(iter_bw, n_iters);*/
 
   // Free buffers
   libxsmm_free(itm_f32_out);
