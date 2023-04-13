@@ -27,6 +27,7 @@ int gemm_benchmark(int argc, char** argv) {
   long use_ping_pong_bufs = 0;
   char prec_string[255];
   char fuse_string[255];
+  double *iter_times;
   // Setup model and trace
   int use_model = 0;
   const char* const env_use_model = getenv("USE_MODEL");
@@ -99,10 +100,12 @@ int gemm_benchmark(int argc, char** argv) {
     sprintf(fuse_string, "NONE");
   }
   
+#if 0
   if ((n_layers > 1) && !(M == K && bm == bk && bk == bn) ) {
     printf("MLP support only for M == K and bm == bn == bk\n");
     return 1;
   }
+#endif
 
   long Mb = M/bm, Nb = N/bn, Kb = K/bk;
   long brcount = Kb/kbf;
@@ -110,6 +113,8 @@ int gemm_benchmark(int argc, char** argv) {
     kbf--;
   }
   brcount = Kb/kbf;
+
+  iter_times = (double*) malloc(n_iters*sizeof(double));
 
   /* Early exit to avoid testing the same combos since in this case the "a" loop has trip count 1 */
   if (kbf == 1 && loop_specs_str[0] != 'a') {
@@ -578,6 +583,7 @@ int gemm_benchmark(int argc, char** argv) {
   auto t_start = getTime();
   if (int8_gemm == 0) {
     for (long it = 0; it < n_iters; it++) {
+      auto iter_start = getTime();
       for (i = 0; i < n_layers; i++) {
         gemm_loop(
             [&](int* ind) {
@@ -638,9 +644,12 @@ int gemm_benchmark(int argc, char** argv) {
             [&]() {if (sizeof(DType) == 2) tileconfig_kernel(NULL);},
             [&]() {if (sizeof(DType) == 2) tilerelease_kernel(NULL);});
       }
+      auto iter_end = getTime();
+      iter_times[it] = iter_end - iter_start;
     }
   } else {
     for (long it = 0; it < n_iters; it++) {
+      auto iter_start = getTime();
       for (i = 0; i < n_layers; i++) {
         gemm_loop(
             [&](int* ind) {
@@ -685,6 +694,8 @@ int gemm_benchmark(int argc, char** argv) {
             [&]() {tileconfig_kernel(NULL);},
             [&]() {tilerelease_kernel(NULL);});
       }
+      auto iter_end = getTime();
+      iter_times[it] = iter_end - iter_start;
     }
   }
   auto t_end = getTime();
@@ -732,6 +743,28 @@ int gemm_benchmark(int argc, char** argv) {
   }
   printf("MEASURE %.5g %s_%d_%d_%d_%d_%d_%d_bf%d_threads%d\n", gflop/((t_end-t_start)/(1.0*n_iters)), loop_specs_str, M, N, K, bm, bn, bk, kbf, omp_get_max_threads());
 
+  double data_size_moved = 1.0*sizeof(DType)*((double)1.0*M*K*n_layers+(double)(n_layers+1)*1.0*M*N)/1024.0/1024.0/1024.0;
+  printf("Effective BW is %.5g GiB/s\n", data_size_moved/((t_end-t_start)/(1.0*n_iters)));
+  
+  double min_time = iter_times[0];
+  double max_time = iter_times[0];
+  double avg_time = 0.0;
+  long argmin = 0;
+  long argmax = 0;
+  for (long it = 0; it < n_iters; it++) {
+    if (iter_times[it] < min_time) {
+      min_time = iter_times[it];
+      argmin = it;
+    }
+    if (iter_times[it] > max_time) {
+      max_time = iter_times[it];
+      argmax = it;
+    }
+    avg_time += iter_times[it];
+  }
+  avg_time = avg_time/(double)n_iters;
+  printf("Effective BW across iters: MAX %.5g (iter %ld), MIN %.5g (iter %ld), AVG %.5g\n", data_size_moved/min_time, argmin,  data_size_moved/max_time, argmax, data_size_moved/avg_time);
+
   // Free buffers
   libxsmm_free(itm_f32_out);
   libxsmm_free(naive_input);
@@ -768,6 +801,7 @@ int gemm_benchmark(int argc, char** argv) {
   free(BIAS);
   free(naive_bias);
   free(scf_quant);
+  free(iter_times);
 
   return 0;
 }
