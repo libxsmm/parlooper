@@ -1,0 +1,36 @@
+# Shapes here are matching the order and shapes of convolutions in conv_fwd_loop_tuner.py
+ic3ih224oc64oh112kh7sh2ph3n"resnet_50_v1_5:conv1"
+# Now 19 matching the shapes from the ADL script
+ic64ih56oc256oh56kh1ph0n"resnet_50_v1_5:res2a_branch1*4"
+ic64ih56oc64oh56kh1ph0n"resnet_50_v1_5:res2a_branch2a"
+ic64ih56oc64oh56kh3ph1n"resnet_50_v1_5:res2a_branch2b*3"
+ic256ih56oc64oh56kh1ph0n"resnet_50_v1_5:res2b_branch2a*2"
+ic256ih56oc512oh28kh1sh2ph0n"resnet_50_v1_5:res3a_branch1"
+# l = 6
+ic256ih56oc128oh28kh1sh2ph0n"resnet_50_v1_5:res3a_branch2aADL"
+ic128ih56oc128oh28kh3sh1ph1n"resnet_50_v1_5:res3a_branch2b" # fixed
+ic128ih28oc512oh28kh1ph0n"resnet_50_v1_5:res3a_branch2c*4"
+ic512ih28oc128oh28kh1ph0n"resnet_50_v1_5:res3b_branch2a*3"
+# l = 10
+ic512ih28oc1024oh14kh1sh2ph0n"resnet_50_v1_5:res4a_branch1"
+# l = 11
+ic512ih28oc256oh14kh1sh2ph0n"resnet_50_v1_5:res4a_branch2aADL"
+ic256ih14oc256oh14kh3ph1n"resnet_50_v1_5:res4b_branch2b*5"
+ic256ih14oc1024oh14kh1ph0n"resnet_50_v1_5:res4a_branch2c*6"
+ic1024ih14oc256oh14kh1ph0n"resnet_50_v1_5:res4b_branch2a*5"
+ic1024ih14oc2048oh7kh1sh2ph0n"resnet_50_v1_5:res5a_branch1"
+# l = 16
+ic1024ih14oc512oh7kh1sh2ph0n"resnet_50_v1_5:res5a_branch2aADL"
+ic512ih7oc512oh7kh3ph1n"resnet_50_v1_5:res5b_branch2b*2"
+ic512ih7oc2048oh7kh1ph0n"resnet_50_v1_5:res5a_branch2c*3"
+ic2048ih7oc512oh7kh1ph0n"resnet_50_v1_5:res5b_branch2a*2"
+# l = 20
+ic128ih56oc128oh28kh3sh2ph1n"resnet_50_v1_5:res3a_branch2b"
+ic256ih28oc256oh14kh3sh2ph1n"resnet_50_v1_5:res4a_branch2b"
+ic512ih14oc512oh7kh3sh2ph1n"resnet_50_v1_5:res5a_branch2b"
+# l = 206
+ic256ih56oc128oh56kh1ph0n"resnet_50_v1_5:res3a_branch2a"
+# l = 211
+ic512ih28oc256oh28kh1ph0n"resnet_50_v1_5:res4a_branch2a"
+# l = 216
+ic1024ih14oc512oh14kh1ph0n"resnet_50_v1_5:res5a_branch2a"

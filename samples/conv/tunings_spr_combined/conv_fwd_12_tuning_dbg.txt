@@ -1,0 +1,3007 @@
+l =  12
+line =  Afgbdec
+CBFcount =  1
+KBFcount =  1
+HBFcount =  1
+WBFcount =  1
+range_list =  [range(0, 3), range(0, 1), range(0, 1), range(0, 2), range(0, 3)]
+dbg: tuning_params =  [1, 1, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdec']
+cmd to execute =  ( ./conv_fwd Afgbdec 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdec']
+cmd to execute =  ( ./conv_fwd Afgbdec 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdec']
+cmd to execute =  ( ./conv_fwd Afgbdec 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdec']
+cmd to execute =  ( ./conv_fwd Afgbdec 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdec']
+cmd to execute =  ( ./conv_fwd Afgbdec 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 1 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdec']
+cmd to execute =  ( ./conv_fwd Afgbdec 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 1 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdec']
+cmd to execute =  ( ./conv_fwd Afgbdec 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdec']
+cmd to execute =  ( ./conv_fwd Afgbdec 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 2 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdec']
+cmd to execute =  ( ./conv_fwd Afgbdec 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 2 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdec']
+cmd to execute =  ( ./conv_fwd Afgbdec 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdec']
+cmd to execute =  ( ./conv_fwd Afgbdec 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 2 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdec']
+cmd to execute =  ( ./conv_fwd Afgbdec 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 2 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdec']
+cmd to execute =  ( ./conv_fwd Afgbdec 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdec']
+cmd to execute =  ( ./conv_fwd Afgbdec 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 4 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdec']
+cmd to execute =  ( ./conv_fwd Afgbdec 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 4 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdec']
+cmd to execute =  ( ./conv_fwd Afgbdec 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdec']
+cmd to execute =  ( ./conv_fwd Afgbdec 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 4 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdec']
+cmd to execute =  ( ./conv_fwd Afgbdec 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 4 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+
+line =  Afgbdcec
+CBFcount =  1
+KBFcount =  2
+HBFcount =  1
+WBFcount =  1
+line =  Afgbdce
+CBFcount =  1
+KBFcount =  1
+HBFcount =  1
+WBFcount =  1
+range_list =  [range(0, 3), range(0, 1), range(0, 1), range(0, 2), range(0, 3)]
+dbg: tuning_params =  [1, 1, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdce']
+cmd to execute =  ( ./conv_fwd Afgbdce 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdce']
+cmd to execute =  ( ./conv_fwd Afgbdce 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdce']
+cmd to execute =  ( ./conv_fwd Afgbdce 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdce']
+cmd to execute =  ( ./conv_fwd Afgbdce 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdce']
+cmd to execute =  ( ./conv_fwd Afgbdce 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 1 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdce']
+cmd to execute =  ( ./conv_fwd Afgbdce 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 1 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdce']
+cmd to execute =  ( ./conv_fwd Afgbdce 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdce']
+cmd to execute =  ( ./conv_fwd Afgbdce 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 2 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdce']
+cmd to execute =  ( ./conv_fwd Afgbdce 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 2 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdce']
+cmd to execute =  ( ./conv_fwd Afgbdce 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdce']
+cmd to execute =  ( ./conv_fwd Afgbdce 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 2 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdce']
+cmd to execute =  ( ./conv_fwd Afgbdce 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 2 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdce']
+cmd to execute =  ( ./conv_fwd Afgbdce 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdce']
+cmd to execute =  ( ./conv_fwd Afgbdce 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 4 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdce']
+cmd to execute =  ( ./conv_fwd Afgbdce 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 4 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdce']
+cmd to execute =  ( ./conv_fwd Afgbdce 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdce']
+cmd to execute =  ( ./conv_fwd Afgbdce 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 4 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdce']
+cmd to execute =  ( ./conv_fwd Afgbdce 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 4 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+
+line =  Afgbdedc
+CBFcount =  1
+KBFcount =  1
+HBFcount =  2
+WBFcount =  1
+range_list =  [range(0, 3), range(0, 1), range(0, 2), range(0, 2), range(0, 3)]
+dbg: tuning_params =  [2, 1, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdedc']
+cmd to execute =  ( ./conv_fwd Afgbdedc 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdedc']
+cmd to execute =  ( ./conv_fwd Afgbdedc 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 1 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdedc']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdedc'] 2 2 4
+dbg: tuning_params =  [2, 2, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdedc']
+cmd to execute =  ( ./conv_fwd Afgbdedc 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdedc']
+cmd to execute =  ( ./conv_fwd Afgbdedc 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 1 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdedc']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdedc'] 2 2 4
+dbg: tuning_params =  [7, 1, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdedc']
+cmd to execute =  ( ./conv_fwd Afgbdedc 56 14 14 256 256 3 3 1 1 1 1 32 32 7 1 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 1, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdedc']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdedc'] 2 7 2
+dbg: tuning_params =  [7, 1, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdedc']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdedc'] 2 7 4
+dbg: tuning_params =  [7, 2, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdedc']
+cmd to execute =  ( ./conv_fwd Afgbdedc 56 14 14 256 256 3 3 1 1 1 1 32 32 7 2 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 2, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdedc']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdedc'] 2 7 2
+dbg: tuning_params =  [7, 2, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdedc']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdedc'] 2 7 4
+dbg: tuning_params =  [2, 1, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdedc']
+cmd to execute =  ( ./conv_fwd Afgbdedc 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdedc']
+cmd to execute =  ( ./conv_fwd Afgbdedc 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 2 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdedc']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdedc'] 2 2 4
+dbg: tuning_params =  [2, 2, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdedc']
+cmd to execute =  ( ./conv_fwd Afgbdedc 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdedc']
+cmd to execute =  ( ./conv_fwd Afgbdedc 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 2 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdedc']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdedc'] 2 2 4
+dbg: tuning_params =  [7, 1, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdedc']
+cmd to execute =  ( ./conv_fwd Afgbdedc 56 14 14 256 256 3 3 1 1 1 1 32 32 7 1 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 1, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdedc']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdedc'] 2 7 2
+dbg: tuning_params =  [7, 1, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdedc']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdedc'] 2 7 4
+dbg: tuning_params =  [7, 2, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdedc']
+cmd to execute =  ( ./conv_fwd Afgbdedc 56 14 14 256 256 3 3 1 1 1 1 32 32 7 2 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 2, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdedc']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdedc'] 2 7 2
+dbg: tuning_params =  [7, 2, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdedc']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdedc'] 2 7 4
+dbg: tuning_params =  [2, 1, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdedc']
+cmd to execute =  ( ./conv_fwd Afgbdedc 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdedc']
+cmd to execute =  ( ./conv_fwd Afgbdedc 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 4 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdedc']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdedc'] 2 2 4
+dbg: tuning_params =  [2, 2, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdedc']
+cmd to execute =  ( ./conv_fwd Afgbdedc 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdedc']
+cmd to execute =  ( ./conv_fwd Afgbdedc 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 4 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdedc']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdedc'] 2 2 4
+dbg: tuning_params =  [7, 1, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdedc']
+cmd to execute =  ( ./conv_fwd Afgbdedc 56 14 14 256 256 3 3 1 1 1 1 32 32 7 1 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 1, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdedc']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdedc'] 2 7 2
+dbg: tuning_params =  [7, 1, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdedc']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdedc'] 2 7 4
+dbg: tuning_params =  [7, 2, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdedc']
+cmd to execute =  ( ./conv_fwd Afgbdedc 56 14 14 256 256 3 3 1 1 1 1 32 32 7 2 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 2, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdedc']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdedc'] 2 7 2
+dbg: tuning_params =  [7, 2, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdedc']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdedc'] 2 7 4
+
+line =  Afgbdecdc
+CBFcount =  1
+KBFcount =  2
+HBFcount =  2
+WBFcount =  1
+line =  Afgbdecd
+CBFcount =  1
+KBFcount =  1
+HBFcount =  2
+WBFcount =  1
+range_list =  [range(0, 3), range(0, 1), range(0, 2), range(0, 2), range(0, 3)]
+dbg: tuning_params =  [2, 1, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdecd']
+cmd to execute =  ( ./conv_fwd Afgbdecd 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdecd']
+cmd to execute =  ( ./conv_fwd Afgbdecd 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 1 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdecd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdecd'] 2 2 4
+dbg: tuning_params =  [2, 2, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdecd']
+cmd to execute =  ( ./conv_fwd Afgbdecd 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdecd']
+cmd to execute =  ( ./conv_fwd Afgbdecd 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 1 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdecd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdecd'] 2 2 4
+dbg: tuning_params =  [7, 1, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdecd']
+cmd to execute =  ( ./conv_fwd Afgbdecd 56 14 14 256 256 3 3 1 1 1 1 32 32 7 1 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 1, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdecd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdecd'] 2 7 2
+dbg: tuning_params =  [7, 1, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdecd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdecd'] 2 7 4
+dbg: tuning_params =  [7, 2, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdecd']
+cmd to execute =  ( ./conv_fwd Afgbdecd 56 14 14 256 256 3 3 1 1 1 1 32 32 7 2 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 2, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdecd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdecd'] 2 7 2
+dbg: tuning_params =  [7, 2, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdecd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdecd'] 2 7 4
+dbg: tuning_params =  [2, 1, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdecd']
+cmd to execute =  ( ./conv_fwd Afgbdecd 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdecd']
+cmd to execute =  ( ./conv_fwd Afgbdecd 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 2 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdecd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdecd'] 2 2 4
+dbg: tuning_params =  [2, 2, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdecd']
+cmd to execute =  ( ./conv_fwd Afgbdecd 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdecd']
+cmd to execute =  ( ./conv_fwd Afgbdecd 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 2 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdecd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdecd'] 2 2 4
+dbg: tuning_params =  [7, 1, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdecd']
+cmd to execute =  ( ./conv_fwd Afgbdecd 56 14 14 256 256 3 3 1 1 1 1 32 32 7 1 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 1, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdecd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdecd'] 2 7 2
+dbg: tuning_params =  [7, 1, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdecd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdecd'] 2 7 4
+dbg: tuning_params =  [7, 2, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdecd']
+cmd to execute =  ( ./conv_fwd Afgbdecd 56 14 14 256 256 3 3 1 1 1 1 32 32 7 2 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 2, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdecd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdecd'] 2 7 2
+dbg: tuning_params =  [7, 2, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdecd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdecd'] 2 7 4
+dbg: tuning_params =  [2, 1, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdecd']
+cmd to execute =  ( ./conv_fwd Afgbdecd 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdecd']
+cmd to execute =  ( ./conv_fwd Afgbdecd 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 4 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdecd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdecd'] 2 2 4
+dbg: tuning_params =  [2, 2, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdecd']
+cmd to execute =  ( ./conv_fwd Afgbdecd 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdecd']
+cmd to execute =  ( ./conv_fwd Afgbdecd 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 4 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdecd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdecd'] 2 2 4
+dbg: tuning_params =  [7, 1, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdecd']
+cmd to execute =  ( ./conv_fwd Afgbdecd 56 14 14 256 256 3 3 1 1 1 1 32 32 7 1 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 1, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdecd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdecd'] 2 7 2
+dbg: tuning_params =  [7, 1, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdecd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdecd'] 2 7 4
+dbg: tuning_params =  [7, 2, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdecd']
+cmd to execute =  ( ./conv_fwd Afgbdecd 56 14 14 256 256 3 3 1 1 1 1 32 32 7 2 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 2, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdecd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdecd'] 2 7 2
+dbg: tuning_params =  [7, 2, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdecd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdecd'] 2 7 4
+
+line =  Afgbdcedc
+CBFcount =  1
+KBFcount =  2
+HBFcount =  2
+WBFcount =  1
+line =  Afgbdcecd
+CBFcount =  1
+KBFcount =  2
+HBFcount =  2
+WBFcount =  1
+line =  Afgbdcdec
+CBFcount =  1
+KBFcount =  2
+HBFcount =  2
+WBFcount =  1
+line =  Afgbdcdce
+CBFcount =  1
+KBFcount =  2
+HBFcount =  2
+WBFcount =  1
+line =  Afgbdcde
+CBFcount =  1
+KBFcount =  1
+HBFcount =  2
+WBFcount =  1
+range_list =  [range(0, 3), range(0, 1), range(0, 2), range(0, 2), range(0, 3)]
+dbg: tuning_params =  [2, 1, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdcde']
+cmd to execute =  ( ./conv_fwd Afgbdcde 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdcde']
+cmd to execute =  ( ./conv_fwd Afgbdcde 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 1 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdcde']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdcde'] 2 2 4
+dbg: tuning_params =  [2, 2, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdcde']
+cmd to execute =  ( ./conv_fwd Afgbdcde 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdcde']
+cmd to execute =  ( ./conv_fwd Afgbdcde 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 1 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdcde']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdcde'] 2 2 4
+dbg: tuning_params =  [7, 1, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdcde']
+cmd to execute =  ( ./conv_fwd Afgbdcde 56 14 14 256 256 3 3 1 1 1 1 32 32 7 1 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 1, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdcde']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdcde'] 2 7 2
+dbg: tuning_params =  [7, 1, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdcde']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdcde'] 2 7 4
+dbg: tuning_params =  [7, 2, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdcde']
+cmd to execute =  ( ./conv_fwd Afgbdcde 56 14 14 256 256 3 3 1 1 1 1 32 32 7 2 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 2, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdcde']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdcde'] 2 7 2
+dbg: tuning_params =  [7, 2, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdcde']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdcde'] 2 7 4
+dbg: tuning_params =  [2, 1, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdcde']
+cmd to execute =  ( ./conv_fwd Afgbdcde 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdcde']
+cmd to execute =  ( ./conv_fwd Afgbdcde 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 2 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdcde']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdcde'] 2 2 4
+dbg: tuning_params =  [2, 2, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdcde']
+cmd to execute =  ( ./conv_fwd Afgbdcde 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdcde']
+cmd to execute =  ( ./conv_fwd Afgbdcde 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 2 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdcde']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdcde'] 2 2 4
+dbg: tuning_params =  [7, 1, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdcde']
+cmd to execute =  ( ./conv_fwd Afgbdcde 56 14 14 256 256 3 3 1 1 1 1 32 32 7 1 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 1, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdcde']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdcde'] 2 7 2
+dbg: tuning_params =  [7, 1, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdcde']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdcde'] 2 7 4
+dbg: tuning_params =  [7, 2, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdcde']
+cmd to execute =  ( ./conv_fwd Afgbdcde 56 14 14 256 256 3 3 1 1 1 1 32 32 7 2 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 2, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdcde']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdcde'] 2 7 2
+dbg: tuning_params =  [7, 2, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdcde']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdcde'] 2 7 4
+dbg: tuning_params =  [2, 1, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdcde']
+cmd to execute =  ( ./conv_fwd Afgbdcde 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdcde']
+cmd to execute =  ( ./conv_fwd Afgbdcde 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 4 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdcde']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdcde'] 2 2 4
+dbg: tuning_params =  [2, 2, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdcde']
+cmd to execute =  ( ./conv_fwd Afgbdcde 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdcde']
+cmd to execute =  ( ./conv_fwd Afgbdcde 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 4 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdcde']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdcde'] 2 2 4
+dbg: tuning_params =  [7, 1, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdcde']
+cmd to execute =  ( ./conv_fwd Afgbdcde 56 14 14 256 256 3 3 1 1 1 1 32 32 7 1 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 1, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdcde']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdcde'] 2 7 2
+dbg: tuning_params =  [7, 1, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdcde']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdcde'] 2 7 4
+dbg: tuning_params =  [7, 2, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdcde']
+cmd to execute =  ( ./conv_fwd Afgbdcde 56 14 14 256 256 3 3 1 1 1 1 32 32 7 2 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 2, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdcde']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdcde'] 2 7 2
+dbg: tuning_params =  [7, 2, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdcde']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdcde'] 2 7 4
+
+line =  Afgbdced
+CBFcount =  1
+KBFcount =  1
+HBFcount =  2
+WBFcount =  1
+range_list =  [range(0, 3), range(0, 1), range(0, 2), range(0, 2), range(0, 3)]
+dbg: tuning_params =  [2, 1, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdced']
+cmd to execute =  ( ./conv_fwd Afgbdced 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdced']
+cmd to execute =  ( ./conv_fwd Afgbdced 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 1 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdced']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdced'] 2 2 4
+dbg: tuning_params =  [2, 2, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdced']
+cmd to execute =  ( ./conv_fwd Afgbdced 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdced']
+cmd to execute =  ( ./conv_fwd Afgbdced 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 1 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdced']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdced'] 2 2 4
+dbg: tuning_params =  [7, 1, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdced']
+cmd to execute =  ( ./conv_fwd Afgbdced 56 14 14 256 256 3 3 1 1 1 1 32 32 7 1 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 1, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdced']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdced'] 2 7 2
+dbg: tuning_params =  [7, 1, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdced']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdced'] 2 7 4
+dbg: tuning_params =  [7, 2, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdced']
+cmd to execute =  ( ./conv_fwd Afgbdced 56 14 14 256 256 3 3 1 1 1 1 32 32 7 2 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 2, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdced']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdced'] 2 7 2
+dbg: tuning_params =  [7, 2, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdced']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdced'] 2 7 4
+dbg: tuning_params =  [2, 1, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdced']
+cmd to execute =  ( ./conv_fwd Afgbdced 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdced']
+cmd to execute =  ( ./conv_fwd Afgbdced 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 2 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdced']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdced'] 2 2 4
+dbg: tuning_params =  [2, 2, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdced']
+cmd to execute =  ( ./conv_fwd Afgbdced 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdced']
+cmd to execute =  ( ./conv_fwd Afgbdced 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 2 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdced']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdced'] 2 2 4
+dbg: tuning_params =  [7, 1, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdced']
+cmd to execute =  ( ./conv_fwd Afgbdced 56 14 14 256 256 3 3 1 1 1 1 32 32 7 1 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 1, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdced']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdced'] 2 7 2
+dbg: tuning_params =  [7, 1, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdced']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdced'] 2 7 4
+dbg: tuning_params =  [7, 2, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdced']
+cmd to execute =  ( ./conv_fwd Afgbdced 56 14 14 256 256 3 3 1 1 1 1 32 32 7 2 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 2, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdced']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdced'] 2 7 2
+dbg: tuning_params =  [7, 2, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdced']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdced'] 2 7 4
+dbg: tuning_params =  [2, 1, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdced']
+cmd to execute =  ( ./conv_fwd Afgbdced 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdced']
+cmd to execute =  ( ./conv_fwd Afgbdced 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 4 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdced']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdced'] 2 2 4
+dbg: tuning_params =  [2, 2, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdced']
+cmd to execute =  ( ./conv_fwd Afgbdced 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdced']
+cmd to execute =  ( ./conv_fwd Afgbdced 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 4 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdced']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdced'] 2 2 4
+dbg: tuning_params =  [7, 1, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdced']
+cmd to execute =  ( ./conv_fwd Afgbdced 56 14 14 256 256 3 3 1 1 1 1 32 32 7 1 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 1, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdced']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdced'] 2 7 2
+dbg: tuning_params =  [7, 1, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdced']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdced'] 2 7 4
+dbg: tuning_params =  [7, 2, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdced']
+cmd to execute =  ( ./conv_fwd Afgbdced 56 14 14 256 256 3 3 1 1 1 1 32 32 7 2 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 2, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdced']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdced'] 2 7 2
+dbg: tuning_params =  [7, 2, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbdced']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbdced'] 2 7 4
+
+line =  Afgbedc
+CBFcount =  1
+KBFcount =  1
+HBFcount =  1
+WBFcount =  1
+range_list =  [range(0, 3), range(0, 1), range(0, 1), range(0, 2), range(0, 3)]
+dbg: tuning_params =  [1, 1, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbedc']
+cmd to execute =  ( ./conv_fwd Afgbedc 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbedc']
+cmd to execute =  ( ./conv_fwd Afgbedc 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbedc']
+cmd to execute =  ( ./conv_fwd Afgbedc 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbedc']
+cmd to execute =  ( ./conv_fwd Afgbedc 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbedc']
+cmd to execute =  ( ./conv_fwd Afgbedc 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 1 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbedc']
+cmd to execute =  ( ./conv_fwd Afgbedc 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 1 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbedc']
+cmd to execute =  ( ./conv_fwd Afgbedc 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbedc']
+cmd to execute =  ( ./conv_fwd Afgbedc 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 2 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbedc']
+cmd to execute =  ( ./conv_fwd Afgbedc 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 2 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbedc']
+cmd to execute =  ( ./conv_fwd Afgbedc 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbedc']
+cmd to execute =  ( ./conv_fwd Afgbedc 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 2 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbedc']
+cmd to execute =  ( ./conv_fwd Afgbedc 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 2 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbedc']
+cmd to execute =  ( ./conv_fwd Afgbedc 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbedc']
+cmd to execute =  ( ./conv_fwd Afgbedc 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 4 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbedc']
+cmd to execute =  ( ./conv_fwd Afgbedc 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 4 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbedc']
+cmd to execute =  ( ./conv_fwd Afgbedc 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbedc']
+cmd to execute =  ( ./conv_fwd Afgbedc 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 4 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbedc']
+cmd to execute =  ( ./conv_fwd Afgbedc 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 4 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+
+line =  Afgbedcdc
+CBFcount =  1
+KBFcount =  2
+HBFcount =  2
+WBFcount =  1
+line =  Afgbedcd
+CBFcount =  1
+KBFcount =  1
+HBFcount =  2
+WBFcount =  1
+range_list =  [range(0, 3), range(0, 1), range(0, 2), range(0, 2), range(0, 3)]
+dbg: tuning_params =  [2, 1, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbedcd']
+cmd to execute =  ( ./conv_fwd Afgbedcd 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbedcd']
+cmd to execute =  ( ./conv_fwd Afgbedcd 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 1 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbedcd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbedcd'] 2 2 4
+dbg: tuning_params =  [2, 2, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbedcd']
+cmd to execute =  ( ./conv_fwd Afgbedcd 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbedcd']
+cmd to execute =  ( ./conv_fwd Afgbedcd 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 1 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbedcd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbedcd'] 2 2 4
+dbg: tuning_params =  [7, 1, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbedcd']
+cmd to execute =  ( ./conv_fwd Afgbedcd 56 14 14 256 256 3 3 1 1 1 1 32 32 7 1 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 1, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbedcd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbedcd'] 2 7 2
+dbg: tuning_params =  [7, 1, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbedcd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbedcd'] 2 7 4
+dbg: tuning_params =  [7, 2, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbedcd']
+cmd to execute =  ( ./conv_fwd Afgbedcd 56 14 14 256 256 3 3 1 1 1 1 32 32 7 2 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 2, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbedcd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbedcd'] 2 7 2
+dbg: tuning_params =  [7, 2, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbedcd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbedcd'] 2 7 4
+dbg: tuning_params =  [2, 1, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbedcd']
+cmd to execute =  ( ./conv_fwd Afgbedcd 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbedcd']
+cmd to execute =  ( ./conv_fwd Afgbedcd 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 2 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbedcd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbedcd'] 2 2 4
+dbg: tuning_params =  [2, 2, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbedcd']
+cmd to execute =  ( ./conv_fwd Afgbedcd 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbedcd']
+cmd to execute =  ( ./conv_fwd Afgbedcd 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 2 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbedcd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbedcd'] 2 2 4
+dbg: tuning_params =  [7, 1, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbedcd']
+cmd to execute =  ( ./conv_fwd Afgbedcd 56 14 14 256 256 3 3 1 1 1 1 32 32 7 1 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 1, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbedcd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbedcd'] 2 7 2
+dbg: tuning_params =  [7, 1, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbedcd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbedcd'] 2 7 4
+dbg: tuning_params =  [7, 2, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbedcd']
+cmd to execute =  ( ./conv_fwd Afgbedcd 56 14 14 256 256 3 3 1 1 1 1 32 32 7 2 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 2, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbedcd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbedcd'] 2 7 2
+dbg: tuning_params =  [7, 2, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbedcd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbedcd'] 2 7 4
+dbg: tuning_params =  [2, 1, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbedcd']
+cmd to execute =  ( ./conv_fwd Afgbedcd 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbedcd']
+cmd to execute =  ( ./conv_fwd Afgbedcd 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 4 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbedcd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbedcd'] 2 2 4
+dbg: tuning_params =  [2, 2, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbedcd']
+cmd to execute =  ( ./conv_fwd Afgbedcd 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbedcd']
+cmd to execute =  ( ./conv_fwd Afgbedcd 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 4 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbedcd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbedcd'] 2 2 4
+dbg: tuning_params =  [7, 1, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbedcd']
+cmd to execute =  ( ./conv_fwd Afgbedcd 56 14 14 256 256 3 3 1 1 1 1 32 32 7 1 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 1, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbedcd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbedcd'] 2 7 2
+dbg: tuning_params =  [7, 1, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbedcd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbedcd'] 2 7 4
+dbg: tuning_params =  [7, 2, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbedcd']
+cmd to execute =  ( ./conv_fwd Afgbedcd 56 14 14 256 256 3 3 1 1 1 1 32 32 7 2 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 2, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbedcd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbedcd'] 2 7 2
+dbg: tuning_params =  [7, 2, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbedcd']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbedcd'] 2 7 4
+
+line =  Afgbecdc
+CBFcount =  1
+KBFcount =  2
+HBFcount =  1
+WBFcount =  1
+line =  Afgbecdcd
+CBFcount =  1
+KBFcount =  2
+HBFcount =  2
+WBFcount =  1
+line =  Afgbecd
+CBFcount =  1
+KBFcount =  1
+HBFcount =  1
+WBFcount =  1
+range_list =  [range(0, 3), range(0, 1), range(0, 1), range(0, 2), range(0, 3)]
+dbg: tuning_params =  [1, 1, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbecd']
+cmd to execute =  ( ./conv_fwd Afgbecd 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbecd']
+cmd to execute =  ( ./conv_fwd Afgbecd 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbecd']
+cmd to execute =  ( ./conv_fwd Afgbecd 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbecd']
+cmd to execute =  ( ./conv_fwd Afgbecd 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbecd']
+cmd to execute =  ( ./conv_fwd Afgbecd 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 1 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbecd']
+cmd to execute =  ( ./conv_fwd Afgbecd 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 1 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbecd']
+cmd to execute =  ( ./conv_fwd Afgbecd 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbecd']
+cmd to execute =  ( ./conv_fwd Afgbecd 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 2 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbecd']
+cmd to execute =  ( ./conv_fwd Afgbecd 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 2 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbecd']
+cmd to execute =  ( ./conv_fwd Afgbecd 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbecd']
+cmd to execute =  ( ./conv_fwd Afgbecd 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 2 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbecd']
+cmd to execute =  ( ./conv_fwd Afgbecd 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 2 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbecd']
+cmd to execute =  ( ./conv_fwd Afgbecd 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbecd']
+cmd to execute =  ( ./conv_fwd Afgbecd 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 4 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbecd']
+cmd to execute =  ( ./conv_fwd Afgbecd 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 4 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbecd']
+cmd to execute =  ( ./conv_fwd Afgbecd 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbecd']
+cmd to execute =  ( ./conv_fwd Afgbecd 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 4 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbecd']
+cmd to execute =  ( ./conv_fwd Afgbecd 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 4 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+
+line =  Afgbcdedc
+CBFcount =  1
+KBFcount =  2
+HBFcount =  2
+WBFcount =  1
+line =  Afgbcdecd
+CBFcount =  1
+KBFcount =  2
+HBFcount =  2
+WBFcount =  1
+line =  Afgbcdec
+CBFcount =  1
+KBFcount =  2
+HBFcount =  1
+WBFcount =  1
+line =  Afgbcdce
+CBFcount =  1
+KBFcount =  2
+HBFcount =  1
+WBFcount =  1
+line =  Afgbcdcde
+CBFcount =  1
+KBFcount =  2
+HBFcount =  2
+WBFcount =  1
+line =  Afgbcdced
+CBFcount =  1
+KBFcount =  2
+HBFcount =  2
+WBFcount =  1
+line =  Afgbcedc
+CBFcount =  1
+KBFcount =  2
+HBFcount =  1
+WBFcount =  1
+line =  Afgbcedcd
+CBFcount =  1
+KBFcount =  2
+HBFcount =  2
+WBFcount =  1
+line =  Afgbcecd
+CBFcount =  1
+KBFcount =  2
+HBFcount =  1
+WBFcount =  1
+line =  Afgbced
+CBFcount =  1
+KBFcount =  1
+HBFcount =  1
+WBFcount =  1
+range_list =  [range(0, 3), range(0, 1), range(0, 1), range(0, 2), range(0, 3)]
+dbg: tuning_params =  [1, 1, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbced']
+cmd to execute =  ( ./conv_fwd Afgbced 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbced']
+cmd to execute =  ( ./conv_fwd Afgbced 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbced']
+cmd to execute =  ( ./conv_fwd Afgbced 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbced']
+cmd to execute =  ( ./conv_fwd Afgbced 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbced']
+cmd to execute =  ( ./conv_fwd Afgbced 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 1 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbced']
+cmd to execute =  ( ./conv_fwd Afgbced 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 1 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbced']
+cmd to execute =  ( ./conv_fwd Afgbced 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbced']
+cmd to execute =  ( ./conv_fwd Afgbced 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 2 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbced']
+cmd to execute =  ( ./conv_fwd Afgbced 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 2 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbced']
+cmd to execute =  ( ./conv_fwd Afgbced 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbced']
+cmd to execute =  ( ./conv_fwd Afgbced 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 2 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbced']
+cmd to execute =  ( ./conv_fwd Afgbced 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 2 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbced']
+cmd to execute =  ( ./conv_fwd Afgbced 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbced']
+cmd to execute =  ( ./conv_fwd Afgbced 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 4 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbced']
+cmd to execute =  ( ./conv_fwd Afgbced 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 4 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbced']
+cmd to execute =  ( ./conv_fwd Afgbced 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbced']
+cmd to execute =  ( ./conv_fwd Afgbced 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 4 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbced']
+cmd to execute =  ( ./conv_fwd Afgbced 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 4 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+
+line =  Afgbcded
+CBFcount =  1
+KBFcount =  1
+HBFcount =  2
+WBFcount =  1
+range_list =  [range(0, 3), range(0, 1), range(0, 2), range(0, 2), range(0, 3)]
+dbg: tuning_params =  [2, 1, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbcded']
+cmd to execute =  ( ./conv_fwd Afgbcded 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbcded']
+cmd to execute =  ( ./conv_fwd Afgbcded 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 1 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbcded']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbcded'] 2 2 4
+dbg: tuning_params =  [2, 2, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbcded']
+cmd to execute =  ( ./conv_fwd Afgbcded 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbcded']
+cmd to execute =  ( ./conv_fwd Afgbcded 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 1 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbcded']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbcded'] 2 2 4
+dbg: tuning_params =  [7, 1, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbcded']
+cmd to execute =  ( ./conv_fwd Afgbcded 56 14 14 256 256 3 3 1 1 1 1 32 32 7 1 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 1, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbcded']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbcded'] 2 7 2
+dbg: tuning_params =  [7, 1, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbcded']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbcded'] 2 7 4
+dbg: tuning_params =  [7, 2, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbcded']
+cmd to execute =  ( ./conv_fwd Afgbcded 56 14 14 256 256 3 3 1 1 1 1 32 32 7 2 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 2, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbcded']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbcded'] 2 7 2
+dbg: tuning_params =  [7, 2, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbcded']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbcded'] 2 7 4
+dbg: tuning_params =  [2, 1, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbcded']
+cmd to execute =  ( ./conv_fwd Afgbcded 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbcded']
+cmd to execute =  ( ./conv_fwd Afgbcded 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 2 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbcded']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbcded'] 2 2 4
+dbg: tuning_params =  [2, 2, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbcded']
+cmd to execute =  ( ./conv_fwd Afgbcded 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbcded']
+cmd to execute =  ( ./conv_fwd Afgbcded 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 2 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbcded']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbcded'] 2 2 4
+dbg: tuning_params =  [7, 1, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbcded']
+cmd to execute =  ( ./conv_fwd Afgbcded 56 14 14 256 256 3 3 1 1 1 1 32 32 7 1 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 1, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbcded']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbcded'] 2 7 2
+dbg: tuning_params =  [7, 1, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbcded']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbcded'] 2 7 4
+dbg: tuning_params =  [7, 2, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbcded']
+cmd to execute =  ( ./conv_fwd Afgbcded 56 14 14 256 256 3 3 1 1 1 1 32 32 7 2 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 2, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbcded']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbcded'] 2 7 2
+dbg: tuning_params =  [7, 2, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbcded']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbcded'] 2 7 4
+dbg: tuning_params =  [2, 1, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbcded']
+cmd to execute =  ( ./conv_fwd Afgbcded 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbcded']
+cmd to execute =  ( ./conv_fwd Afgbcded 56 14 14 256 256 3 3 1 1 1 1 32 32 2 1 4 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 1, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbcded']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbcded'] 2 2 4
+dbg: tuning_params =  [2, 2, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbcded']
+cmd to execute =  ( ./conv_fwd Afgbcded 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbcded']
+cmd to execute =  ( ./conv_fwd Afgbcded 56 14 14 256 256 3 3 1 1 1 1 32 32 2 2 4 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [2, 2, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbcded']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbcded'] 2 2 4
+dbg: tuning_params =  [7, 1, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbcded']
+cmd to execute =  ( ./conv_fwd Afgbcded 56 14 14 256 256 3 3 1 1 1 1 32 32 7 1 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 1, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbcded']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbcded'] 2 7 2
+dbg: tuning_params =  [7, 1, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbcded']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbcded'] 2 7 4
+dbg: tuning_params =  [7, 2, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbcded']
+cmd to execute =  ( ./conv_fwd Afgbcded 56 14 14 256 256 3 3 1 1 1 1 32 32 7 2 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [7, 2, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbcded']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbcded'] 2 7 2
+dbg: tuning_params =  [7, 2, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbcded']
+bad config, h_in_gemm does not divide h_block as loop string, h blocking factor count, h_block, h_in_gemm =  ['Afgbcded'] 2 7 4
+
+line =  Afgbcde
+CBFcount =  1
+KBFcount =  1
+HBFcount =  1
+WBFcount =  1
+range_list =  [range(0, 3), range(0, 1), range(0, 1), range(0, 2), range(0, 3)]
+dbg: tuning_params =  [1, 1, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbcde']
+cmd to execute =  ( ./conv_fwd Afgbcde 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbcde']
+cmd to execute =  ( ./conv_fwd Afgbcde 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbcde']
+cmd to execute =  ( ./conv_fwd Afgbcde 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 1 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbcde']
+cmd to execute =  ( ./conv_fwd Afgbcde 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 1 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbcde']
+cmd to execute =  ( ./conv_fwd Afgbcde 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 1 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 1, 1, 4, 0]
+dbg: tuning_string =  ['Afgbcde']
+cmd to execute =  ( ./conv_fwd Afgbcde 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 1 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbcde']
+cmd to execute =  ( ./conv_fwd Afgbcde 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbcde']
+cmd to execute =  ( ./conv_fwd Afgbcde 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 2 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbcde']
+cmd to execute =  ( ./conv_fwd Afgbcde 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 2 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 2, 1, 1, 0]
+dbg: tuning_string =  ['Afgbcde']
+cmd to execute =  ( ./conv_fwd Afgbcde 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 2 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 2, 1, 2, 0]
+dbg: tuning_string =  ['Afgbcde']
+cmd to execute =  ( ./conv_fwd Afgbcde 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 2 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 2, 1, 4, 0]
+dbg: tuning_string =  ['Afgbcde']
+cmd to execute =  ( ./conv_fwd Afgbcde 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 2 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbcde']
+cmd to execute =  ( ./conv_fwd Afgbcde 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbcde']
+cmd to execute =  ( ./conv_fwd Afgbcde 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 4 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbcde']
+cmd to execute =  ( ./conv_fwd Afgbcde 56 14 14 256 256 3 3 1 1 1 1 32 32 1 1 4 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 4, 1, 1, 0]
+dbg: tuning_string =  ['Afgbcde']
+cmd to execute =  ( ./conv_fwd Afgbcde 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 4 1 1 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 4, 1, 2, 0]
+dbg: tuning_string =  ['Afgbcde']
+cmd to execute =  ( ./conv_fwd Afgbcde 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 4 1 2 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+dbg: tuning_params =  [1, 2, 4, 1, 4, 0]
+dbg: tuning_string =  ['Afgbcde']
+cmd to execute =  ( ./conv_fwd Afgbcde 56 14 14 256 256 3 3 1 1 1 1 32 32 1 2 4 1 4 0 1000 ) >> conv_fwd_12_tuning_dbg.txt 
+
+script version, l, config_name, nlines, ncombinations =  v1 12 conv_fwd_general 30 216
+59832763671875
+Linf rel.error: 9958.127071823204460088163614
+Check-norm    : 0.003112890207992681772947
+Validation PASSED
+GFLOPS 71862.4 Afgbdcde_hb=2_wb=1_cb=2_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00018018,71862,84788.878411,84788.626402,0.198253,10343.511647,0.000982,9958.127072,0.003113
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 2 2 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbdcde
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84959.47860775301523972303
+L1 test       : 84958.90004158532246947289
+L2 abs.error  : 0.198770431717659790127328
+L2 rel.error  : 1946.386602113495655430597253
+Linf abs.error: 0.000891029834747314453125
+Linf rel.error: 844.561627200971429374476429
+Check-norm    : 0.003114642834755616124243
+Validation PASSED
+GFLOPS 29350.8 Afgbdcde_hb=2_wb=2_cb=2_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00044114,29351,84959.478608,84958.900042,0.198770,1946.386602,0.000891,844.561627,0.003115
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 7 1 2 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbdcde
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84905.85172616862109862268
+L1 test       : 84906.63073774939402937889
+L2 abs.error  : 0.198452503096324450737598
+L2 rel.error  : 2907.688341969007069565122947
+Linf abs.error: 0.000872433185577392578125
+Linf rel.error: 2453.971751412429512129165232
+Check-norm    : 0.003112370222585714336916
+Validation PASSED
+GFLOPS 51776.4 Afgbdcde_hb=7_wb=1_cb=2_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00025007,51776,84905.851726,84906.630738,0.198453,2907.688342,0.000872,2453.971751,0.003112
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 7 2 2 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbdcde
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85062.94760690559633076191
+L1 test       : 85063.53082885639742016792
+L2 abs.error  : 0.198373988237515702648395
+L2 rel.error  : 6830.160629268420962034724653
+Linf abs.error: 0.000909984111785888671875
+Linf rel.error: 3708.854125843675319629255682
+Check-norm    : 0.003105707595131922127418
+Validation PASSED
+GFLOPS 29305.4 Afgbdcde_hb=7_wb=2_cb=2_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00044182,29305,85062.947607,85063.530829,0.198374,6830.160629,0.000910,3708.854126,0.003106
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 1 4 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbdcde
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85183.15323567319137509912
+L1 test       : 85181.46015137596987187862
+L2 abs.error  : 0.225420387441176206522186
+L2 rel.error  : 4896.768136216594029974658042
+Linf abs.error: 0.001181438565254211425781
+Linf rel.error: 4277.862337662337267829570919
+Check-norm    : 0.003523984842625973740865
+Validation PASSED
+GFLOPS 52038.6 Afgbdcde_hb=2_wb=1_cb=4_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00024881,52039,85183.153236,85181.460151,0.225420,4896.768136,0.001181,4277.862338,0.003524
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 1 4 1 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbdcde
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85255.11319633043603971601
+L1 test       : 85255.02127118175849318504
+L2 abs.error  : 0.225745279004912202669431
+L2 rel.error  : 3712.188260203134632320143282
+Linf abs.error: 0.001132830977439880371094
+Linf rel.error: 2051.055445544554459047503769
+Check-norm    : 0.003525247784979211856243
+Validation PASSED
+GFLOPS 66056.8 Afgbdcde_hb=2_wb=1_cb=4_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00019601,66057,85255.113196,85255.021271,0.225745,3712.188260,0.001133,2051.055446,0.003525
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 2 4 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbdcde
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84870.66123232639802154154
+L1 test       : 84869.81533427885733544827
+L2 abs.error  : 0.224633903883890928554479
+L2 rel.error  : 9140.240917211624037008732557
+Linf abs.error: 0.001114025712013244628906
+Linf rel.error: 7859.604651162791014940012246
+Check-norm    : 0.003525400851506761950444
+Validation PASSED
+GFLOPS 34858.5 Afgbdcde_hb=2_wb=2_cb=4_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00037144,34859,84870.661232,84869.815334,0.224634,9140.240917,0.001114,7859.604651,0.003525
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 7 1 4 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbdcde
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84890.12990208157862070948
+L1 test       : 84890.43371008150279521942
+L2 abs.error  : 0.224964620597097153531507
+L2 rel.error  : 10865.955248700907759484834969
+Linf abs.error: 0.001150667667388916015625
+Linf rel.error: 10466.555555555554747115820646
+Check-norm    : 0.003529193206825491976181
+Validation PASSED
+GFLOPS 57809.4 Afgbdcde_hb=7_wb=1_cb=4_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00022397,57809,84890.129902,84890.433710,0.224965,10865.955249,0.001151,10466.555556,0.003529
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 7 2 4 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbdcde
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85129.43422012143128085881
+L1 test       : 85128.7537871969398111105
+L2 abs.error  : 0.225537508285101495619784
+L2 rel.error  : 7460.059397538526354765053838
+Linf abs.error: 0.001236066222190856933594
+Linf rel.error: 4843.438538205979966733139008
+Check-norm    : 0.003527583923993966343036
+Validation PASSED
+GFLOPS 35677.6 Afgbdcde_hb=7_wb=2_cb=4_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00036291,35678,85129.434220,85128.753787,0.225538,7460.059398,0.001236,4843.438538,0.003528
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 1 1 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbdced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84717.96297862155188340694
+L1 test       : 84716.7060136736836284399
+L2 abs.error  : 0.183296642781455049187045
+L2 rel.error  : 34931.303143126606300938874483
+Linf abs.error: 0.000772848725318908691406
+Linf rel.error: 34719.476190476190822664648294
+Check-norm    : 0.002881243560475120653319
+Validation PASSED
+GFLOPS 57939.5 Afgbdced_hb=2_wb=1_cb=1_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00022347,57939,84717.962979,84716.706014,0.183297,34931.303143,0.000773,34719.476190,0.002881
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 1 1 1 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbdced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84799.54016751037852372974
+L1 test       : 84799.98015094944275915623
+L2 abs.error  : 0.183455226197724141634637
+L2 rel.error  : 3060.279109883048022311413661
+Linf abs.error: 0.000752434134483337402344
+Linf rel.error: 1374.813664596273383722291328
+Check-norm    : 0.002881651521088432216927
+Validation PASSED
+GFLOPS 73117.6 Afgbdced_hb=2_wb=1_cb=1_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00017708,73118,84799.540168,84799.980151,0.183455,3060.279110,0.000752,1374.813665,0.002882
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 2 1 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbdced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84918.94482944732590112835
+L1 test       : 84917.8632004191167652607
+L2 abs.error  : 0.183865450514257761094328
+L2 rel.error  : 4196.696194370892044389620423
+Linf abs.error: 0.000724107027053833007812
+Linf rel.error: 2883.370370370370437740348279
+Check-norm    : 0.002883666486406713958673
+Validation PASSED
+GFLOPS 31427.1 Afgbdced_hb=2_wb=2_cb=1_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.000412,31427,84918.944829,84917.863200,0.183865,4196.696194,0.000724,2883.370370,0.002884
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 7 1 1 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbdced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84654.39425904171366710216
+L1 test       : 84655.2537667788565158844
+L2 abs.error  : 0.182968739469641983319548
+L2 rel.error  : 214410.532248055940726771950722
+Linf abs.error: 0.000733241438865661621094
+Linf rel.error: 214340.270588235289324074983597
+Check-norm    : 0.002878758598414519250669
+Validation PASSED
+GFLOPS 56388.3 Afgbdced_hb=7_wb=1_cb=1_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00022962,56388,84654.394259,84655.253767,0.182969,214410.532248,0.000733,214340.270588,0.002879
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 7 2 1 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbdced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85042.3627264818933326751
+L1 test       : 85042.37837023334577679634
+L2 abs.error  : 0.183676208629796999804995
+L2 rel.error  : 20858.787122274316061520949006
+Linf abs.error: 0.000797480344772338867188
+Linf rel.error: 18542.709090909091173671185970
+Check-norm    : 0.002876438570902710781252
+Validation PASSED
+GFLOPS 31705.3 Afgbdced_hb=7_wb=2_cb=1_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00040838,31705,85042.362726,85042.378370,0.183676,20858.787122,0.000797,18542.709091,0.002876
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 1 2 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbdced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85057.52665302518289536238
+L1 test       : 85057.72838820470497012138
+L2 abs.error  : 0.198423623737592064175672
+L2 rel.error  : 17937.849196944654977414757013
+Linf abs.error: 0.000827521085739135742188
+Linf rel.error: 17838.526195899772574193775654
+Check-norm    : 0.003106324757976033218432
+Validation PASSED
+GFLOPS 50724.4 Afgbdced_hb=2_wb=1_cb=2_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00025526,50724,85057.526653,85057.728388,0.198424,17937.849197,0.000828,17838.526196,0.003106
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 1 2 1 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbdced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84667.55673397741338703781
+L1 test       : 84668.48170403251424431801
+L2 abs.error  : 0.197816902951708173397094
+L2 rel.error  : 5643.624308218883925292175263
+Linf abs.error: 0.000860765576362609863281
+Linf rel.error: 3329.812698412698409811127931
+Check-norm    : 0.003111330485402348348944
+Validation PASSED
+GFLOPS 69402.5 Afgbdced_hb=2_wb=1_cb=2_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00018656,69402,84667.556734,84668.481704,0.197817,5643.624308,0.000861,3329.812698,0.003111
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 2 2 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbdced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84913.43279078212799504399
+L1 test       : 84914.24834794271737337112
+L2 abs.error  : 0.198197802141966056277411
+L2 rel.error  : 131174.089299173501785844564438
+Linf abs.error: 0.000914722681045532226562
+Linf rel.error: 131073.000000000000000000000000
+Check-norm    : 0.003107613640053031797694
+Validation PASSED
+GFLOPS 29191.6 Afgbdced_hb=2_wb=2_cb=2_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00044355,29192,84913.432791,84914.248348,0.198198,131174.089299,0.000915,131073.000000,0.003108
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 7 1 2 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbdced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85344.44019359808589797467
+L1 test       : 85343.60325497551821172237
+L2 abs.error  : 0.199457334858976514935236
+L2 rel.error  : 3929.780859664944728137925267
+Linf abs.error: 0.000928387045860290527344
+Linf rel.error: 2574.039049235993388720089570
+Check-norm    : 0.003111958011051006202374
+Validation PASSED
+GFLOPS 50856.2 Afgbdced_hb=7_wb=1_cb=2_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.0002546,50856,85344.440194,85343.603255,0.199457,3929.780860,0.000928,2574.039049,0.003112
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 7 2 2 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbdced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85239.83866294559265952557
+L1 test       : 85238.78666913160122931004
+L2 abs.error  : 0.199145295069283495559276
+L2 rel.error  : 4961.013204702109760546591133
+Linf abs.error: 0.000920221209526062011719
+Linf rel.error: 4049.919540229885114968055859
+Check-norm    : 0.003111612428031421215963
+Validation PASSED
+GFLOPS 28829.1 Afgbdced_hb=7_wb=2_cb=2_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00044912,28829,85239.838663,85238.786669,0.199145,4961.013205,0.000920,4049.919540,0.003112
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 1 4 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbdced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84788.84555469460610765964
+L1 test       : 84786.59191533271223306656
+L2 abs.error  : 0.224863239203416942491032
+L2 rel.error  : 4791.281040086556458845734596
+Linf abs.error: 0.001351982355117797851562
+Linf rel.error: 2759.876033057851145713357255
+Check-norm    : 0.003531065797502305411704
+Validation PASSED
+GFLOPS 54365.8 Afgbdced_hb=2_wb=1_cb=4_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00023816,54366,84788.845555,84786.591915,0.224863,4791.281040,0.001352,2759.876033,0.003531
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 1 4 1 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbdced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84907.30690206213330384344
+L1 test       : 84907.26811993052251636982
+L2 abs.error  : 0.224852435477804202257346
+L2 rel.error  : 7154.324575986080162692815065
+Linf abs.error: 0.001100391149520874023438
+Linf rel.error: 5619.518064911206238321028650
+Check-norm    : 0.003525670315730795954107
+Validation PASSED
+GFLOPS 66555.3 Afgbdced_hb=2_wb=1_cb=4_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00019454,66555,84907.306902,84907.268120,0.224852,7154.324576,0.001100,5619.518065,0.003526
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 2 4 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbdced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84885.1262738160730805248
+L1 test       : 84884.49998314329423010349
+L2 abs.error  : 0.224865490845947840758967
+L2 rel.error  : 10243.503202581607183674350381
+Linf abs.error: 0.001336932182312011718750
+Linf rel.error: 8865.477611940297720138914883
+Check-norm    : 0.003527908863588400615457
+Validation PASSED
+GFLOPS 33639.2 Afgbdced_hb=2_wb=2_cb=4_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.0003849,33639,84885.126274,84884.499983,0.224865,10243.503203,0.001337,8865.477612,0.003528
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 7 1 4 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbdced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84732.78269051521783694625
+L1 test       : 84732.34316645027138292789
+L2 abs.error  : 0.224121147248714264188507
+L2 rel.error  : 9974.453068070606605033390224
+Linf abs.error: 0.001252502202987670898438
+Linf rel.error: 6528.267326732673609512858093
+Check-norm    : 0.003522402566468253812954
+Validation PASSED
+GFLOPS 57202 Afgbdced_hb=7_wb=1_cb=4_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00022635,57202,84732.782691,84732.343166,0.224121,9974.453068,0.001253,6528.267327,0.003522
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 7 2 4 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbdced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85156.94864263958879746497
+L1 test       : 85156.9211599789559841156
+L2 abs.error  : 0.225528087291588241747320
+L2 rel.error  : 7432.853829550755108357407153
+Linf abs.error: 0.001346305012702941894531
+Linf rel.error: 7127.615384615384755306877196
+Check-norm    : 0.003527498757277842868912
+Validation PASSED
+GFLOPS 35936.5 Afgbdced_hb=7_wb=2_cb=4_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.0003603,35937,85156.948643,85156.921160,0.225528,7432.853830,0.001346,7127.615385,0.003527
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84973.84665083269646856934
+L1 test       : 84972.57716603693552315235
+L2 abs.error  : 0.183920697504904195884734
+L2 rel.error  : 5472.436599525189194537233561
+Linf abs.error: 0.000767469406127929687500
+Linf rel.error: 3355.714139093885933107230812
+Check-norm    : 0.002882423359016163429136
+Validation PASSED
+GFLOPS 50575.1 Afgbedc_hb=1_wb=1_cb=1_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00025601,50575,84973.846651,84972.577166,0.183921,5472.436600,0.000767,3355.714139,0.002882
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 1 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85138.22623310243943706155
+L1 test       : 85138.21355165867134928703
+L2 abs.error  : 0.184153527560687424458052
+L2 rel.error  : 8079.505147644254066108260304
+Linf abs.error: 0.000756189227104187011719
+Linf rel.error: 6700.658914728682248096447438
+Check-norm    : 0.002879434966555129930127
+Validation PASSED
+GFLOPS 79337.6 Afgbedc_hb=1_wb=1_cb=1_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.0001632,79338,85138.226233,85138.213552,0.184154,8079.505148,0.000756,6700.658915,0.002879
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 1 4 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85203.48418951730127446353
+L1 test       : 85204.22809391235932707787
+L2 abs.error  : 0.184473738577914159186832
+L2 rel.error  : 23192.982900825052638538181782
+Linf abs.error: 0.000722199678421020507812
+Linf rel.error: 19528.727999999999155988916755
+Check-norm    : 0.002882952718999621816859
+Validation PASSED
+GFLOPS 66510.3 Afgbedc_hb=1_wb=1_cb=1_kb=1_hg=4_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00019467,66510,85203.484190,85204.228094,0.184474,23192.982901,0.000722,19528.728000,0.002883
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 2 1 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84903.07095293875318020582
+L1 test       : 84902.91543517634272575378
+L2 abs.error  : 0.183539795084241091904786
+L2 rel.error  : 6193.432453251098195323720574
+Linf abs.error: 0.000731393694877624511719
+Linf rel.error: 4851.526315789473301265388727
+Check-norm    : 0.002879594514142604436135
+Validation PASSED
+GFLOPS 28890.7 Afgbedc_hb=1_wb=2_cb=1_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00044817,28891,84903.070953,84902.915435,0.183540,6193.432453,0.000731,4851.526316,0.002880
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 2 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85277.14436009246855974197
+L1 test       : 85277.73633286659605801105
+L2 abs.error  : 0.199027851718744985820564
+L2 rel.error  : 56737.896363846281019505113363
+Linf abs.error: 0.000913053750991821289062
+Linf rel.error: 55962.325842696627660188823938
+Check-norm    : 0.003108639203064755829331
+Validation PASSED
+GFLOPS 51927.9 Afgbedc_hb=1_wb=1_cb=2_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00024934,51928,85277.144360,85277.736333,0.199028,56737.896364,0.000913,55962.325843,0.003109
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 2 1 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85058.15392691153101623058
+L1 test       : 85057.803642685292288661
+L2 abs.error  : 0.198792210935378660385808
+L2 rel.error  : 4153.527617784429821767844260
+Linf abs.error: 0.000934183597564697265625
+Linf rel.error: 2689.105004101722897758008912
+Check-norm    : 0.003112060156214901517763
+Validation PASSED
+GFLOPS 70330 Afgbedc_hb=1_wb=1_cb=2_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.0001841,70330,85058.153927,85057.803643,0.198792,4153.527618,0.000934,2689.105004,0.003112
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 2 1 4 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85222.55333666715887375176
+L1 test       : 85221.94398498605005443096
+L2 abs.error  : 0.198924629212051673476935
+L2 rel.error  : 13628.406198784088701358996332
+Linf abs.error: 0.000979781150817871093750
+Linf rel.error: 12223.331606217616354115307331
+Check-norm    : 0.003108426288711492284367
+Validation PASSED
+GFLOPS 63648.2 Afgbedc_hb=1_wb=1_cb=2_kb=1_hg=4_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00020343,63648,85222.553337,85221.943985,0.198925,13628.406199,0.000980,12223.331606,0.003108
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 2 2 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85291.01413747803599108011
+L1 test       : 85291.20742346695624291897
+L2 abs.error  : 0.199323485921745258142579
+L2 rel.error  : 12343.042533182546321768313646
+Linf abs.error: 0.000989563763141632080078
+Linf rel.error: 10284.166276346604718128219247
+Check-norm    : 0.003112370730998326260469
+Validation PASSED
+GFLOPS 29280 Afgbedc_hb=1_wb=2_cb=2_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00044221,29280,85291.014137,85291.207423,0.199323,12343.042533,0.000990,10284.166276,0.003112
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 4 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84995.36987917752412613481
+L1 test       : 84995.88819290208630263805
+L2 abs.error  : 0.225073373333822074338073
+L2 rel.error  : 10617.138487180354786687530577
+Linf abs.error: 0.001216605305671691894531
+Linf rel.error: 7519.000000000000000000000000
+Check-norm    : 0.003526419505101999543606
+Validation PASSED
+GFLOPS 48554.9 Afgbedc_hb=1_wb=1_cb=4_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00026666,48555,84995.369879,84995.888193,0.225073,10617.138487,0.001217,7519.000000,0.003526
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 4 1 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85344.51071179652353748679
+L1 test       : 85343.66040789056569337845
+L2 abs.error  : 0.226063116544997444457010
+L2 rel.error  : 5383.831076636630314169451594
+Linf abs.error: 0.001228019595146179199219
+Linf rel.error: 3029.974789915966539410874248
+Check-norm    : 0.003526071644086726641215
+Validation PASSED
+GFLOPS 66107.3 Afgbedc_hb=1_wb=1_cb=4_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00019586,66107,85344.510712,85343.660408,0.226063,5383.831077,0.001228,3029.974790,0.003526
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 4 1 4 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85120.76996886949928011745
+L1 test       : 85120.53936635446734726429
+L2 abs.error  : 0.225557748294463872307247
+L2 rel.error  : 17200.197937919572723330929875
+Linf abs.error: 0.001196041703224182128906
+Linf rel.error: 15376.898792409430825500749052
+Check-norm    : 0.003527483132487183210835
+Validation PASSED
+GFLOPS 59402.8 Afgbedc_hb=1_wb=1_cb=4_kb=1_hg=4_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00021797,59403,85120.769969,85120.539366,0.225558,17200.197938,0.001196,15376.898792,0.003527
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 2 4 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85433.64602710404142271727
+L1 test       : 85432.58147994568571448326
+L2 abs.error  : 0.226164999031582936162010
+L2 rel.error  : 8467.961749378744571004062891
+Linf abs.error: 0.001402378082275390625000
+Linf rel.error: 6988.156105100463719281833619
+Check-norm    : 0.003525630640251458270545
+Validation PASSED
+GFLOPS 27170.1 Afgbedc_hb=1_wb=2_cb=4_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00047655,27170,85433.646027,85432.581480,0.226165,8467.961749,0.001402,6988.156105,0.003526
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 1 1 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedcd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84962.46911851610639132559
+L1 test       : 84962.33341432176530361176
+L2 abs.error  : 0.183540914170190194720789
+L2 rel.error  : 5738.273558819291793042793870
+Linf abs.error: 0.000768303871154785156250
+Linf rel.error: 3589.530973451327554357703775
+Check-norm    : 0.002876449516268433058419
+Validation PASSED
+GFLOPS 55900.9 Afgbedcd_hb=2_wb=1_cb=1_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00023162,55901,84962.469119,84962.333414,0.183541,5738.273559,0.000768,3589.530973,0.002876
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 1 1 1 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedcd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85013.10319371309014968574
+L1 test       : 85012.60673530073836445808
+L2 abs.error  : 0.183790220651201902102301
+L2 rel.error  : 3795.234109043717580789234489
+Linf abs.error: 0.000722169876098632812500
+Linf rel.error: 2365.414261460101897682761773
+Check-norm    : 0.002879119449671714656841
+Validation PASSED
+GFLOPS 77893.7 Afgbedcd_hb=2_wb=1_cb=1_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00016622,77894,85013.103194,85012.606735,0.183790,3795.234109,0.000722,2365.414261,0.002879
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 2 1 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedcd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85243.73397676757303997874
+L1 test       : 85243.55221193842589855194
+L2 abs.error  : 0.184219377021811736572232
+L2 rel.error  : 15270.783350605695886770263314
+Linf abs.error: 0.000720590353012084960938
+Linf rel.error: 14881.591802392427780432626605
+Check-norm    : 0.002878305420630730606518
+Validation PASSED
+GFLOPS 31248.3 Afgbedcd_hb=2_wb=2_cb=1_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00041435,31248,85243.733977,85243.552212,0.184219,15270.783351,0.000721,14881.591802,0.002878
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 7 1 1 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedcd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84988.4272878104675328359
+L1 test       : 84988.04232016648165881634
+L2 abs.error  : 0.183832135701403581728997
+L2 rel.error  : 6602.938295855032265535555780
+Linf abs.error: 0.000756874680519104003906
+Linf rel.error: 4269.152972358954684750642627
+Check-norm    : 0.002880089359232925697724
+Validation PASSED
+GFLOPS 57600.8 Afgbedcd_hb=7_wb=1_cb=1_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00022479,57601,84988.427288,84988.042320,0.183832,6602.938296,0.000757,4269.152972,0.002880
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 7 2 1 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedcd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84940.22209084958012681454
+L1 test       : 84940.18461256544105708599
+L2 abs.error  : 0.183871158037559573328323
+L2 rel.error  : 1853.082377094634011882590130
+Linf abs.error: 0.000753477215766906738281
+Linf rel.error: 868.575402635431942144350614
+Check-norm    : 0.002881937551005937271642
+Validation PASSED
+GFLOPS 31713 Afgbedcd_hb=7_wb=2_cb=1_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00040828,31713,84940.222091,84940.184613,0.183871,1853.082377,0.000753,868.575403,0.002882
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 1 2 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedcd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85235.65691593498922884464
+L1 test       : 85234.93340606638230383396
+L2 abs.error  : 0.198879981939894395770452
+L2 rel.error  : 18704.687465961866109864786267
+Linf abs.error: 0.000882789492607116699219
+Linf rel.error: 17015.153846153847553068771958
+Check-norm    : 0.003106612603296154268007
+Validation PASSED
+GFLOPS 51618.9 Afgbedcd_hb=2_wb=1_cb=2_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00025083,51619,85235.656916,85234.933406,0.198880,18704.687466,0.000883,17015.153846,0.003107
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 1 2 1 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedcd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85170.92404776022885926068
+L1 test       : 85171.47266974532976746559
+L2 abs.error  : 0.198749050913848562816000
+L2 rel.error  : 9566.482603231292159762233496
+Linf abs.error: 0.001006677746772766113281
+Linf rel.error: 7006.828054298642200592439622
+Check-norm    : 0.003108245303004422265686
+Validation PASSED
+GFLOPS 69796.4 Afgbedcd_hb=2_wb=1_cb=2_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00018551,69796,85170.924048,85171.472670,0.198749,9566.482603,0.001007,7006.828054,0.003108
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 2 2 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedcd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85345.60019076017488259822
+L1 test       : 85345.03849528823047876358
+L2 abs.error  : 0.199362591151424906055212
+L2 rel.error  : 7364.018753366074633959215134
+Linf abs.error: 0.000958263874053955078125
+Linf rel.error: 6715.754098360655916621908545
+Check-norm    : 0.003110748262904446028582
+Validation PASSED
+GFLOPS 28902 Afgbedcd_hb=2_wb=2_cb=2_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00044799,28902,85345.600191,85345.038495,0.199363,7364.018753,0.000958,6715.754098,0.003111
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 7 1 2 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedcd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84837.33404624524700921029
+L1 test       : 84838.1167133762501180172
+L2 abs.error  : 0.198004369472571162269503
+L2 rel.error  : 2412.623853864295142557239160
+Linf abs.error: 0.000899896025657653808594
+Linf rel.error: 1106.152479998136641370365396
+Check-norm    : 0.003107510781349760459885
+Validation PASSED
+GFLOPS 52138 Afgbedcd_hb=7_wb=1_cb=2_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00024834,52138,84837.334046,84838.116713,0.198004,2412.623854,0.000900,1106.152480,0.003108
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 7 2 2 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedcd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85358.90701420723053161055
+L1 test       : 85357.45894218678586184978
+L2 abs.error  : 0.199458371618026736316054
+L2 rel.error  : 4198.114426853295299224555492
+Linf abs.error: 0.001013472676277160644531
+Linf rel.error: 3094.097744360902197513496503
+Check-norm    : 0.003112030072304808846206
+Validation PASSED
+GFLOPS 29042.5 Afgbedcd_hb=7_wb=2_cb=2_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00044582,29043,85358.907014,85357.458942,0.199458,4198.114427,0.001013,3094.097744,0.003112
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 1 4 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedcd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85090.16790711032808758318
+L1 test       : 85089.3581754704937338829
+L2 abs.error  : 0.225371673351681234276356
+L2 rel.error  : 14938.490354482981274486519396
+Linf abs.error: 0.001281455159187316894531
+Linf rel.error: 13793.308115543328312924131751
+Check-norm    : 0.003526387722556619756104
+Validation PASSED
+GFLOPS 53278.3 Afgbedcd_hb=2_wb=1_cb=4_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00024302,53278,85090.167907,85089.358175,0.225372,14938.490354,0.001281,13793.308116,0.003526
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 1 4 1 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedcd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84983.98332223304896615446
+L1 test       : 84983.4636239134706556797
+L2 abs.error  : 0.225108651093404971144096
+L2 rel.error  : 7329.547742267744979471899569
+Linf abs.error: 0.001184955239295959472656
+Linf rel.error: 4250.452449567723306245170534
+Check-norm    : 0.003527564177284504311205
+Validation PASSED
+GFLOPS 66405 Afgbedcd_hb=2_wb=1_cb=4_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00019498,66405,84983.983322,84983.463624,0.225109,7329.547742,0.001185,4250.452450,0.003528
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 2 4 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedcd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85090.55259265824861358851
+L1 test       : 85089.46075012115761637688
+L2 abs.error  : 0.225435252781182898784706
+L2 rel.error  : 9011.000182189303814084269106
+Linf abs.error: 0.001361191272735595703125
+Linf rel.error: 5613.226203807390447764191777
+Check-norm    : 0.003528546139869387799487
+Validation PASSED
+GFLOPS 31367.4 Afgbedcd_hb=2_wb=2_cb=4_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00041278,31367,85090.552593,85089.460750,0.225435,9011.000182,0.001361,5613.226204,0.003529
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 7 1 4 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedcd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85161.86403874638199340552
+L1 test       : 85161.54440150409936904907
+L2 abs.error  : 0.225303364377805293017332
+L2 rel.error  : 5292.463225701146257051732391
+Linf abs.error: 0.001201376318931579589844
+Linf rel.error: 3423.268497330282116308808327
+Check-norm    : 0.003523881021772498709638
+Validation PASSED
+GFLOPS 58130.4 Afgbedcd_hb=7_wb=1_cb=4_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00022274,58130,85161.864039,85161.544402,0.225303,5292.463226,0.001201,3423.268497,0.003524
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 7 2 4 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbedcd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85014.46448528999462723732
+L1 test       : 85013.30297643691301345825
+L2 abs.error  : 0.225421648847072525478907
+L2 rel.error  : 10902.054600865845713997259736
+Linf abs.error: 0.001207828521728515625000
+Linf rel.error: 8710.102990033223250065930188
+Check-norm    : 0.003530270668892975145792
+Validation PASSED
+GFLOPS 34301.8 Afgbedcd_hb=7_wb=2_cb=4_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00037747,34302,85014.464485,85013.302976,0.225422,10902.054601,0.001208,8710.102990,0.003530
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbecd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85038.65303926263004541397
+L1 test       : 85038.82059923605993390083
+L2 abs.error  : 0.183817363671444661266108
+L2 rel.error  : 15988.069854959161602891981602
+Linf abs.error: 0.000708624720573425292969
+Linf rel.error: 14901.965517241378620383329690
+Check-norm    : 0.002878405729018180571332
+Validation PASSED
+GFLOPS 58100.8 Afgbecd_hb=1_wb=1_cb=1_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00022285,58101,85038.653039,85038.820599,0.183817,15988.069855,0.000709,14901.965517,0.002878
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 1 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbecd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85125.6980699405976338312
+L1 test       : 85125.66136824479326605797
+L2 abs.error  : 0.183793387643586103585847
+L2 rel.error  : 4333.197004631704658095259219
+Linf abs.error: 0.000833362340927124023438
+Linf rel.error: 3194.308900523560168949188665
+Check-norm    : 0.002875340189110687279944
+Validation PASSED
+GFLOPS 77725.8 Afgbecd_hb=1_wb=1_cb=1_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00016658,77726,85125.698070,85125.661368,0.183793,4333.197005,0.000833,3194.308901,0.002875
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 1 4 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbecd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85252.02309978748962748796
+L1 test       : 85252.21944818762131035328
+L2 abs.error  : 0.184384970777268591968223
+L2 rel.error  : 7478.262838118337640480604023
+Linf abs.error: 0.000731363892555236816406
+Linf rel.error: 5727.180602006688786786980927
+Check-norm    : 0.002880405190656501381724
+Validation PASSED
+GFLOPS 67623.8 Afgbecd_hb=1_wb=1_cb=1_kb=1_hg=4_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00019147,67624,85252.023100,85252.219448,0.184385,7478.262838,0.000731,5727.180602,0.002880
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 2 1 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbecd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84627.87134668299404438585
+L1 test       : 84628.99751907633617520332
+L2 abs.error  : 0.182783952811278155303754
+L2 rel.error  : 3453.267042849988229136215523
+Linf abs.error: 0.000734880566596984863281
+Linf rel.error: 2458.491916859122284222394228
+Check-norm    : 0.002876045239208905104911
+Validation PASSED
+GFLOPS 31911.9 Afgbecd_hb=1_wb=2_cb=1_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00040574,31912,84627.871347,84628.997519,0.182784,3453.267043,0.000735,2458.491917,0.002876
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 2 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbecd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84848.68839118808682542294
+L1 test       : 84849.99056042544543743134
+L2 abs.error  : 0.198498115823424498005423
+L2 rel.error  : 3587.633120107465856563067064
+Linf abs.error: 0.000912547111511230468750
+Linf rel.error: 2418.777777777777828305261210
+Check-norm    : 0.003114800731811751422634
+Validation PASSED
+GFLOPS 51292.2 Afgbecd_hb=1_wb=1_cb=2_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00025243,51292,84848.688391,84849.990560,0.198498,3587.633120,0.000913,2418.777778,0.003115
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 2 1 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbecd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84944.49625860065862070769
+L1 test       : 84942.57726263580843806267
+L2 abs.error  : 0.198513269965433947206179
+L2 rel.error  : 8907.382298033588085672818124
+Linf abs.error: 0.000862568616867065429688
+Linf rel.error: 6123.622129436325849383138120
+Check-norm    : 0.003112368677700950818366
+Validation PASSED
+GFLOPS 71235.7 Afgbecd_hb=1_wb=1_cb=2_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00018176,71236,84944.496259,84942.577263,0.198513,8907.382298,0.000863,6123.622129,0.003112
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 2 1 4 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbecd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85026.13064534655131865293
+L1 test       : 85026.37382707162760198116
+L2 abs.error  : 0.198744447910271737622878
+L2 rel.error  : 85410.645121654903050512075424
+Linf abs.error: 0.000849291682243347167969
+Linf rel.error: 80828.733333333337213844060898
+Check-norm    : 0.003113246626186356742078
+Validation PASSED
+GFLOPS 63363.4 Afgbecd_hb=1_wb=1_cb=2_kb=1_hg=4_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00020434,63363,85026.130645,85026.373827,0.198744,85410.645122,0.000849,80828.733333,0.003113
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 2 2 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbecd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85026.4832196881907293573
+L1 test       : 85027.26382204541005194187
+L2 abs.error  : 0.198870606916587894241744
+L2 rel.error  : 3504.310448299547260830877349
+Linf abs.error: 0.000921651721000671386719
+Linf rel.error: 2818.904139433551335969241336
+Check-norm    : 0.003114450113903149009592
+Validation PASSED
+GFLOPS 29174.2 Afgbecd_hb=1_wb=2_cb=2_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00044381,29174,85026.483220,85027.263822,0.198871,3504.310448,0.000922,2818.904139,0.003114
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 4 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbecd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85076.70671369177580345422
+L1 test       : 85076.33356191148050129414
+L2 abs.error  : 0.225191293856558366615062
+L2 rel.error  : 7576.867938142261664324905723
+Linf abs.error: 0.001105338335037231445312
+Linf rel.error: 5953.689075630251863913144916
+Check-norm    : 0.003525531833828969997119
+Validation PASSED
+GFLOPS 60287 Afgbecd_hb=1_wb=1_cb=4_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00021477,60287,85076.706714,85076.333562,0.225191,7576.867938,0.001105,5953.689076,0.003526
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 4 1 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbecd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85016.73224935351754538715
+L1 test       : 85015.87827405799180269241
+L2 abs.error  : 0.225468755783737290210311
+L2 rel.error  : 18441.783305544406175613403320
+Linf abs.error: 0.001092612743377685546875
+Linf rel.error: 13825.000000000000000000000000
+Check-norm    : 0.003531434572296651436957
+Validation PASSED
+GFLOPS 69205 Afgbecd_hb=1_wb=1_cb=4_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00018709,69205,85016.732249,85015.878274,0.225469,18441.783306,0.001093,13825.000000,0.003531
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 4 1 4 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbecd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84991.0450189452531049028
+L1 test       : 84992.85171053744852542877
+L2 abs.error  : 0.225109923125440453128832
+L2 rel.error  : 9283.807150737984557054005563
+Linf abs.error: 0.001537948846817016601562
+Linf rel.error: 5129.605042016806692117825150
+Check-norm    : 0.003527281367743273932797
+Validation PASSED
+GFLOPS 61659.9 Afgbecd_hb=1_wb=1_cb=4_kb=1_hg=4_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00020999,61660,84991.045019,84992.851711,0.225110,9283.807151,0.001538,5129.605042,0.003527
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 2 4 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbecd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84741.98864256999513600022
+L1 test       : 84741.72839626693166792393
+L2 abs.error  : 0.224617671509127037055009
+L2 rel.error  : 45677.587994784887996502220631
+Linf abs.error: 0.001672983169555664062500
+Linf rel.error: 45207.456575682379479985684156
+Check-norm    : 0.003529941981313011734045
+Validation PASSED
+GFLOPS 36255.8 Afgbecd_hb=1_wb=2_cb=4_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00035712,36256,84741.988643,84741.728396,0.224618,45677.587995,0.001673,45207.456576,0.003530
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84676.80319038570451084524
+L1 test       : 84678.40648789564147591591
+L2 abs.error  : 0.183073740402308032804157
+L2 rel.error  : 49325.898816791028366424143314
+Linf abs.error: 0.000769510865211486816406
+Linf rel.error: 48818.142212189617566764354706
+Check-norm    : 0.002879322685906902587472
+Validation PASSED
+GFLOPS 57812.5 Afgbced_hb=1_wb=1_cb=1_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00022396,57812,84676.803190,84678.406488,0.183074,49325.898817,0.000770,48818.142212,0.002879
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 1 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85079.00560242396022658795
+L1 test       : 85079.48455127398483455181
+L2 abs.error  : 0.184128941545546154223700
+L2 rel.error  : 10962.440883874469363945536315
+Linf abs.error: 0.000773787498474121093750
+Linf rel.error: 6814.462282398452771303709596
+Check-norm    : 0.002882253217042390555647
+Validation PASSED
+GFLOPS 77591.4 Afgbced_hb=1_wb=1_cb=1_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00016687,77591,85079.005602,85079.484551,0.184129,10962.440884,0.000774,6814.462282,0.002882
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 1 4 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85220.17647846962790936232
+L1 test       : 85220.51069685444235801697
+L2 abs.error  : 0.184528309926762140724676
+L2 rel.error  : 26092.653806303969759028404951
+Linf abs.error: 0.000738993287086486816406
+Linf rel.error: 25712.777777777777373557910323
+Check-norm    : 0.002883882080241616241434
+Validation PASSED
+GFLOPS 70389.2 Afgbced_hb=1_wb=1_cb=1_kb=1_hg=4_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00018395,70389,85220.176478,85220.510697,0.184528,26092.653806,0.000739,25712.777778,0.002884
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 2 1 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84954.96192390879150480032
+L1 test       : 84954.35199853335507214069
+L2 abs.error  : 0.183955938980888772382727
+L2 rel.error  : 59923.364541716298845130950212
+Linf abs.error: 0.000764816999435424804688
+Linf rel.error: 59836.217391304344346281141043
+Check-norm    : 0.002883963745809407959453
+Validation PASSED
+GFLOPS 31827.1 Afgbced_hb=1_wb=2_cb=1_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00040682,31827,84954.961924,84954.351999,0.183956,59923.364542,0.000765,59836.217391,0.002884
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 2 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84893.63273630054027307779
+L1 test       : 84896.25600120727904140949
+L2 abs.error  : 0.198688608083286977201709
+L2 rel.error  : 31732.246273266977368621155620
+Linf abs.error: 0.000913903117179870605469
+Linf rel.error: 31237.826666666667733807116747
+Check-norm    : 0.003116219402916510852752
+Validation PASSED
+GFLOPS 50030.7 Afgbced_hb=1_wb=1_cb=2_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.0002588,50031,84893.632736,84896.256001,0.198689,31732.246273,0.000914,31237.826667,0.003116
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 2 1 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84985.80342527203902136534
+L1 test       : 84987.64753047563135623932
+L2 abs.error  : 0.198366911138875279263516
+L2 rel.error  : 4216.366034448970822268165648
+Linf abs.error: 0.000868991017341613769531
+Linf rel.error: 2308.446808510638220468536019
+Check-norm    : 0.003108921113152645840372
+Validation PASSED
+GFLOPS 71686.2 Afgbced_hb=1_wb=1_cb=2_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00018062,71686,84985.803425,84987.647530,0.198367,4216.366034,0.000869,2308.446809,0.003109
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 2 1 4 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84748.05411658465163782239
+L1 test       : 84747.03882145113311707973
+L2 abs.error  : 0.198069258781593177110025
+L2 rel.error  : 2792.295628103352100879419595
+Linf abs.error: 0.000902742147445678710938
+Linf rel.error: 1549.378510378510327427648008
+Check-norm    : 0.003111441914554820276084
+Validation PASSED
+GFLOPS 63749.8 Afgbced_hb=1_wb=1_cb=2_kb=1_hg=4_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.0002031,63750,84748.054117,84747.038821,0.198069,2792.295628,0.000903,1549.378510,0.003111
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 2 2 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84893.77129610790871083736
+L1 test       : 84894.41067156009376049042
+L2 abs.error  : 0.198040937906849595639969
+L2 rel.error  : 16718.136573205716558732092381
+Linf abs.error: 0.000826954841613769531250
+Linf rel.error: 11949.720037019898882135748863
+Check-norm    : 0.003107274255766786803107
+Validation PASSED
+GFLOPS 28982.7 Afgbced_hb=1_wb=2_cb=2_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00044674,28983,84893.771296,84894.410672,0.198041,16718.136573,0.000827,11949.720037,0.003107
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 4 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85147.12219565929262898862
+L1 test       : 85146.48204351542517542839
+L2 abs.error  : 0.225397704845567870002299
+L2 rel.error  : 3318.430189649184285372029990
+Linf abs.error: 0.001097187399864196777344
+Linf rel.error: 2022.965410747375017308513634
+Check-norm    : 0.003525179904025919908062
+Validation PASSED
+GFLOPS 58512 Afgbced_hb=1_wb=1_cb=4_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00022128,58512,85147.122196,85146.482044,0.225398,3318.430190,0.001097,2022.965411,0.003525
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 4 1 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85172.13620436078053899109
+L1 test       : 85173.46280205808579921722
+L2 abs.error  : 0.225338593131412190384566
+L2 rel.error  : 11943.384263917258067522197962
+Linf abs.error: 0.001095473766326904296875
+Linf rel.error: 7907.706467661691931425593793
+Check-norm    : 0.003523107169675940546910
+Validation PASSED
+GFLOPS 68372.5 Afgbced_hb=1_wb=1_cb=4_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00018937,68373,85172.136204,85173.462802,0.225339,11943.384264,0.001095,7907.706468,0.003523
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 4 1 4 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84791.70429822757432702929
+L1 test       : 84792.51082627521827816963
+L2 abs.error  : 0.224556101666163104857432
+L2 rel.error  : 8639.553502601829677587375045
+Linf abs.error: 0.001294031739234924316406
+Linf rel.error: 6348.727748691099805000703782
+Check-norm    : 0.003527084637401854162742
+Validation PASSED
+GFLOPS 61253.3 Afgbced_hb=1_wb=1_cb=4_kb=1_hg=4_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00021138,61253,84791.704298,84792.510826,0.224556,8639.553503,0.001294,6348.727749,0.003527
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 2 4 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85370.2457266112178331241
+L1 test       : 85369.16684756381437182426
+L2 abs.error  : 0.226032841480914931109325
+L2 rel.error  : 3929.305645591735355992568657
+Linf abs.error: 0.001318566501140594482422
+Linf rel.error: 2502.111111111111313221044838
+Check-norm    : 0.003525232723510247044574
+Validation PASSED
+GFLOPS 36589.6 Afgbced_hb=1_wb=2_cb=4_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00035387,36590,85370.245727,85369.166848,0.226033,3929.305646,0.001319,2502.111111,0.003525
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 1 1 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcded
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85125.67549304269778076559
+L1 test       : 85126.57957136188633739948
+L2 abs.error  : 0.184007676483289556168543
+L2 rel.error  : 17736.493227450628182850778103
+Linf abs.error: 0.000707522034645080566406
+Linf rel.error: 14668.263479145472956588491797
+Check-norm    : 0.002878550873352328509647
+Validation PASSED
+GFLOPS 58145.9 Afgbcded_hb=2_wb=1_cb=1_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00022268,58146,85125.675493,85126.579571,0.184008,17736.493227,0.000708,14668.263479,0.002879
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 1 1 1 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcded
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84954.30196729327144566923
+L1 test       : 84954.2372943144291639328
+L2 abs.error  : 0.183603403675760168400899
+L2 rel.error  : 7641.942625356166900019161403
+Linf abs.error: 0.000811278820037841796875
+Linf rel.error: 4957.837772397094340703915805
+Check-norm    : 0.002877974885740282491586
+Validation PASSED
+GFLOPS 79315.9 Afgbcded_hb=2_wb=1_cb=1_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00016324,79316,84954.301967,84954.237294,0.183603,7641.942625,0.000811,4957.837772,0.002878
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 2 1 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcded
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84835.57628650972037576139
+L1 test       : 84835.14861791324801743031
+L2 abs.error  : 0.183491346312500663850997
+L2 rel.error  : 5123.765544444788247346878052
+Linf abs.error: 0.000687837600708007812500
+Linf rel.error: 3517.590308370044112962204963
+Check-norm    : 0.002880982071066102035567
+Validation PASSED
+GFLOPS 31765.2 Afgbcded_hb=2_wb=2_cb=1_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00040761,31765,84835.576287,84835.148618,0.183491,5123.765544,0.000688,3517.590308,0.002881
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 7 1 1 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcded
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85198.87403520963562186807
+L1 test       : 85200.13155445363372564316
+L2 abs.error  : 0.184226949639346521125916
+L2 rel.error  : 9079.788376051219529472291470
+Linf abs.error: 0.000737577676773071289062
+Linf rel.error: 7554.088471849865527474321425
+Check-norm    : 0.002879907391277264187834
+Validation PASSED
+GFLOPS 56685 Afgbcded_hb=7_wb=1_cb=1_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00022842,56685,85198.874035,85200.131554,0.184227,9079.788376,0.000738,7554.088472,0.002880
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 7 2 1 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcded
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84813.48574154209927655756
+L1 test       : 84814.78271424910053610802
+L2 abs.error  : 0.183454089399909398006017
+L2 rel.error  : 8818.849380499421386048197746
+Linf abs.error: 0.000732883810997009277344
+Linf rel.error: 6895.706533776301512261852622
+Check-norm    : 0.002880768722775838442535
+Validation PASSED
+GFLOPS 31378.9 Afgbcded_hb=7_wb=2_cb=1_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00041263,31379,84813.485742,84814.782714,0.183454,8818.849380,0.000733,6895.706534,0.002881
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 1 2 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcded
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85151.48293277151242364198
+L1 test       : 85151.24692650162614881992
+L2 abs.error  : 0.198645998086061675858005
+L2 rel.error  : 43951.698417317864368669688702
+Linf abs.error: 0.001062363386154174804688
+Linf rel.error: 42088.931034482760878745466471
+Check-norm    : 0.003105781954964738529601
+Validation PASSED
+GFLOPS 51114.6 Afgbcded_hb=2_wb=1_cb=2_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00025331,51115,85151.482933,85151.246927,0.198646,43951.698417,0.001062,42088.931034,0.003106
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 1 2 1 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcded
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85148.76402038775268010795
+L1 test       : 85148.38829943723976612091
+L2 abs.error  : 0.198662641555587576869257
+L2 rel.error  : 3667.890337990049374639056623
+Linf abs.error: 0.000903129577636718750000
+Linf rel.error: 2674.777777777777828305261210
+Check-norm    : 0.003106550423894666786845
+Validation PASSED
+GFLOPS 71087.1 Afgbcded_hb=2_wb=1_cb=2_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00018214,71087,85148.764020,85148.388299,0.198663,3667.890338,0.000903,2674.777778,0.003107
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 2 2 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcded
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85122.85135758396063465625
+L1 test       : 85121.99966953019611537457
+L2 abs.error  : 0.198598124417695864885047
+L2 rel.error  : 86671.488134369967156089842319
+Linf abs.error: 0.000905260443687438964844
+Linf rel.error: 86017.000000000000000000000000
+Check-norm    : 0.003106706437267106081512
+Validation PASSED
+GFLOPS 28860.7 Afgbcded_hb=2_wb=2_cb=2_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00044863,28861,85122.851358,85121.999670,0.198598,86671.488134,0.000905,86017.000000,0.003107
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 7 1 2 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcded
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84850.88205633549659978598
+L1 test       : 84850.75267302291467785835
+L2 abs.error  : 0.198284248475672164602202
+L2 rel.error  : 5687.073874412687473522964865
+Linf abs.error: 0.000945702195167541503906
+Linf rel.error: 5020.915708812260163540486246
+Check-norm    : 0.003112390834057609471236
+Validation PASSED
+GFLOPS 51169.7 Afgbcded_hb=7_wb=1_cb=2_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00025304,51170,84850.882056,84850.752673,0.198284,5687.073874,0.000946,5020.915709,0.003112
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 7 2 2 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcded
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85051.538148025210830383
+L1 test       : 85050.89680039975792169571
+L2 abs.error  : 0.198542686369518245337318
+L2 rel.error  : 4763.512672029628447489812970
+Linf abs.error: 0.000886604189872741699219
+Linf rel.error: 2722.012171296127689856803045
+Check-norm    : 0.003108151653700357269078
+Validation PASSED
+GFLOPS 29019.7 Afgbcded_hb=7_wb=2_cb=2_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00044617,29020,85051.538148,85050.896800,0.198543,4763.512672,0.000887,2722.012171,0.003108
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 1 4 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcded
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84892.72328516586276236922
+L1 test       : 84892.05249952804297208786
+L2 abs.error  : 0.225085086821922769617643
+L2 rel.error  : 2935.932194957257706846576184
+Linf abs.error: 0.001243054866790771484375
+Linf rel.error: 1436.514018691588717047125101
+Check-norm    : 0.003530848309813388111178
+Validation PASSED
+GFLOPS 58960.8 Afgbcded_hb=2_wb=1_cb=4_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.0002196,58961,84892.723285,84892.052500,0.225085,2935.932195,0.001243,1436.514019,0.003531
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 1 4 1 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcded
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85053.33167089386552106589
+L1 test       : 85053.6653842597734183073
+L2 abs.error  : 0.225519089862327187789859
+L2 rel.error  : 6440.726118218928604619577527
+Linf abs.error: 0.001297302544116973876953
+Linf rel.error: 5846.488215488215246296022087
+Check-norm    : 0.003530971373334492163093
+Validation PASSED
+GFLOPS 68573.2 Afgbcded_hb=2_wb=1_cb=4_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00018882,68573,85053.331671,85053.665384,0.225519,6440.726118,0.001297,5846.488215,0.003531
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 2 2 4 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcded
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84842.65685145011229906231
+L1 test       : 84841.73551567224785685539
+L2 abs.error  : 0.224613986975047225103097
+L2 rel.error  : 3351.999413472670767077943310
+Linf abs.error: 0.001137897372245788574219
+Linf rel.error: 2503.347826086956501967506483
+Check-norm    : 0.003525362225615630545200
+Validation PASSED
+GFLOPS 36418.8 Afgbcded_hb=2_wb=2_cb=4_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00035553,36419,84842.656851,84841.735516,0.224614,3351.999413,0.001138,2503.347826,0.003525
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 7 1 4 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcded
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85188.77787943897419609129
+L1 test       : 85188.43565365415997803211
+L2 abs.error  : 0.225602835943346902158879
+L2 rel.error  : 82646.601444909727433696389198
+Linf abs.error: 0.001123517751693725585938
+Linf rel.error: 82433.000000000000000000000000
+Check-norm    : 0.003526189443954197075271
+Validation PASSED
+GFLOPS 59184.5 Afgbcded_hb=7_wb=1_cb=4_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00021877,59184,85188.777879,85188.435654,0.225603,82646.601445,0.001124,82433.000000,0.003526
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 7 2 4 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcded
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85245.91332567801873665303
+L1 test       : 85247.58313363930210471153
+L2 abs.error  : 0.225553100145386709041162
+L2 rel.error  : 14336.086328927174690761603415
+Linf abs.error: 0.001112118363380432128906
+Linf rel.error: 8758.138461538461342570371926
+Check-norm    : 0.003523512569398487472710
+Validation PASSED
+GFLOPS 36220.7 Afgbcded_hb=7_wb=2_cb=4_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00035747,36221,85245.913326,85247.583134,0.225553,14336.086329,0.001112,8758.138462,0.003524
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcde
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85050.70151528449787292629
+L1 test       : 85050.21716709574684500694
+L2 abs.error  : 0.183922438198822785215825
+L2 rel.error  : 5159.726099126082772272638977
+Linf abs.error: 0.000812008976936340332031
+Linf rel.error: 3580.958320176823690417222679
+Check-norm    : 0.002880077812956346756251
+Validation PASSED
+GFLOPS 56502.3 Afgbcde_hb=1_wb=1_cb=1_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00022916,56502,85050.701515,85050.217167,0.183922,5159.726099,0.000812,3580.958320,0.002880
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 1 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcde
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85027.824215211599948816
+L1 test       : 85027.74443965684622526169
+L2 abs.error  : 0.183860317788077737288788
+L2 rel.error  : 11043.107850564194450271315873
+Linf abs.error: 0.000705778598785400390625
+Linf rel.error: 10417.317880794702432467602193
+Check-norm    : 0.002879149926386559161379
+Validation PASSED
+GFLOPS 79064.6 Afgbcde_hb=1_wb=1_cb=1_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00016376,79065,85027.824215,85027.744440,0.183860,11043.107851,0.000706,10417.317881,0.002879
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 1 4 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcde
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85216.20494469279947225004
+L1 test       : 85215.96624055458232760429
+L2 abs.error  : 0.184347968552206781245317
+L2 rel.error  : 5801.394297861951599770691246
+Linf abs.error: 0.000693097710609436035156
+Linf rel.error: 4634.180327868852145911660045
+Check-norm    : 0.002880865710351997958233
+Validation PASSED
+GFLOPS 68829.2 Afgbcde_hb=1_wb=1_cb=1_kb=1_hg=4_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00018812,68829,85216.204945,85215.966241,0.184348,5801.394298,0.000693,4634.180328,0.002881
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 2 1 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcde
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85138.43488650840299669653
+L1 test       : 85138.55510059813968837261
+L2 abs.error  : 0.184041834601497478196563
+L2 rel.error  : 5246.888830585746291035320610
+Linf abs.error: 0.000729009509086608886719
+Linf rel.error: 3652.159379407616142998449504
+Check-norm    : 0.002878463527227695037403
+Validation PASSED
+GFLOPS 31397.6 Afgbcde_hb=1_wb=2_cb=1_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00041238,31398,85138.434887,85138.555101,0.184042,5246.888831,0.000729,3652.159379,0.002878
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 2 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcde
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84902.81910075232735835016
+L1 test       : 84902.04519095411524176598
+L2 abs.error  : 0.198611765800102091361623
+L2 rel.error  : 25599.970342973792867269366980
+Linf abs.error: 0.000975310802459716796875
+Linf rel.error: 19319.447761194031045306473970
+Check-norm    : 0.003115559715948664452900
+Validation PASSED
+GFLOPS 50870.3 Afgbcde_hb=1_wb=1_cb=2_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00025453,50870,84902.819101,84902.045191,0.198612,25599.970343,0.000975,19319.447761,0.003116
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 2 1 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcde
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84862.78524659547838382423
+L1 test       : 84863.10154736926779150963
+L2 abs.error  : 0.198421257611167384249384
+L2 rel.error  : 5055.263802199372548784594983
+Linf abs.error: 0.000987961888313293457031
+Linf rel.error: 4080.609709358032432646723464
+Check-norm    : 0.003114025365980493172818
+Validation PASSED
+GFLOPS 71028.4 Afgbcde_hb=1_wb=1_cb=2_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00018229,71028,84862.785247,84863.101547,0.198421,5055.263802,0.000988,4080.609709,0.003114
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 2 1 4 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcde
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84729.18281837778340559453
+L1 test       : 84729.63640444446355104446
+L2 abs.error  : 0.197859320185185788565363
+L2 rel.error  : 25434.537536817468208028003573
+Linf abs.error: 0.000838696956634521484375
+Linf rel.error: 22961.424242424243857385590672
+Check-norm    : 0.003109396910512851261443
+Validation PASSED
+GFLOPS 63307.9 Afgbcde_hb=1_wb=1_cb=2_kb=1_hg=4_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00020452,63308,84729.182818,84729.636404,0.197859,25434.537537,0.000839,22961.424242,0.003109
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 2 2 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcde
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85232.28081926862068939954
+L1 test       : 85232.29540151567198336124
+L2 abs.error  : 0.199499348652625724254150
+L2 rel.error  : 3489.596451696770145645132288
+Linf abs.error: 0.001003593206405639648438
+Linf rel.error: 1806.252818035426798815024085
+Check-norm    : 0.003117991614335272401726
+Validation PASSED
+GFLOPS 29011.4 Afgbcde_hb=1_wb=2_cb=2_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.0004463,29011,85232.280819,85232.295402,0.199499,3489.596452,0.001004,1806.252818,0.003118
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 4 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcde
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85047.58974944351939484477
+L1 test       : 85045.44244412751868367195
+L2 abs.error  : 0.224894536570860698043717
+L2 rel.error  : 34312.280098487703071441501379
+Linf abs.error: 0.001081004738807678222656
+Linf rel.error: 34052.019607843139965552836657
+Check-norm    : 0.003522238964940764462813
+Validation PASSED
+GFLOPS 58228.6 Afgbcde_hb=1_wb=1_cb=4_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00022236,58229,85047.589749,85045.442444,0.224895,34312.280098,0.001081,34052.019608,0.003522
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 4 1 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcde
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85044.16017955300048924983
+L1 test       : 85043.35685817664489150047
+L2 abs.error  : 0.224973332040028395351072
+L2 rel.error  : 162424.469050994899589568376541
+Linf abs.error: 0.001166522502899169921875
+Linf rel.error: 161680.628742514963960275053978
+Check-norm    : 0.003523803842060895235438
+Validation PASSED
+GFLOPS 68558.6 Afgbcde_hb=1_wb=1_cb=4_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00018886,68559,85044.160180,85043.356858,0.224973,162424.469051,0.001167,161680.628743,0.003524
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 4 1 4 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcde
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 85149.48484783673484344035
+L1 test       : 85147.89152167714200913906
+L2 abs.error  : 0.225191744632207535570245
+L2 rel.error  : 15907.834640621385915437713265
+Linf abs.error: 0.001243069767951965332031
+Linf rel.error: 14967.153846153845734079368412
+Check-norm    : 0.003522553170164040726303
+Validation PASSED
+GFLOPS 60533.9 Afgbcde_hb=1_wb=1_cb=4_kb=1_hg=4_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00021389,60534,85149.484848,85147.891522,0.225192,15907.834641,0.001243,14967.153846,0.003523
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 256 256  3 3 1 1  1 1 1 1 1 1  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 2 4 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcde
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 84821.30873204332601744682
+L1 test       : 84820.08870575949549674988
+L2 abs.error  : 0.224754636668954038691837
+L2 rel.error  : 32247.085756136348209111019969
+Linf abs.error: 0.001151010394096374511719
+Linf rel.error: 30036.333333333332120673730969
+Check-norm    : 0.003528816786115229926779
+Validation PASSED
+GFLOPS 36547.8 Afgbcde_hb=1_wb=2_cb=4_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,256,256,14,14,3,3,1,1,1,0.00035427,36548,84821.308732,84820.088706,0.224755,32247.085756,0.001151,30036.333333,0.003529
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
+Invalid input GEMM config: When multiple H pixels are handled in the gemm, then the full ofw should be also used as gemm_n...
