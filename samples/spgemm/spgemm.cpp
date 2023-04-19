@@ -61,6 +61,7 @@ int spgemm_benchmark(int argc, char** argv) {
   unsigned int use_ac_vnni = (use_bcsc > 0) ? 1 : 0;
   unsigned int vnni_block_size = (use_ac_vnni > 0) ? libxsmm_cpuid_dot_pack_factor(LIBXSMM_DATATYPE_BF16) : 1;
   unsigned int n_warmup_iters = 2;
+  unsigned int c_flat = 0;
   long i;
   unsigned long long l_start, l_end;
   double l_total;
@@ -90,6 +91,9 @@ int spgemm_benchmark(int argc, char** argv) {
     sparse_block_bn = atoi(argv[14]);
     hardwired_sparsity = atoi(argv[15]);
     n_iters = atoi(argv[16]);
+    if (argc > 17) {
+      c_flat = atoi(argv[17]);
+    }
     use_ac_vnni = (use_bcsc > 0) ? 1 : 0;
     vnni_block_size = (use_ac_vnni > 0) ? libxsmm_cpuid_dot_pack_factor(LIBXSMM_DATATYPE_BF16) : 1;
     Mb = M/bm;
@@ -114,6 +118,9 @@ int spgemm_benchmark(int argc, char** argv) {
   libxsmm_bitfield l_flags = (use_bf16 == 1) ? LIBXSMM_GEMM_FLAGS('N', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG : LIBXSMM_GEMM_FLAGS('N', 'N') ;
   libxsmm_bitfield l_tc_flags = (use_bf16 == 1) ? LIBXSMM_GEMM_FLAGS('N', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG : LIBXSMM_GEMM_FLAGS('N', 'N') ;
   libxsmm_bitfield l_tr_flags = (use_bf16 == 1) ? LIBXSMM_GEMM_FLAGS('N', 'N') | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG : LIBXSMM_GEMM_FLAGS('N', 'N') ;
+  if (c_flat == 0) {
+    l_flags |= LIBXSMM_GEMM_FLAG_VNNI_C;
+  }
   libxsmm_bitfield l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
   
   if (hardwired_sparsity == 0) {
@@ -508,7 +515,11 @@ int spgemm_benchmark(int argc, char** argv) {
               gemm_param.b.primary = l_b_sp_bcsc_bf16;
               gemm_param.b.secondary = &l_colptr[Nblocks_offsets[i_n]/bcsc_bn];
               gemm_param.b.tertiary  = l_rowidx;
-              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(4, sizeof(libxsmm_bfloat16), l_c_vnni_asm_csc_bf16, i_m, Nblocks_offsets[i_n]/vnni_block_size, 0, Nblocks_offsets[i_n]%vnni_block_size, N/vnni_block_size, bm, vnni_block_size);              
+              if (c_flat == 0) {
+                gemm_param.c.primary = LIBXSMM_ACCESS_RAW(4, sizeof(libxsmm_bfloat16), l_c_vnni_asm_csc_bf16, i_m, Nblocks_offsets[i_n]/vnni_block_size, 0, Nblocks_offsets[i_n]%vnni_block_size, N/vnni_block_size, bm, vnni_block_size);
+              } else {
+                gemm_param.c.primary = LIBXSMM_ACCESS_RAW(3, sizeof(libxsmm_bfloat16), l_c_asm_csc_bf16, i_m, Nblocks_offsets[i_n], 0, N, bm);
+              }        
             }
           }
 
@@ -529,8 +540,10 @@ int spgemm_benchmark(int argc, char** argv) {
       for ( l_i = 0; l_i < Mb; l_i++) {
         for ( l_j = 0; l_j < N; l_j++) {
           for ( l_k = 0; l_k < bm; l_k++ ) {
-            LIBXSMM_VLA_ACCESS(3, l_p_c_asm_csc_bf16,  l_i, l_j, l_k, N, bm) =
-              LIBXSMM_VLA_ACCESS(4, l_p_c_vnni_asm_csc_bf16, l_i, l_j/vnni_block_size, l_k, l_j%vnni_block_size, N/vnni_block_size, bm, vnni_block_size);
+            if (c_flat == 0) {
+              LIBXSMM_VLA_ACCESS(3, l_p_c_asm_csc_bf16,  l_i, l_j, l_k, N, bm) =
+                LIBXSMM_VLA_ACCESS(4, l_p_c_vnni_asm_csc_bf16, l_i, l_j/vnni_block_size, l_k, l_j%vnni_block_size, N/vnni_block_size, bm, vnni_block_size);
+            }
           }
         }
       }
@@ -569,7 +582,11 @@ int spgemm_benchmark(int argc, char** argv) {
               gemm_param.b.primary = l_b_sp_bcsc_bf16;
               gemm_param.b.secondary = &l_colptr[Nblocks_offsets[i_n]/bcsc_bn];
               gemm_param.b.tertiary  = l_rowidx;    
-              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(4, sizeof(libxsmm_bfloat16), l_c_vnni_asm_csc_bf16, i_m, Nblocks_offsets[i_n]/vnni_block_size, 0, Nblocks_offsets[i_n]%vnni_block_size, N/vnni_block_size, bm, vnni_block_size);              
+              if (c_flat == 0) {
+                gemm_param.c.primary = LIBXSMM_ACCESS_RAW(4, sizeof(libxsmm_bfloat16), l_c_vnni_asm_csc_bf16, i_m, Nblocks_offsets[i_n]/vnni_block_size, 0, Nblocks_offsets[i_n]%vnni_block_size, N/vnni_block_size, bm, vnni_block_size);
+              } else {
+                gemm_param.c.primary = LIBXSMM_ACCESS_RAW(3, sizeof(libxsmm_bfloat16), l_c_asm_csc_bf16, i_m, Nblocks_offsets[i_n], 0, N, bm);
+              }            
             }
           }
 
@@ -605,7 +622,11 @@ int spgemm_benchmark(int argc, char** argv) {
               gemm_param.b.primary = l_b_sp_bcsc_bf16;
               gemm_param.b.secondary = &l_colptr[Nblocks_offsets[i_n]/bcsc_bn];
               gemm_param.b.tertiary  = l_rowidx;
-              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(4, sizeof(libxsmm_bfloat16), l_c_vnni_asm_csc_bf16, i_m, Nblocks_offsets[i_n]/vnni_block_size, 0, Nblocks_offsets[i_n]%vnni_block_size, N/vnni_block_size, bm, vnni_block_size);              
+              if (c_flat == 0) {
+                gemm_param.c.primary = LIBXSMM_ACCESS_RAW(4, sizeof(libxsmm_bfloat16), l_c_vnni_asm_csc_bf16, i_m, Nblocks_offsets[i_n]/vnni_block_size, 0, Nblocks_offsets[i_n]%vnni_block_size, N/vnni_block_size, bm, vnni_block_size);
+              } else {
+                gemm_param.c.primary = LIBXSMM_ACCESS_RAW(3, sizeof(libxsmm_bfloat16), l_c_asm_csc_bf16, i_m, Nblocks_offsets[i_n], 0, N, bm);
+              }              
             }
           }
 
