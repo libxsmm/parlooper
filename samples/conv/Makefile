@@ -28,8 +28,8 @@ endif
 LDFLAGS = -ldl 
 IFLAGS = -I$(PARLOOPER_ROOT)/include -I$(PARLOOPER_ROOT)/utils -I$(LIBXSMM_ROOT)/include -I$(LIBXSMM_DNN_ROOT)/include
 SRCDIRS = $(PARLOOPER_ROOT)/utils $(PARLOOPER_ROOT)/src .
-SRCFILES := common_loops.cpp par_loop_cost_estimator.cpp
-OBJFILES := $(patsubst %,$(BLDDIR)/%,$(notdir $(SRCFILES:.cpp=-cpp.o)))
+#SRCFILES := common_loops.cpp par_loop_cost_estimator.cpp
+#OBJFILES := $(patsubst %,$(BLDDIR)/%,$(notdir $(SRCFILES:.cpp=-cpp.o)))
 XFILES := $(OUTDIR)/conv_fwd $(OUTDIR)/conv_bwd $(OUTDIR)/conv_upd $(OUTDIR)/loop_permute_generator
 vpath %.cpp $(SRCDIRS) 
 
@@ -54,9 +54,9 @@ $(OUTDIR)/loop_permute_generator:
 	$(CXX) $(CXXFLAGS) $(PARLOOPER_ROOT)/utils/spec_loop_generator.cpp -o loop_permute_generator
 
 CLEANOBJ:
-	rm -rf *.o
+	rm -f *.o $(BLDDIR)/*.o
 
 .PHONY: clean
-clean:
-	rm -rf conv_fwd conv_bwd conv_upd loop_permute_generator *.o
+clean: CLEANOBJ
+	rm -f $(XFILES)
 

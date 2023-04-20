@@ -53,9 +53,9 @@ $(BLDDIR)/%-cpp.o: %.cpp
 	$(CXX) -fPIC $(CXXFLAGS) $(IFLAGS) $(LFLAGS)  -c $< -o $@ $(LDFLAGS)
 
 CLEANOBJ:
-	rm -rf $(BLDDIR)/*.o
+	rm -f $(BLDDIR)/*.o
 
 .PHONY: clean
-clean:
-	rm -rf $(LIBDIR)/*.a $(LIBDIR)/*.so $(BLDDIR)/*.o
+clean: CLEANOBJ
+	rm -f $(LIBDIR)/*.a $(LIBDIR)/*.so
 
