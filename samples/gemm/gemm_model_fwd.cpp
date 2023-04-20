@@ -29,6 +29,27 @@ int print_bw_iters(int *data, int n_vals) {
   return 0;
 }
 
+void touch_buffer_numa_aware( unsigned char* buf, unsigned long long n_bytes, int n_numa_domains) {
+  int n_threads = omp_get_max_threads();
+  int threads_per_numa = n_threads/n_numa_domains;
+#if defined(_OPENMP)
+# pragma omp parallel
+#endif
+  {
+#if defined(_OPENMP)
+    const int tid = omp_get_thread_num();
+#else
+    const int tid = 0;
+#endif
+    if (tid % threads_per_numa == 0) {
+      int my_numa_node = tid/threads_per_numa;
+      unsigned long long chunksize = (n_bytes + n_numa_domains - 1)/n_numa_domains;
+      unsigned long long zero_chunksize = (my_numa_node < (n_numa_domains-1)) ? chunksize : n_bytes - (n_numa_domains-1) * chunksize;
+      memset( (unsigned char*)buf + my_numa_node * chunksize, 0 , zero_chunksize); 
+    }
+  }
+}
+
 template<typename DType>
 int gemm_benchmark(int argc, char** argv) {
   // Setup default GEMM sizes
@@ -39,6 +60,7 @@ int gemm_benchmark(int argc, char** argv) {
   long kbf = 1;
   long n_layers = 1;
   long n_iters = 1;
+  long n_numa_domains = 1;
   long i;
   long fuse_bias = 0;
   long fuse_relu = 0;
@@ -89,6 +111,9 @@ int gemm_benchmark(int argc, char** argv) {
     }
     if (argc > 14) {
       use_ping_pong_bufs = atoi(argv[14]);
+    }
+    if (argc > 15) {
+      n_numa_domains = atoi(argv[15]);
     }
   }
 
@@ -207,6 +232,14 @@ int gemm_benchmark(int argc, char** argv) {
   init_buf( naive_input,     K*N, 0, 0 );
   init_buf( naive_output,    M*N, 0, 0 );
   init_buf( naive_filter,    M*K, 0, 0 );
+
+  /* We perform NUMA aware initialization fo weight tensors using first-touch method */
+  if (n_numa_domains > 1) {
+    for (i = 0; i < n_layers; i++) {
+      touch_buffer_numa_aware( (unsigned char*)WGT[i], M*K*sizeof(DType), n_numa_domains);
+    }
+  }
+
   if (int8_gemm > 0) {
     naive_input_i8  = (unsigned char*)libxsmm_aligned_malloc( K*N*sizeof(unsigned char ), 2097152);
     naive_output_i8 = (unsigned char*)libxsmm_aligned_malloc( M*N*sizeof(unsigned char ), 2097152);
