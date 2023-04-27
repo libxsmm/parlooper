@@ -95,7 +95,7 @@ int spgemm_benchmark(int argc, char** argv) {
       c_flat = atoi(argv[17]);
     }
     use_ac_vnni = (use_bcsc > 0) ? 1 : 0;
-    vnni_block_size = (use_ac_vnni > 0) ? libxsmm_cpuid_dot_pack_factor(LIBXSMM_DATATYPE_BF16) : 1;
+    vnni_block_size = (use_ac_vnni > 0) ? ((use_bf16 > 0) ? libxsmm_cpuid_dot_pack_factor(LIBXSMM_DATATYPE_BF16) : 1) : 1;
     Mb = M/bm;
 #ifdef HARDWIRED_SPARSITY_KNOB
     if (hardwired_sparsity == 0) {
@@ -145,8 +145,8 @@ int spgemm_benchmark(int argc, char** argv) {
   unsigned int* l_rowidx_tmp = NULL;
   float* l_b_de = (float*)libxsmm_aligned_malloc(sizeof(float) * K * N, 64);
   float* l_b_sp_csc = NULL;
-  libxsmm_bfloat16* l_b_sp_csc_bf16 = NULL;
-  libxsmm_bfloat16* l_b_sp_bcsc_bf16 = NULL;
+  DType* l_b_sp_csc_bf16 = NULL;
+  DType* l_b_sp_bcsc_bf16 = NULL;
   float* l_a = (float*)libxsmm_aligned_malloc(sizeof(float) * M * K, 64);
   libxsmm_bfloat16* l_a_bf16 = (libxsmm_bfloat16*)libxsmm_aligned_malloc(sizeof(libxsmm_bfloat16) * M * K, 64);
   libxsmm_bfloat16* l_a_vnni_bf16 = (libxsmm_bfloat16*)libxsmm_aligned_malloc(sizeof(libxsmm_bfloat16) * M * K, 64);
@@ -264,7 +264,7 @@ int spgemm_benchmark(int argc, char** argv) {
     l_rowidx   = (unsigned int*) libxsmm_aligned_malloc( nnz*sizeof(unsigned int),   64 );
     l_rowidx_tmp = (unsigned int*) libxsmm_aligned_malloc( nnz*sizeof(unsigned int),   64 ); 
     l_b_sp_csc = (float*       ) libxsmm_aligned_malloc( nnz*sizeof(float),          64 );
-    l_b_sp_csc_bf16 = (libxsmm_bfloat16*) libxsmm_aligned_malloc( nnz*sizeof(libxsmm_bfloat16),          64 );
+    l_b_sp_csc_bf16 = (DType*) libxsmm_aligned_malloc( nnz*sizeof(DType),          64 );
     l_k = 0;
     l_colptr[N] = nnz;
     for ( l_i = 0; l_i < N; l_i++ ) {
@@ -274,9 +274,9 @@ int spgemm_benchmark(int argc, char** argv) {
           l_rowidx[l_k] = l_j;
           l_b_sp_csc[l_k] = LIBXSMM_VLA_ACCESS(2, l_p_b_de, l_i, l_j, K);
           if (use_bf16 > 0) {
-            libxsmm_rne_convert_fp32_bf16( &l_b_sp_csc[l_k], &l_b_sp_csc_bf16[l_k], 1);
-            libxsmm_convert_bf16_f32( &l_b_sp_csc_bf16[l_k], &l_b_sp_csc[l_k], 1 );
-            libxsmm_convert_bf16_f32( &l_b_sp_csc_bf16[l_k], &LIBXSMM_VLA_ACCESS(2, l_p_b_de, l_i, l_j, K), 1 );
+            libxsmm_rne_convert_fp32_bf16( &l_b_sp_csc[l_k], (libxsmm_bfloat16*)&l_b_sp_csc_bf16[l_k], 1);
+            libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)&l_b_sp_csc_bf16[l_k], &l_b_sp_csc[l_k], 1 );
+            libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)&l_b_sp_csc_bf16[l_k], &LIBXSMM_VLA_ACCESS(2, l_p_b_de, l_i, l_j, K), 1 );
           }
           l_k++;
         }
@@ -289,7 +289,7 @@ int spgemm_benchmark(int argc, char** argv) {
     l_colptr   = (unsigned int*) libxsmm_aligned_malloc( (N/bcsc_bn+1)*sizeof(unsigned int), 64 );
     l_rowidx   = (unsigned int*) libxsmm_aligned_malloc( nnz/(bcsc_bk*bcsc_bn)*sizeof(unsigned int),   64 );
     l_rowidx_tmp   = (unsigned int*) libxsmm_aligned_malloc( nnz/(bcsc_bk*bcsc_bn)*sizeof(unsigned int),   64 );
-    l_b_sp_bcsc_bf16 = (libxsmm_bfloat16*) libxsmm_aligned_malloc( nnz*sizeof(libxsmm_bfloat16),          64 );
+    l_b_sp_bcsc_bf16 = (DType*) libxsmm_aligned_malloc( nnz*sizeof(DType),          64 );
     l_nz_block_id = 0;
     l_colptr[N/bcsc_bn] = nnz/(bcsc_bk*bcsc_bn);
     for ( l_i = 0; l_i < N/bcsc_bn; l_i++ ) {
@@ -304,7 +304,11 @@ int spgemm_benchmark(int argc, char** argv) {
           for (l_di = 0; l_di < bcsc_bn; l_di++) {
             for (l_dj = 0; l_dj < bcsc_bk; l_dj++) {
               float val = LIBXSMM_VLA_ACCESS(2, l_p_b_de, l_ui+l_di, l_uj+l_dj, K);
-              libxsmm_rne_convert_fp32_bf16( &val, &l_b_sp_bcsc_bf16[l_val_idx], 1);
+              if (use_bf16 > 0) {
+                libxsmm_rne_convert_fp32_bf16( &val, (libxsmm_bfloat16*)&l_b_sp_bcsc_bf16[l_val_idx], 1);
+              } else {
+                l_b_sp_bcsc_bf16[l_val_idx] = val;     
+              }
               l_val_idx++;
             }
           }
@@ -502,9 +506,17 @@ int spgemm_benchmark(int argc, char** argv) {
           libxsmm_gemm_param gemm_param;
 
           if (use_bf16 == 0) {
-            gemm_param.a.primary = LIBXSMM_ACCESS_RAW(3, sizeof(float), l_a, i_m, i_k, 0, K, bm);
-            gemm_param.b.primary = l_b_sp_csc;         
-            gemm_param.c.primary = LIBXSMM_ACCESS_RAW(3, sizeof(float), l_c_asm_csc, i_m, Nblocks_offsets[i_n], 0, N, bm);
+            if (use_bcsc == 0) {
+              gemm_param.a.primary = LIBXSMM_ACCESS_RAW(3, sizeof(float), l_a, i_m, i_k, 0, K, bm);
+              gemm_param.b.primary = l_b_sp_csc;         
+              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(3, sizeof(float), l_c_asm_csc, i_m, Nblocks_offsets[i_n], 0, N, bm);
+            } else {
+              gemm_param.a.primary = LIBXSMM_ACCESS_RAW(3, sizeof(float), l_a, i_m, i_k, 0, K, bm);;
+              gemm_param.b.primary = l_b_sp_bcsc_bf16;
+              gemm_param.b.secondary = &l_colptr[Nblocks_offsets[i_n]/bcsc_bn];
+              gemm_param.b.tertiary  = l_rowidx;
+              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(3, sizeof(float), l_c_asm_csc, i_m, Nblocks_offsets[i_n], 0, N, bm);
+            }
           } else {
             if (use_bcsc == 0) {
               gemm_param.a.primary = LIBXSMM_ACCESS_RAW(3, sizeof(libxsmm_bfloat16), l_a_bf16, i_m, i_k, 0, K, bm);              
@@ -569,9 +581,17 @@ int spgemm_benchmark(int argc, char** argv) {
           int i_k = ind[0], i_m = ind[1], i_n = ind[2];
           libxsmm_gemm_param gemm_param;
           if (use_bf16 == 0) {
-            gemm_param.a.primary = LIBXSMM_ACCESS_RAW(3, sizeof(float), l_a, i_m, i_k, 0, K, bm);
-            gemm_param.b.primary = l_b_sp_csc;
-            gemm_param.c.primary = LIBXSMM_ACCESS_RAW(3, sizeof(float), l_c_asm_csc, i_m, Nblocks_offsets[i_n], 0, N, bm);
+            if (use_bcsc == 0) {
+              gemm_param.a.primary = LIBXSMM_ACCESS_RAW(3, sizeof(float), l_a, i_m, i_k, 0, K, bm);
+              gemm_param.b.primary = l_b_sp_csc;
+              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(3, sizeof(float), l_c_asm_csc, i_m, Nblocks_offsets[i_n], 0, N, bm);
+            } else {
+              gemm_param.a.primary = LIBXSMM_ACCESS_RAW(3, sizeof(float), l_a, i_m, i_k, 0, K, bm);;
+              gemm_param.b.primary = l_b_sp_bcsc_bf16;
+              gemm_param.b.secondary = &l_colptr[Nblocks_offsets[i_n]/bcsc_bn];
+              gemm_param.b.tertiary  = l_rowidx;
+              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(3, sizeof(float), l_c_asm_csc, i_m, Nblocks_offsets[i_n], 0, N, bm);
+            }
           } else {
             if (use_bcsc == 0) {
               gemm_param.a.primary = LIBXSMM_ACCESS_RAW(3, sizeof(libxsmm_bfloat16), l_a_bf16, i_m, i_k, 0, K, bm);              
@@ -609,9 +629,17 @@ int spgemm_benchmark(int argc, char** argv) {
           int i_k = ind[0], i_m = ind[1], i_n = ind[2];
           libxsmm_gemm_param gemm_param;
           if (use_bf16 == 0) {
-            gemm_param.a.primary = LIBXSMM_ACCESS_RAW(3, sizeof(float), l_a, i_m, i_k, 0, K, bm);
-            gemm_param.b.primary = l_b_sp_csc;
-            gemm_param.c.primary = LIBXSMM_ACCESS_RAW(3, sizeof(float), l_c_asm_csc, i_m, Nblocks_offsets[i_n], 0, N, bm);
+            if (use_bcsc == 0) {       
+              gemm_param.a.primary = LIBXSMM_ACCESS_RAW(3, sizeof(float), l_a, i_m, i_k, 0, K, bm);
+              gemm_param.b.primary = l_b_sp_csc;
+              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(3, sizeof(float), l_c_asm_csc, i_m, Nblocks_offsets[i_n], 0, N, bm);
+            } else {
+              gemm_param.a.primary = LIBXSMM_ACCESS_RAW(3, sizeof(float), l_a, i_m, i_k, 0, K, bm);;
+              gemm_param.b.primary = l_b_sp_bcsc_bf16;
+              gemm_param.b.secondary = &l_colptr[Nblocks_offsets[i_n]/bcsc_bn];
+              gemm_param.b.tertiary  = l_rowidx;
+              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(3, sizeof(float), l_c_asm_csc, i_m, Nblocks_offsets[i_n], 0, N, bm);
+            }
           } else {
             if (use_bcsc == 0) {
               gemm_param.a.primary = LIBXSMM_ACCESS_RAW(3, sizeof(libxsmm_bfloat16), l_a_bf16, i_m, i_k, 0, K, bm);              
