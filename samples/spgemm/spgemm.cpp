@@ -318,6 +318,21 @@ int spgemm_benchmark(int argc, char** argv) {
     }
   }
 
+  /* Convert the BCSC to be in VNNI4T */
+  if ((use_bcsc > 0) && (vnni_block_size == 4) && (use_bf16 > 0) && (bcsc_bk > vnni_block_size)) {
+    unsigned int l_di = 0, l_dj = 0;  
+    for ( l_i = 0; l_i < nnz/(bcsc_bk*bcsc_bn); l_i++) {
+      libxsmm_bfloat16 tmp_block[bcsc_bk*bcsc_bn];
+      memcpy(tmp_block, &l_b_sp_bcsc_bf16[l_i*(bcsc_bk*bcsc_bn)], (bcsc_bk*bcsc_bn)*sizeof(libxsmm_bfloat16));
+      for (l_di = 0; l_di < bcsc_bn; l_di++) {
+        for (l_dj = 0; l_dj < bcsc_bk; l_dj++) {
+          l_b_sp_bcsc_bf16[l_i*(bcsc_bk*bcsc_bn) + (l_dj/vnni_block_size) * (bcsc_bn * vnni_block_size) + l_di * vnni_block_size + l_dj % vnni_block_size] = tmp_block[l_di * bcsc_bk + l_dj];    
+
+        }
+      }
+    }
+  }
+
   /* Logically partition the sparse B matrix */
   if (use_bcsc > 0) {
     unsigned int total_nnz_processed = 0;
