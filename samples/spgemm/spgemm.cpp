@@ -11,6 +11,18 @@
 
 #define HARDWIRED_SPARSITY_KNOB
 
+int ullcompare( const void* a , const void* b ) {
+  const unsigned long long aull = *( const unsigned long* )a;
+  const unsigned long long bull = *( const unsigned long* )b;
+  if ( aull < bull ) {
+    return -1;
+  } else if( aull > bull ) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
 void shuffle_array(unsigned long long *array, int n) {
   if (n > 1)
   {
@@ -26,15 +38,9 @@ void shuffle_array(unsigned long long *array, int n) {
 }
 
 int is_dense_grid_point(unsigned long long grid_point_id, int n_dense_grid_points, unsigned long long *grid_point_array) {
-  int result = 0;
-  int i = 0;
-  for (i = 0; i < n_dense_grid_points; i++) {
-    if (grid_point_array[i] == grid_point_id) {
-      return 1;
-    }
-  } 
-
-  return result;
+  unsigned long long key = grid_point_id;
+  unsigned long long *found_ptr = (unsigned long long*) bsearch(&key, grid_point_array, n_dense_grid_points, sizeof(unsigned long long), ullcompare);
+  return ((found_ptr == NULL) ? 0 : 1);
 }
 
 template<typename DType>
@@ -117,6 +123,7 @@ int spgemm_benchmark(int argc, char** argv) {
   }
   /* Pemute array of n grid points and consider densifying on the ones with id <= n_dense_grid_points */
   shuffle_array(grid_point_array, n_grid_points);
+  qsort(grid_point_array, n_dense_grid_points, sizeof(unsigned long long), ullcompare);
 
   // Kernel management specifics
   libxsmm_bitfield l_flags = (use_bf16 == 1) ? LIBXSMM_GEMM_FLAGS('N', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG : LIBXSMM_GEMM_FLAGS('N', 'N') ;
