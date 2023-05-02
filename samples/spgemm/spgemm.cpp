@@ -12,8 +12,8 @@
 #define HARDWIRED_SPARSITY_KNOB
 
 int ullcompare( const void* a , const void* b ) {
-  const unsigned long long aull = *( const unsigned long* )a;
-  const unsigned long long bull = *( const unsigned long* )b;
+  const unsigned long long aull = *( const unsigned long long* )a;
+  const unsigned long long bull = *( const unsigned long long* )b;
   if ( aull < bull ) {
     return -1;
   } else if( aull > bull ) {
