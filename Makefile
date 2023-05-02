@@ -6,6 +6,12 @@
 # Further information: https://github.com/libxsmm/libxsmm/                    #
 # SPDX-License-Identifier: BSD-3-Clause                                       #
 ###############################################################################
+.SUFFIXES:
+
+MAKEFLAGS += --no-print-directory
+MAKEFLAGS += --no-builtin-rules
+MAKEFLAGS += --no-builtin-variables
+
 BLDDIR := $(if $(BLDDIR),$(BLDDIR),./build)
 LIBDIR := $(if $(LIBDIR),$(LIBDIR),./lib)
 LIBXSMM_ROOT := $(if $(LIBXSMM_ROOT),$(LIBXSMM_ROOT),../../libxsmm)
@@ -31,11 +37,13 @@ SRCFILES := jit_compile.cpp par_loop_generator.cpp
 OBJFILES := $(patsubst %,$(BLDDIR)/%,$(notdir $(SRCFILES:.cpp=-cpp.o)))
 vpath %.cpp $(SRCDIRS) 
 
-$(info "BLDDIR = $(BLDDIR)")
-$(info "OBJFILES = $(OBJFILES)")
+#$(info "BLDDIR = $(BLDDIR)")
+#$(info "OBJFILES = $(OBJFILES)")
 
 .PHONY: all
-all: builddir libdir slib dlib CLEANOBJ
+# To avoid dealing with dependency files or having stale object files, object files are always cleaned up after each build
+all: builddir libdir slib dlib
+	rm -f $(BLDDIR)/*.o
 
 builddir:
 	mkdir -p $(BLDDIR)
