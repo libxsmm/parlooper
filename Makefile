@@ -15,7 +15,6 @@ MAKEFLAGS += --no-builtin-variables
 BLDDIR := $(if $(BLDDIR),$(BLDDIR),./build)
 LIBDIR := $(if $(LIBDIR),$(LIBDIR),./lib)
 LIBXSMM_ROOT := $(if $(LIBXSMM_ROOT),$(LIBXSMM_ROOT),../../libxsmm)
-LIBXSMM_DNN_ROOT := $(if $(LIBXSMM_DNN_ROOT),$(LIBXSMM_DNN_ROOT),../../libxsmm_dnn)
 CXX = g++
 CXXFLAGS = -fopenmp -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14 -O2
 ifeq ($(PARLOOPER_COMPILER),gcc)
@@ -31,7 +30,7 @@ ifeq ($(PARLOOPER_COMPILER),icc)
   CXXFLAGS := -fopenmp -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14 -O2 
 endif
 LDFLAGS = -ldl 
-IFLAGS = -I./include -I./utils -I$(LIBXSMM_ROOT)/include -I$(LIBXSMM_DNN_ROOT)/include
+IFLAGS = -I./include -I./utils -I$(LIBXSMM_ROOT)/include
 SRCDIRS = ./utils ./src .
 SRCFILES := jit_compile.cpp par_loop_generator.cpp
 OBJFILES := $(patsubst %,$(BLDDIR)/%,$(notdir $(SRCFILES:.cpp=-cpp.o)))
