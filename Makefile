@@ -12,6 +12,16 @@ MAKEFLAGS += --no-print-directory
 MAKEFLAGS += --no-builtin-rules
 MAKEFLAGS += --no-builtin-variables
 
+make.goal := $(lastword $(MAKECMDGOALS))
+make.file := $(lastword $(MAKEFILE_LIST))
+
+make.dir := $(dir $(shell realpath $(make.file)))
+pwd := $(shell cd . && pwd)
+ifeq (,$(and $(pwd),$(make.dir)))
+$(error "Either pwd=$(pwd) or make.dir=$(make.dir) empty")
+endif
+root.dir := $(shell realpath $(make.dir))
+
 BLDDIR := $(if $(BLDDIR),$(BLDDIR),./build)
 LIBDIR := $(if $(LIBDIR),$(LIBDIR),./lib)
 LIBXSMM_ROOT := $(if $(LIBXSMM_ROOT),$(LIBXSMM_ROOT),../../libxsmm)
@@ -23,19 +33,20 @@ ifeq ($(PARLOOPER_COMPILER),gcc)
 endif
 ifeq ($(PARLOOPER_COMPILER),clang)
   CXX := clang++
-  CXXFLAGS := -Wno-unused-command-line-argument -Wno-format -fopenmp=libomp -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14 -O2  
+  CXXFLAGS := -Wno-unused-command-line-argument -Wno-format -fopenmp=libomp -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14 -O2
 endif
 ifeq ($(PARLOOPER_COMPILER),icc)
   CXX := icpc
-  CXXFLAGS := -fopenmp -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14 -O2 
+  CXXFLAGS := -fopenmp -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14 -O2
 endif
-LDFLAGS = -ldl 
-IFLAGS = -I./include -I./utils -I$(LIBXSMM_ROOT)/include
-SRCDIRS = ./utils ./src .
+LDFLAGS = -ldl
+IFLAGS = -I$(root.dir)/include -I$(root.dir)/utils -I$(LIBXSMM_ROOT)/include
+SRCDIRS = $(root.dir)/src
 SRCFILES := jit_compile.cpp par_loop_generator.cpp
 OBJFILES := $(patsubst %,$(BLDDIR)/%,$(notdir $(SRCFILES:.cpp=-cpp.o)))
-vpath %.cpp $(SRCDIRS) 
+vpath %.cpp $(SRCDIRS)
 
+#$(info "SRCDIRS = $(SRCDIRS)")
 #$(info "BLDDIR = $(BLDDIR)")
 #$(info "OBJFILES = $(OBJFILES)")
 
