@@ -87,6 +87,29 @@ LIBXSMM_INLINE void matrix_copy_KC_to_KCCK_i8flat(char *src, char *dst, int C, i
   }
 }
 
+LIBXSMM_INLINE void matrix_copy_KC_to_KCCK_f16flat(libxsmm_float16 *src, libxsmm_float16 *dst, int C, int K, int bc, int bk) {
+  int k1, k2, c1, c2;
+  int kBlocks = K/bk;
+  int cBlocks = C/bc;
+  LIBXSMM_VLA_DECL(2, libxsmm_float16, real_src, src, C);
+  LIBXSMM_VLA_DECL(4, libxsmm_float16, real_dst, dst, cBlocks, bc, bk);
+
+#if defined(_OPENMP)
+  LIBXSMM_OMP_VAR(c1); LIBXSMM_OMP_VAR(c2); LIBXSMM_OMP_VAR(k2);
+# pragma omp parallel for private(k1,c1,c2,k2)
+#endif
+  for (k1 = 0; k1 < kBlocks; k1++) {
+    for (c1 = 0; c1 < cBlocks; c1++) {
+      for (c2 = 0; c2 < bc; c2++) {
+        for (k2 = 0; k2 < bk; k2++) {
+          LIBXSMM_VLA_ACCESS(4, real_dst, k1, c1, c2, k2, cBlocks, bc, bk) =
+            LIBXSMM_VLA_ACCESS(2, real_src, k1*bk+k2, c1*bc+c2, C);
+        }
+      }
+    }
+  }
+}
+
 void naive_fullyconnected_fused_int8f16( naive_fullyconnected_t* param, const libxsmm_float16* input_ptr, libxsmm_float16* output_ptr, const char* filter_ptr) {
   const int nImg = param->N;
   const int nIFm = param->C;
@@ -117,6 +140,38 @@ void naive_fullyconnected_fused_int8f16( naive_fullyconnected_t* param, const li
         libxsmm_convert_f16_f32( &cur_a, &a_use, 1 );
         a_use = a_use * l_float_one;
         libxsmm_rne_convert_fp32_f16(&a_use, &cur_a, 1);
+        libxsmm_convert_f16_f32( &cur_a, &a_use, 1 );
+        cur_b = LIBXSMM_VLA_ACCESS(2, input, img, ifm, nIFm);
+        libxsmm_convert_f16_f32( &cur_b, &b_use, 1 );
+        f32_res += a_use * b_use;
+        libxsmm_rne_convert_fp32_f16(&f32_res, &c_tmp, 1);
+        libxsmm_convert_f16_f32( &c_tmp, &f32_res, 1 );
+      }
+      libxsmm_rne_convert_fp32_f16(&f32_res, &c_tmp, 1);
+      LIBXSMM_VLA_ACCESS(2, output, img, ofm, nOFm) = c_tmp;
+    }
+  }
+}
+
+void naive_fullyconnected_fused_f16( naive_fullyconnected_t* param, const libxsmm_float16* input_ptr, libxsmm_float16* output_ptr, libxsmm_float16* filter_ptr) {
+  const int nImg = param->N;
+  const int nIFm = param->C;
+  const int nOFm = param->K;
+  int img, ifm, ofm;
+  LIBXSMM_VLA_DECL(2, const libxsmm_float16, input,  input_ptr,  nIFm);
+  LIBXSMM_VLA_DECL(2, const libxsmm_float16, filter, filter_ptr, nIFm);
+  LIBXSMM_VLA_DECL(2, libxsmm_float16, output, output_ptr, nOFm);
+#if defined(_OPENMP)
+  LIBXSMM_OMP_VAR(img); LIBXSMM_OMP_VAR(ifm); LIBXSMM_OMP_VAR(ofm);
+# pragma omp parallel for private(img, ofm, ifm)
+#endif
+  for (ofm = 0; ofm < nOFm; ++ofm) {
+    for(img = 0; img < nImg; ++img) {
+      float f32_res = 0.0f, a_use, b_use;
+      libxsmm_float16 c_tmp;
+      libxsmm_float16 cur_a, cur_b;
+      for (ifm = 0; ifm < nIFm; ++ifm) {
+        cur_a = LIBXSMM_VLA_ACCESS(2, filter, ofm, ifm, nIFm);
         libxsmm_convert_f16_f32( &cur_a, &a_use, 1 );
         cur_b = LIBXSMM_VLA_ACCESS(2, input, img, ifm, nIFm);
         libxsmm_convert_f16_f32( &cur_b, &b_use, 1 );
