@@ -109,9 +109,6 @@ int spgemm_benchmark(int argc, char** argv) {
   libxsmm_bitfield l_tc_flags = (use_bf16 == 1 || use_i8 == 1) ? LIBXSMM_GEMM_FLAGS('N', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG : LIBXSMM_GEMM_FLAGS('N', 'N') ;
   libxsmm_bitfield l_tr_flags = (use_bf16 == 1 || use_i8 == 1) ? LIBXSMM_GEMM_FLAGS('N', 'N') | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG : LIBXSMM_GEMM_FLAGS('N', 'N') ;
   libxsmm_bitfield l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
-  l_flags |=  LIBXSMM_GEMM_FLAG_NO_HARDWIRED_SPARSITY;
-  l_tc_flags |= LIBXSMM_GEMM_FLAG_NO_HARDWIRED_SPARSITY;
-  l_tr_flags |= LIBXSMM_GEMM_FLAG_NO_HARDWIRED_SPARSITY;
   libxsmm_gemmfunction tc_kernel;
   libxsmm_gemmfunction tr_kernel;
   libxsmm_meltwfunction_unary kernels_zero[N_target_blocks+1];
@@ -356,7 +353,7 @@ int spgemm_benchmark(int argc, char** argv) {
   }
 
   /* Create sparse routines */
-  libxsmm_gemm_shape gemm_shape = libxsmm_create_gemm_shape( 1, 0, K, K, -1, N, dtype, dtype, dtypeout, LIBXSMM_DATATYPE(float) );
+  libxsmm_gemm_shape gemm_shape = libxsmm_create_gemm_shape( 1, 0, K, K, 0, N, dtype, dtype, dtypeout, LIBXSMM_DATATYPE(float) );
   libxsmm_gemmfunction spmm_kernel_bcsc = libxsmm_create_packed_spgemm_bcsc(gemm_shape, l_flags, l_prefetch_flags, bm, bcsc_bk, bcsc_bn, NULL, NULL);
   if (spmm_kernel_bcsc == NULL) {
     printf("Could not generate BCSC kernel !!!\n");
