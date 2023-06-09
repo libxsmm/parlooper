@@ -354,7 +354,7 @@ int spgemm_benchmark(int argc, char** argv) {
 
   /* Create sparse routines */
   libxsmm_gemm_shape gemm_shape = libxsmm_create_gemm_shape( 1, 0, K, K, 0, N, dtype, dtype, dtypeout, LIBXSMM_DATATYPE(float) );
-  libxsmm_gemmfunction spmm_kernel_bcsc = libxsmm_create_packed_spgemm_bcsc(gemm_shape, l_flags, l_prefetch_flags, bm, bcsc_bk, bcsc_bn, NULL, NULL);
+  libxsmm_gemmfunction spmm_kernel_bcsc = libxsmm_create_packed_spgemm_bcsc(gemm_shape, l_flags, l_prefetch_flags, bm, bcsc_bk, bcsc_bn);
   if (spmm_kernel_bcsc == NULL) {
     printf("Could not generate BCSC kernel !!!\n");
     return 0;
@@ -371,8 +371,8 @@ int spgemm_benchmark(int argc, char** argv) {
   }
   if (use_bf16 > 0 || use_i8 > 0) {
     libxsmm_gemm_shape gemm_shape = libxsmm_create_gemm_shape( 1, 0, K, K, -1, N, dtype, dtype, dtypeout, LIBXSMM_DATATYPE(float) );
-    tc_kernel = libxsmm_create_packed_spgemm_bcsc(gemm_shape, l_tc_flags, l_prefetch_flags, bm, bcsc_bk, bcsc_bn, l_colptr, l_rowidx);
-    tr_kernel = libxsmm_create_packed_spgemm_bcsc(gemm_shape, l_tr_flags, l_prefetch_flags, bm, bcsc_bk, bcsc_bn, l_colptr, l_rowidx);
+    tc_kernel = libxsmm_create_packed_spgemm_bcsc(gemm_shape, l_tc_flags, l_prefetch_flags, bm, bcsc_bk, bcsc_bn);
+    tr_kernel = libxsmm_create_packed_spgemm_bcsc(gemm_shape, l_tr_flags, l_prefetch_flags, bm, bcsc_bk, bcsc_bn);
   }
 
   // JIT requested nested loop specs
