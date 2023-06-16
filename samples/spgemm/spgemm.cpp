@@ -138,9 +138,9 @@ int spgemm_benchmark(int argc, char** argv) {
   unsigned int *Nblocks_offsets = (unsigned int*)libxsmm_aligned_malloc(sizeof(unsigned int) * N_target_blocks, 64);
 
   LIBXSMM_VLA_DECL(2, float, l_p_b_de, l_b_de, K);
-  LIBXSMM_VLA_DECL(3, float, l_p_a, (char*)l_a, K, bm);
+  LIBXSMM_VLA_DECL(3, float, l_p_a, l_a, K, bm);
 
-  LIBXSMM_VLA_DECL(2, char, l_p_b_de_i8, l_b_de, K);
+  LIBXSMM_VLA_DECL(2, char, l_p_b_de_i8, (char*)l_b_de, K);
   LIBXSMM_VLA_DECL(3, char, l_p_a_i8, (char*)l_a, K, bm);
   
   LIBXSMM_VLA_DECL(4, DType, l_p_a_vnni_spmm, l_a_vnni_spmm, K/vnni_block_size, bm, vnni_block_size);
