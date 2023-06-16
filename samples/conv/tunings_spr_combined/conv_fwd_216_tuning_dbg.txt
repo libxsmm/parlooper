@@ -1,0 +1,1184 @@
+l =  216
+line =  Afgbdec
+CBFcount =  1
+KBFcount =  1
+HBFcount =  1
+WBFcount =  1
+range_list =  [range(0, 1), range(0, 1), range(0, 1), range(0, 1), range(0, 2)]
+dbg: tuning_params =  [1, 1, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdec']
+cmd to execute =  ( ./conv_fwd Afgbdec 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdec']
+cmd to execute =  ( ./conv_fwd Afgbdec 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 1 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+
+line =  Afgbdcec
+CBFcount =  1
+KBFcount =  2
+HBFcount =  1
+WBFcount =  1
+range_list =  [range(0, 1), range(0, 4), range(0, 1), range(0, 1), range(0, 2)]
+dbg: tuning_params =  [1, 1, 1, 2, 1, 0]
+dbg: tuning_string =  ['Afgbdcec']
+cmd to execute =  ( ./conv_fwd Afgbdcec 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 2 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 2, 2, 0]
+dbg: tuning_string =  ['Afgbdcec']
+cmd to execute =  ( ./conv_fwd Afgbdcec 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 2 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 4, 1, 0]
+dbg: tuning_string =  ['Afgbdcec']
+cmd to execute =  ( ./conv_fwd Afgbdcec 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 4 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 4, 2, 0]
+dbg: tuning_string =  ['Afgbdcec']
+cmd to execute =  ( ./conv_fwd Afgbdcec 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 4 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 8, 1, 0]
+dbg: tuning_string =  ['Afgbdcec']
+cmd to execute =  ( ./conv_fwd Afgbdcec 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 8 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 8, 2, 0]
+dbg: tuning_string =  ['Afgbdcec']
+cmd to execute =  ( ./conv_fwd Afgbdcec 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 8 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 16, 1, 0]
+dbg: tuning_string =  ['Afgbdcec']
+cmd to execute =  ( ./conv_fwd Afgbdcec 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 16 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 16, 2, 0]
+dbg: tuning_string =  ['Afgbdcec']
+cmd to execute =  ( ./conv_fwd Afgbdcec 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 16 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+
+line =  Afgbdce
+CBFcount =  1
+KBFcount =  1
+HBFcount =  1
+WBFcount =  1
+range_list =  [range(0, 1), range(0, 1), range(0, 1), range(0, 1), range(0, 2)]
+dbg: tuning_params =  [1, 1, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbdce']
+cmd to execute =  ( ./conv_fwd Afgbdce 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbdce']
+cmd to execute =  ( ./conv_fwd Afgbdce 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 1 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+
+line =  Afgbdedc
+CBFcount =  1
+KBFcount =  1
+HBFcount =  2
+WBFcount =  1
+line =  Afgbdecdc
+CBFcount =  1
+KBFcount =  2
+HBFcount =  2
+WBFcount =  1
+line =  Afgbdecd
+CBFcount =  1
+KBFcount =  1
+HBFcount =  2
+WBFcount =  1
+line =  Afgbdcedc
+CBFcount =  1
+KBFcount =  2
+HBFcount =  2
+WBFcount =  1
+line =  Afgbdcecd
+CBFcount =  1
+KBFcount =  2
+HBFcount =  2
+WBFcount =  1
+line =  Afgbdcdec
+CBFcount =  1
+KBFcount =  2
+HBFcount =  2
+WBFcount =  1
+line =  Afgbdcdce
+CBFcount =  1
+KBFcount =  2
+HBFcount =  2
+WBFcount =  1
+line =  Afgbdcde
+CBFcount =  1
+KBFcount =  1
+HBFcount =  2
+WBFcount =  1
+line =  Afgbdced
+CBFcount =  1
+KBFcount =  1
+HBFcount =  2
+WBFcount =  1
+line =  Afgbedc
+CBFcount =  1
+KBFcount =  1
+HBFcount =  1
+WBFcount =  1
+range_list =  [range(0, 1), range(0, 1), range(0, 1), range(0, 1), range(0, 2)]
+dbg: tuning_params =  [1, 1, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbedc']
+cmd to execute =  ( ./conv_fwd Afgbedc 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbedc']
+cmd to execute =  ( ./conv_fwd Afgbedc 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 1 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+
+line =  Afgbedcdc
+CBFcount =  1
+KBFcount =  2
+HBFcount =  2
+WBFcount =  1
+line =  Afgbedcd
+CBFcount =  1
+KBFcount =  1
+HBFcount =  2
+WBFcount =  1
+line =  Afgbecdc
+CBFcount =  1
+KBFcount =  2
+HBFcount =  1
+WBFcount =  1
+range_list =  [range(0, 1), range(0, 4), range(0, 1), range(0, 1), range(0, 2)]
+dbg: tuning_params =  [1, 1, 1, 2, 1, 0]
+dbg: tuning_string =  ['Afgbecdc']
+cmd to execute =  ( ./conv_fwd Afgbecdc 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 2 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 2, 2, 0]
+dbg: tuning_string =  ['Afgbecdc']
+cmd to execute =  ( ./conv_fwd Afgbecdc 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 2 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 4, 1, 0]
+dbg: tuning_string =  ['Afgbecdc']
+cmd to execute =  ( ./conv_fwd Afgbecdc 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 4 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 4, 2, 0]
+dbg: tuning_string =  ['Afgbecdc']
+cmd to execute =  ( ./conv_fwd Afgbecdc 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 4 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 8, 1, 0]
+dbg: tuning_string =  ['Afgbecdc']
+cmd to execute =  ( ./conv_fwd Afgbecdc 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 8 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 8, 2, 0]
+dbg: tuning_string =  ['Afgbecdc']
+cmd to execute =  ( ./conv_fwd Afgbecdc 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 8 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 16, 1, 0]
+dbg: tuning_string =  ['Afgbecdc']
+cmd to execute =  ( ./conv_fwd Afgbecdc 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 16 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 16, 2, 0]
+dbg: tuning_string =  ['Afgbecdc']
+cmd to execute =  ( ./conv_fwd Afgbecdc 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 16 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+
+line =  Afgbecdcd
+CBFcount =  1
+KBFcount =  2
+HBFcount =  2
+WBFcount =  1
+line =  Afgbecd
+CBFcount =  1
+KBFcount =  1
+HBFcount =  1
+WBFcount =  1
+range_list =  [range(0, 1), range(0, 1), range(0, 1), range(0, 1), range(0, 2)]
+dbg: tuning_params =  [1, 1, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbecd']
+cmd to execute =  ( ./conv_fwd Afgbecd 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbecd']
+cmd to execute =  ( ./conv_fwd Afgbecd 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 1 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+
+line =  Afgbcdedc
+CBFcount =  1
+KBFcount =  2
+HBFcount =  2
+WBFcount =  1
+line =  Afgbcdecd
+CBFcount =  1
+KBFcount =  2
+HBFcount =  2
+WBFcount =  1
+line =  Afgbcdec
+CBFcount =  1
+KBFcount =  2
+HBFcount =  1
+WBFcount =  1
+range_list =  [range(0, 1), range(0, 4), range(0, 1), range(0, 1), range(0, 2)]
+dbg: tuning_params =  [1, 1, 1, 2, 1, 0]
+dbg: tuning_string =  ['Afgbcdec']
+cmd to execute =  ( ./conv_fwd Afgbcdec 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 2 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 2, 2, 0]
+dbg: tuning_string =  ['Afgbcdec']
+cmd to execute =  ( ./conv_fwd Afgbcdec 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 2 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 4, 1, 0]
+dbg: tuning_string =  ['Afgbcdec']
+cmd to execute =  ( ./conv_fwd Afgbcdec 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 4 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 4, 2, 0]
+dbg: tuning_string =  ['Afgbcdec']
+cmd to execute =  ( ./conv_fwd Afgbcdec 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 4 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 8, 1, 0]
+dbg: tuning_string =  ['Afgbcdec']
+cmd to execute =  ( ./conv_fwd Afgbcdec 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 8 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 8, 2, 0]
+dbg: tuning_string =  ['Afgbcdec']
+cmd to execute =  ( ./conv_fwd Afgbcdec 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 8 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 16, 1, 0]
+dbg: tuning_string =  ['Afgbcdec']
+cmd to execute =  ( ./conv_fwd Afgbcdec 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 16 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 16, 2, 0]
+dbg: tuning_string =  ['Afgbcdec']
+cmd to execute =  ( ./conv_fwd Afgbcdec 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 16 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+
+line =  Afgbcdce
+CBFcount =  1
+KBFcount =  2
+HBFcount =  1
+WBFcount =  1
+range_list =  [range(0, 1), range(0, 4), range(0, 1), range(0, 1), range(0, 2)]
+dbg: tuning_params =  [1, 1, 1, 2, 1, 0]
+dbg: tuning_string =  ['Afgbcdce']
+cmd to execute =  ( ./conv_fwd Afgbcdce 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 2 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 2, 2, 0]
+dbg: tuning_string =  ['Afgbcdce']
+cmd to execute =  ( ./conv_fwd Afgbcdce 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 2 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 4, 1, 0]
+dbg: tuning_string =  ['Afgbcdce']
+cmd to execute =  ( ./conv_fwd Afgbcdce 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 4 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 4, 2, 0]
+dbg: tuning_string =  ['Afgbcdce']
+cmd to execute =  ( ./conv_fwd Afgbcdce 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 4 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 8, 1, 0]
+dbg: tuning_string =  ['Afgbcdce']
+cmd to execute =  ( ./conv_fwd Afgbcdce 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 8 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 8, 2, 0]
+dbg: tuning_string =  ['Afgbcdce']
+cmd to execute =  ( ./conv_fwd Afgbcdce 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 8 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 16, 1, 0]
+dbg: tuning_string =  ['Afgbcdce']
+cmd to execute =  ( ./conv_fwd Afgbcdce 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 16 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 16, 2, 0]
+dbg: tuning_string =  ['Afgbcdce']
+cmd to execute =  ( ./conv_fwd Afgbcdce 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 16 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+
+line =  Afgbcdcde
+CBFcount =  1
+KBFcount =  2
+HBFcount =  2
+WBFcount =  1
+line =  Afgbcdced
+CBFcount =  1
+KBFcount =  2
+HBFcount =  2
+WBFcount =  1
+line =  Afgbcedc
+CBFcount =  1
+KBFcount =  2
+HBFcount =  1
+WBFcount =  1
+range_list =  [range(0, 1), range(0, 4), range(0, 1), range(0, 1), range(0, 2)]
+dbg: tuning_params =  [1, 1, 1, 2, 1, 0]
+dbg: tuning_string =  ['Afgbcedc']
+cmd to execute =  ( ./conv_fwd Afgbcedc 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 2 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 2, 2, 0]
+dbg: tuning_string =  ['Afgbcedc']
+cmd to execute =  ( ./conv_fwd Afgbcedc 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 2 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 4, 1, 0]
+dbg: tuning_string =  ['Afgbcedc']
+cmd to execute =  ( ./conv_fwd Afgbcedc 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 4 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 4, 2, 0]
+dbg: tuning_string =  ['Afgbcedc']
+cmd to execute =  ( ./conv_fwd Afgbcedc 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 4 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 8, 1, 0]
+dbg: tuning_string =  ['Afgbcedc']
+cmd to execute =  ( ./conv_fwd Afgbcedc 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 8 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 8, 2, 0]
+dbg: tuning_string =  ['Afgbcedc']
+cmd to execute =  ( ./conv_fwd Afgbcedc 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 8 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 16, 1, 0]
+dbg: tuning_string =  ['Afgbcedc']
+cmd to execute =  ( ./conv_fwd Afgbcedc 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 16 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 16, 2, 0]
+dbg: tuning_string =  ['Afgbcedc']
+cmd to execute =  ( ./conv_fwd Afgbcedc 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 16 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+
+line =  Afgbcedcd
+CBFcount =  1
+KBFcount =  2
+HBFcount =  2
+WBFcount =  1
+line =  Afgbcecd
+CBFcount =  1
+KBFcount =  2
+HBFcount =  1
+WBFcount =  1
+range_list =  [range(0, 1), range(0, 4), range(0, 1), range(0, 1), range(0, 2)]
+dbg: tuning_params =  [1, 1, 1, 2, 1, 0]
+dbg: tuning_string =  ['Afgbcecd']
+cmd to execute =  ( ./conv_fwd Afgbcecd 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 2 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 2, 2, 0]
+dbg: tuning_string =  ['Afgbcecd']
+cmd to execute =  ( ./conv_fwd Afgbcecd 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 2 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 4, 1, 0]
+dbg: tuning_string =  ['Afgbcecd']
+cmd to execute =  ( ./conv_fwd Afgbcecd 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 4 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 4, 2, 0]
+dbg: tuning_string =  ['Afgbcecd']
+cmd to execute =  ( ./conv_fwd Afgbcecd 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 4 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 8, 1, 0]
+dbg: tuning_string =  ['Afgbcecd']
+cmd to execute =  ( ./conv_fwd Afgbcecd 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 8 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 8, 2, 0]
+dbg: tuning_string =  ['Afgbcecd']
+cmd to execute =  ( ./conv_fwd Afgbcecd 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 8 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 16, 1, 0]
+dbg: tuning_string =  ['Afgbcecd']
+cmd to execute =  ( ./conv_fwd Afgbcecd 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 16 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 16, 2, 0]
+dbg: tuning_string =  ['Afgbcecd']
+cmd to execute =  ( ./conv_fwd Afgbcecd 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 16 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+
+line =  Afgbced
+CBFcount =  1
+KBFcount =  1
+HBFcount =  1
+WBFcount =  1
+range_list =  [range(0, 1), range(0, 1), range(0, 1), range(0, 1), range(0, 2)]
+dbg: tuning_params =  [1, 1, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbced']
+cmd to execute =  ( ./conv_fwd Afgbced 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbced']
+cmd to execute =  ( ./conv_fwd Afgbced 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 1 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+
+line =  Afgbcded
+CBFcount =  1
+KBFcount =  1
+HBFcount =  2
+WBFcount =  1
+line =  Afgbcde
+CBFcount =  1
+KBFcount =  1
+HBFcount =  1
+WBFcount =  1
+range_list =  [range(0, 1), range(0, 1), range(0, 1), range(0, 1), range(0, 2)]
+dbg: tuning_params =  [1, 1, 1, 1, 1, 0]
+dbg: tuning_string =  ['Afgbcde']
+cmd to execute =  ( ./conv_fwd Afgbcde 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 1 1 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+dbg: tuning_params =  [1, 1, 1, 1, 2, 0]
+dbg: tuning_string =  ['Afgbcde']
+cmd to execute =  ( ./conv_fwd Afgbcde 56 14 14 1024 512 1 1 1 1 0 0 32 32 1 1 1 1 2 0 1000 ) >> conv_fwd_216_tuning_dbg.txt 
+
+script version, l, config_name, nlines, ncombinations =  v1 216 conv_fwd_general 30 60
+_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 2 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbecdc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119641.8204381714313058183
+L1 test       : 119642.9950224857311695814
+L2 abs.error  : 0.182180517425938826026055
+L2 rel.error  : 24760.997915801399358315393329
+Linf abs.error: 0.000584959983825683593750
+Linf rel.error: 24251.631578947370144305750728
+Check-norm    : 0.002880090309927294846271
+Validation PASSED
+GFLOPS 49714.4 Afgbecdc_hb=1_wb=1_cb=1_kb=2_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00023151,49714,119641.820438,119642.995022,0.182181,24760.997916,0.000585,24251.631579,0.002880
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 2 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbecdc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119537.2392810835590353236
+L1 test       : 119538.664378300542011857
+L2 abs.error  : 0.181928275379536569245076
+L2 rel.error  : 34550.046974984856205992400646
+Linf abs.error: 0.000482723116874694824219
+Linf rel.error: 33535.000000000000000000000000
+Check-norm    : 0.002878532403507958869343
+Validation PASSED
+GFLOPS 65883.3 Afgbecdc_hb=1_wb=1_cb=1_kb=2_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00017469,65883,119537.239281,119538.664378,0.181928,34550.046975,0.000483,33535.000000,0.002879
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 4 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbecdc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119344.3173893483908614144
+L1 test       : 119344.063977827550843358
+L2 abs.error  : 0.181526263108930080436565
+L2 rel.error  : 50310.289027587328746449202299
+Linf abs.error: 0.000491939485073089599609
+Linf rel.error: 46898.199999999997089616954327
+Check-norm    : 0.002876848567593496067141
+Validation PASSED
+GFLOPS 49684.7 Afgbecdc_hb=1_wb=1_cb=1_kb=4_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00023164,49685,119344.317389,119344.063978,0.181526,50310.289028,0.000492,46898.200000,0.002877
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 4 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbecdc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119461.1140057443990372121
+L1 test       : 119461.1091116740717552602
+L2 abs.error  : 0.181903295371300538496584
+L2 rel.error  : 23277.361765977606410160660744
+Linf abs.error: 0.000554695725440979003906
+Linf rel.error: 18109.345924453278712462633848
+Check-norm    : 0.002880145517332995640236
+Validation PASSED
+GFLOPS 63668.5 Afgbecdc_hb=1_wb=1_cb=1_kb=4_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00018077,63668,119461.114006,119461.109112,0.181903,23277.361766,0.000555,18109.345924,0.002880
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 8 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbecdc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119614.33909045641485136
+L1 test       : 119614.5801633121445775032
+L2 abs.error  : 0.181992600139144922177792
+L2 rel.error  : 10017.031888430987237370572984
+Linf abs.error: 0.000483535230159759521484
+Linf rel.error: 8125.576131687243105261586607
+Check-norm    : 0.002877396129558045228397
+Validation PASSED
+GFLOPS 48716.3 Afgbecdc_hb=1_wb=1_cb=1_kb=8_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00023625,48716,119614.339090,119614.580163,0.181993,10017.031888,0.000484,8125.576132,0.002877
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 8 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbecdc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119243.5766774980729678646
+L1 test       : 119243.1749276730697602034
+L2 abs.error  : 0.181269029735500325495323
+L2 rel.error  : 5980.690305532014463096857071
+Linf abs.error: 0.000579074025154113769531
+Linf rel.error: 3572.691275167785079247551039
+Check-norm    : 0.002875362424685198262791
+Validation PASSED
+GFLOPS 64455.4 Afgbecdc_hb=1_wb=1_cb=1_kb=8_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00017856,64455,119243.576677,119243.174928,0.181269,5980.690306,0.000579,3572.691275,0.002875
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 16 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbecdc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119516.6749653449660399929
+L1 test       : 119517.5103933529462665319
+L2 abs.error  : 0.182050407437583716685481
+L2 rel.error  : 8530.281230533606503740884364
+Linf abs.error: 0.000471770763397216796875
+Linf rel.error: 4559.494845360824911040253937
+Check-norm    : 0.002881778871253433318284
+Validation PASSED
+GFLOPS 44973.9 Afgbecdc_hb=1_wb=1_cb=1_kb=16_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00025591,44974,119516.674965,119517.510393,0.182050,8530.281231,0.000472,4559.494845,0.002882
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 16 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbecdc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119919.9744746760261477903
+L1 test       : 119920.8434271529549732804
+L2 abs.error  : 0.182681049242456428061132
+L2 rel.error  : 146477.603553397784708067774773
+Linf abs.error: 0.000510901212692260742188
+Linf rel.error: 146357.014134275610558688640594
+Check-norm    : 0.002881511661052019775825
+Validation PASSED
+GFLOPS 63563.4 Afgbecdc_hb=1_wb=1_cb=1_kb=16_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00018107,63563,119919.974475,119920.843427,0.182681,146477.603553,0.000511,146357.014134,0.002882
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbecd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119261.3840783697087317705
+L1 test       : 119261.3401000290177762508
+L2 abs.error  : 0.181547054318281053664208
+L2 rel.error  : 16790.683972496026399312540889
+Linf abs.error: 0.000559665262699127197266
+Linf rel.error: 16383.000000000000000000000000
+Check-norm    : 0.002879504413958938486423
+Validation PASSED
+GFLOPS 49101.8 Afgbecd_hb=1_wb=1_cb=1_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00023439,49102,119261.384078,119261.340100,0.181547,16790.683972,0.000560,16383.000000,0.002880
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 1 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbecd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119558.1210422457515960559
+L1 test       : 119558.6799347330816090107
+L2 abs.error  : 0.181931817295247072463482
+L2 rel.error  : 45932.747082684676570352166891
+Linf abs.error: 0.000509396195411682128906
+Linf rel.error: 44498.454545454544131644070148
+Check-norm    : 0.002877880436056518779347
+Validation PASSED
+GFLOPS 64266.3 Afgbecd_hb=1_wb=1_cb=1_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00017909,64266,119558.121042,119558.679935,0.181932,45932.747083,0.000509,44498.454545,0.002878
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 2 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcdec
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119392.2820785756630357355
+L1 test       : 119391.7929429656360298395
+L2 abs.error  : 0.181955927252406918226413
+L2 rel.error  : 12028.732933593917550751939416
+Linf abs.error: 0.000503003597259521484375
+Linf rel.error: 8409.833914053426269674673676
+Check-norm    : 0.002882391917560673481186
+Validation PASSED
+GFLOPS 48823.1 Afgbcdec_hb=1_wb=1_cb=1_kb=2_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00023573,48823,119392.282079,119391.792943,0.181956,12028.732934,0.000503,8409.833914,0.002882
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 2 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcdec
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119612.4955294127867091447
+L1 test       : 119613.8047679739538580179
+L2 abs.error  : 0.182269686215697807041280
+L2 rel.error  : 220244.608812430611578747630119
+Linf abs.error: 0.000485017895698547363281
+Linf rel.error: 217461.363636363646946847438812
+Check-norm    : 0.002882604291977473431191
+Validation PASSED
+GFLOPS 63832.4 Afgbcdec_hb=1_wb=1_cb=1_kb=2_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.0001803,63832,119612.495529,119613.804768,0.182270,220244.608812,0.000485,217461.363636,0.002883
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 4 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcdec
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119365.3050604720774572343
+L1 test       : 119365.5370323848910629749
+L2 abs.error  : 0.181307494984123990233726
+L2 rel.error  : 105234.419699491249048151075840
+Linf abs.error: 0.000508368015289306640625
+Linf rel.error: 90741.153846153843915089964867
+Check-norm    : 0.002872737383578592706979
+Validation PASSED
+GFLOPS 49684.1 Afgbcdec_hb=1_wb=1_cb=1_kb=4_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00023165,49684,119365.305060,119365.537032,0.181307,105234.419699,0.000508,90741.153846,0.002873
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 4 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcdec
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119897.7564055164984893054
+L1 test       : 119897.6255896063521504402
+L2 abs.error  : 0.182227735971207976950481
+L2 rel.error  : 9286.033501249967230251058936
+Linf abs.error: 0.000566527247428894042969
+Linf rel.error: 6021.367454068241386266890913
+Check-norm    : 0.002875009674846074839843
+Validation PASSED
+GFLOPS 67062.6 Afgbcdec_hb=1_wb=1_cb=1_kb=4_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00017162,67063,119897.756406,119897.625590,0.182228,9286.033501,0.000567,6021.367454,0.002875
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 8 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcdec
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119811.8507701698981691152
+L1 test       : 119814.7763218870386481285
+L2 abs.error  : 0.182128875107069126970671
+L2 rel.error  : 25441.070219596509559778496623
+Linf abs.error: 0.000624135136604309082031
+Linf rel.error: 16127.000000000000000000000000
+Check-norm    : 0.002875792931283061796416
+Validation PASSED
+GFLOPS 48596.8 Afgbcdec_hb=1_wb=1_cb=1_kb=8_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00023683,48597,119811.850770,119814.776322,0.182129,25441.070220,0.000624,16127.000000,0.002876
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 8 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcdec
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119550.0168134572159033269
+L1 test       : 119550.2063951126765459776
+L2 abs.error  : 0.181969800239932699703616
+L2 rel.error  : 10016.982823502987230313010514
+Linf abs.error: 0.000511154532432556152344
+Linf rel.error: 7393.077922077922266907989979
+Check-norm    : 0.002879200600207077343634
+Validation PASSED
+GFLOPS 67217.7 Afgbcdec_hb=1_wb=1_cb=1_kb=8_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00017122,67218,119550.016813,119550.206395,0.181970,10016.982824,0.000511,7393.077922,0.002879
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 16 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcdec
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119425.2763518035208107904
+L1 test       : 119425.316792589146643877
+L2 abs.error  : 0.181537817535074252894844
+L2 rel.error  : 12779.841643030358682153746486
+Linf abs.error: 0.000561878085136413574219
+Linf rel.error: 10113.000000000000000000000000
+Check-norm    : 0.002874746921114718425927
+Validation PASSED
+GFLOPS 48200 Afgbcdec_hb=1_wb=1_cb=1_kb=16_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00023878,48200,119425.276352,119425.316793,0.181538,12779.841643,0.000562,10113.000000,0.002875
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 16 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcdec
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119324.379032958546304144
+L1 test       : 119325.3238929605577141047
+L2 abs.error  : 0.181527509310780876816693
+L2 rel.error  : 31960.634940805117366835474968
+Linf abs.error: 0.000467166304588317871094
+Linf rel.error: 25160.142857142858701990917325
+Check-norm    : 0.002877672779067862261076
+Validation PASSED
+GFLOPS 66377.8 Afgbcdec_hb=1_wb=1_cb=1_kb=16_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00017339,66378,119324.379033,119325.323893,0.181528,31960.634941,0.000467,25160.142857,0.002878
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 2 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcdce
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119572.0910000343428691849
+L1 test       : 119572.4412434808909893036
+L2 abs.error  : 0.182085513703884122049814
+L2 rel.error  : 13361.738135779891308629885316
+Linf abs.error: 0.000462323427200317382812
+Linf rel.error: 11938.486552567237595212645829
+Check-norm    : 0.002880223070996764354879
+Validation PASSED
+GFLOPS 49826.3 Afgbcdce_hb=1_wb=1_cb=1_kb=2_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00023099,49826,119572.091000,119572.441243,0.182086,13361.738136,0.000462,11938.486553,0.002880
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 2 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcdce
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 120031.0409066612628521398
+L1 test       : 120030.3730034579057246447
+L2 abs.error  : 0.182761931320570364389866
+L2 rel.error  : 7876.931370429497292207088321
+Linf abs.error: 0.000494167208671569824219
+Linf rel.error: 4527.521654501216289645526558
+Check-norm    : 0.002880097332447663447536
+Validation PASSED
+GFLOPS 63559.5 Afgbcdce_hb=1_wb=1_cb=1_kb=2_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00018108,63560,120031.040907,120030.373003,0.182762,7876.931370,0.000494,4527.521655,0.002880
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 4 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcdce
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119694.9702333100140094757
+L1 test       : 119693.174167814664542675
+L2 abs.error  : 0.182343468942561648393763
+L2 rel.error  : 37091.292409685454913415014744
+Linf abs.error: 0.000519037246704101562500
+Linf rel.error: 29388.174603174604271771386266
+Check-norm    : 0.002881556404636512625644
+Validation PASSED
+GFLOPS 49943.9 Afgbcdce_hb=1_wb=1_cb=1_kb=4_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00023044,49944,119694.970233,119693.174168,0.182343,37091.292410,0.000519,29388.174603,0.002882
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 4 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcdce
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119581.9698172379285097122
+L1 test       : 119581.1334487911080941558
+L2 abs.error  : 0.181953031205356441368792
+L2 rel.error  : 30246.695183204159548040479422
+Linf abs.error: 0.000505380332469940185547
+Linf rel.error: 22392.466666666667151730507612
+Check-norm    : 0.002878472529228043742117
+Validation PASSED
+GFLOPS 67129.4 Afgbcdce_hb=1_wb=1_cb=1_kb=4_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00017145,67129,119581.969817,119581.133449,0.181953,30246.695183,0.000505,22392.466667,0.002878
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 8 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcdce
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119657.7423074628750327975
+L1 test       : 119657.5702132286969572306
+L2 abs.error  : 0.182000853680046065230513
+L2 rel.error  : 7229.163154675780788238625973
+Linf abs.error: 0.000529766082763671875000
+Linf rel.error: 5191.758800521512057457584888
+Check-norm    : 0.002876794396752613194174
+Validation PASSED
+GFLOPS 49735.9 Afgbcdce_hb=1_wb=1_cb=1_kb=8_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00023141,49736,119657.742307,119657.570213,0.182001,7229.163155,0.000530,5191.758801,0.002877
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 8 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcdce
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119524.9169531468069180846
+L1 test       : 119525.2215441199950873852
+L2 abs.error  : 0.182156543395111364391781
+L2 rel.error  : 15638.697591679039760492742062
+Linf abs.error: 0.000545322895050048828125
+Linf rel.error: 11244.381818181818744051270187
+Check-norm    : 0.002882088670505598190091
+Validation PASSED
+GFLOPS 66813.4 Afgbcdce_hb=1_wb=1_cb=1_kb=8_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00017226,66813,119524.916953,119525.221544,0.182157,15638.697592,0.000545,11244.381818,0.002882
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 16 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcdce
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119319.6561425325344316661
+L1 test       : 119319.0957991823088377714
+L2 abs.error  : 0.181352569519597883740403
+L2 rel.error  : 22079.884540786748402751982212
+Linf abs.error: 0.000490278005599975585938
+Linf rel.error: 20804.079365079363924451172352
+Check-norm    : 0.002874084297565327253410
+Validation PASSED
+GFLOPS 50039 Afgbcdce_hb=1_wb=1_cb=1_kb=16_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00023,50039,119319.656143,119319.095799,0.181353,22079.884541,0.000490,20804.079365,0.002874
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 16 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcdce
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119458.3205607805284671485
+L1 test       : 119459.5828514674212783575
+L2 abs.error  : 0.181700369279200080185888
+L2 rel.error  : 8011.353098041707198717631400
+Linf abs.error: 0.000456832349300384521484
+Linf rel.error: 3911.185404339250453631393611
+Check-norm    : 0.002877223919717804452578
+Validation PASSED
+GFLOPS 67217.3 Afgbcdce_hb=1_wb=1_cb=1_kb=16_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00017122,67217,119458.320561,119459.582851,0.181700,8011.353098,0.000457,3911.185404,0.002877
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 2 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcedc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119764.7203440873418003321
+L1 test       : 119765.9939062986522912979
+L2 abs.error  : 0.182354778320301363914169
+L2 rel.error  : 7636.439881733444963174406439
+Linf abs.error: 0.000488311052322387695312
+Linf rel.error: 5776.105590062112241866998374
+Check-norm    : 0.002879716630344373966277
+Validation PASSED
+GFLOPS 49592 Afgbcedc_hb=1_wb=1_cb=1_kb=2_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00023208,49592,119764.720344,119765.993906,0.182355,7636.439882,0.000488,5776.105590,0.002880
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 2 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcedc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119823.5518423142057145014
+L1 test       : 119823.738097122753970325
+L2 abs.error  : 0.182372892651625678750449
+L2 rel.error  : 6150.409206619125143333803862
+Linf abs.error: 0.000443451106548309326172
+Linf rel.error: 3360.969904240766027214704081
+Check-norm    : 0.002878558980397246704064
+Validation PASSED
+GFLOPS 63798.5 Afgbcedc_hb=1_wb=1_cb=1_kb=2_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.0001804,63799,119823.551842,119823.738097,0.182373,6150.409207,0.000443,3360.969904,0.002879
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 4 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcedc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119642.3744096286100102589
+L1 test       : 119642.2855406943708658218
+L2 abs.error  : 0.182146808334115506422535
+L2 rel.error  : 6036.387814371394597401376814
+Linf abs.error: 0.000484406948089599609375
+Linf rel.error: 3675.874418604651054920395836
+Check-norm    : 0.002879112502966187005921
+Validation PASSED
+GFLOPS 49784 Afgbcedc_hb=1_wb=1_cb=1_kb=4_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00023118,49784,119642.374410,119642.285541,0.182147,6036.387814,0.000484,3675.874419,0.002879
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 4 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcedc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119591.097584141927654855
+L1 test       : 119592.8359246139880269766
+L2 abs.error  : 0.181935747032340666695660
+L2 rel.error  : 35473.289537627497338689863682
+Linf abs.error: 0.000505477190017700195312
+Linf rel.error: 34504.696969696968153584748507
+Check-norm    : 0.002877253824695440598963
+Validation PASSED
+GFLOPS 66456.1 Afgbcedc_hb=1_wb=1_cb=1_kb=4_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00017318,66456,119591.097584,119592.835925,0.181936,35473.289538,0.000505,34504.696970,0.002877
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 8 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcedc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119397.4450585870799841359
+L1 test       : 119398.3535891803912818432
+L2 abs.error  : 0.181854305433488072640813
+L2 rel.error  : 40726.032688536426576320081949
+Linf abs.error: 0.000488057732582092285156
+Linf rel.error: 39320.599999999998544808477163
+Check-norm    : 0.002880666827516880582755
+Validation PASSED
+GFLOPS 50150.7 Afgbcedc_hb=1_wb=1_cb=1_kb=8_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00022949,50151,119397.445059,119398.353589,0.181854,40726.032689,0.000488,39320.600000,0.002881
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 8 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcedc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119679.1035376363870454952
+L1 test       : 119679.1083970516920089722
+L2 abs.error  : 0.182244019862630862727215
+L2 rel.error  : 9173.136423077914514578878880
+Linf abs.error: 0.000507637858390808105469
+Linf rel.error: 5408.260726072607212699949741
+Check-norm    : 0.002879906855421632185660
+Validation PASSED
+GFLOPS 67146 Afgbcedc_hb=1_wb=1_cb=1_kb=8_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00017141,67146,119679.103538,119679.108397,0.182244,9173.136423,0.000508,5408.260726,0.002880
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 16 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcedc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119644.5334733531490201131
+L1 test       : 119644.6919425518717616796
+L2 abs.error  : 0.182368320143831419422042
+L2 rel.error  : 19093.693238092917454196140170
+Linf abs.error: 0.000505104660987854003906
+Linf rel.error: 16601.453333333334740018472075
+Check-norm    : 0.002883006752530115068822
+Validation PASSED
+GFLOPS 48892.1 Afgbcedc_hb=1_wb=1_cb=1_kb=16_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.0002354,48892,119644.533473,119644.691943,0.182368,19093.693238,0.000505,16601.453333,0.002883
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 16 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcedc
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119641.9253888415842084214
+L1 test       : 119641.6598218008875846863
+L2 abs.error  : 0.181807094966983606720845
+L2 rel.error  : 13837.138926834160884027369320
+Linf abs.error: 0.000481352210044860839844
+Linf rel.error: 10165.767346938775517628528178
+Check-norm    : 0.002874066164046363072715
+Validation PASSED
+GFLOPS 67244.2 Afgbcedc_hb=1_wb=1_cb=1_kb=16_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00017115,67244,119641.925389,119641.659822,0.181807,13837.138927,0.000481,10165.767347,0.002874
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 2 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcecd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119704.3172415466833626851
+L1 test       : 119703.5718911343719810247
+L2 abs.error  : 0.181949734987157246690614
+L2 rel.error  : 123632.324801374285016208887100
+Linf abs.error: 0.000470578670501708984375
+Linf rel.error: 123362.882352941174758598208427
+Check-norm    : 0.002875312561204210800442
+Validation PASSED
+GFLOPS 49754.8 Afgbcecd_hb=1_wb=1_cb=1_kb=2_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00023132,49755,119704.317242,119703.571891,0.181950,123632.324801,0.000471,123362.882353,0.002875
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 2 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcecd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119678.8893629524536663666
+L1 test       : 119677.727041648468002677
+L2 abs.error  : 0.182155727191840560719172
+L2 rel.error  : 104405.612494525033980607986450
+Linf abs.error: 0.000514134764671325683594
+Linf rel.error: 83455.000000000000000000000000
+Check-norm    : 0.002879004177478241416344
+Validation PASSED
+GFLOPS 64818.5 Afgbcecd_hb=1_wb=1_cb=1_kb=2_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00017756,64818,119678.889363,119677.727042,0.182156,104405.612495,0.000514,83455.000000,0.002879
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 4 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcecd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 120148.259018292257678695
+L1 test       : 120148.0009660921059548855
+L2 abs.error  : 0.182840737871975911321698
+L2 rel.error  : 23052.346697775388747686520219
+Linf abs.error: 0.000528380274772644042969
+Linf rel.error: 18411.886597938144404906779528
+Check-norm    : 0.002878641263301281744830
+Validation PASSED
+GFLOPS 48658.6 Afgbcecd_hb=1_wb=1_cb=1_kb=4_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00023653,48659,120148.259018,120148.000966,0.182841,23052.346698,0.000528,18411.886598,0.002879
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 4 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcecd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119668.6465580027143005282
+L1 test       : 119668.5467375055886805058
+L2 abs.error  : 0.181813056886354545982343
+L2 rel.error  : 6612.918261638895273790694773
+Linf abs.error: 0.000534996390342712402344
+Linf rel.error: 4729.268456375839377869851887
+Check-norm    : 0.002873366143942498139585
+Validation PASSED
+GFLOPS 65189.2 Afgbcecd_hb=1_wb=1_cb=1_kb=4_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00017655,65189,119668.646558,119668.546738,0.181813,6612.918262,0.000535,4729.268456,0.002873
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 8 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcecd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119612.4867461407120572403
+L1 test       : 119611.9012862639501690865
+L2 abs.error  : 0.182157009819813253681531
+L2 rel.error  : 9482.532049294737589661963284
+Linf abs.error: 0.000524654984474182128906
+Linf rel.error: 8485.571428571429350995458663
+Check-norm    : 0.002880575599798583432548
+Validation PASSED
+GFLOPS 48967 Afgbcecd_hb=1_wb=1_cb=1_kb=8_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00023504,48967,119612.486746,119611.901286,0.182157,9482.532049,0.000525,8485.571429,0.002881
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 8 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcecd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119478.2028733062470564619
+L1 test       : 119478.2757673307787626982
+L2 abs.error  : 0.181900670941125025548146
+L2 rel.error  : 7660.640167503573138674255461
+Linf abs.error: 0.000538796186447143554688
+Linf rel.error: 3806.831991599579851026646793
+Check-norm    : 0.002879275498090819174202
+Validation PASSED
+GFLOPS 67088 Afgbcecd_hb=1_wb=1_cb=1_kb=8_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00017155,67088,119478.202873,119478.275767,0.181901,7660.640168,0.000539,3806.831992,0.002879
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 16 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcecd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119198.2330844768875977024
+L1 test       : 119197.2640410589519888163
+L2 abs.error  : 0.181118701651905217309135
+L2 rel.error  : 39048.394478805479593575000763
+Linf abs.error: 0.000508919358253479003906
+Linf rel.error: 37662.922077922077733092010021
+Check-norm    : 0.002874368641133946689070
+Validation PASSED
+GFLOPS 49973.4 Afgbcecd_hb=1_wb=1_cb=1_kb=16_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00023031,49973,119198.233084,119197.264041,0.181119,39048.394479,0.000509,37662.922078,0.002874
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 16 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcecd
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119653.1680530365701997653
+L1 test       : 119651.5295782380271703005
+L2 abs.error  : 0.182147237813521517546533
+L2 rel.error  : 34833.192799989490595180541277
+Linf abs.error: 0.000512093305587768554688
+Linf rel.error: 25837.307692307691468158736825
+Check-norm    : 0.002879138505073834588405
+Validation PASSED
+GFLOPS 66678.6 Afgbcecd_hb=1_wb=1_cb=1_kb=16_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00017261,66679,119653.168053,119651.529578,0.182147,34833.192800,0.000512,25837.307692,0.002879
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119795.9622165225882781669
+L1 test       : 119794.9497804176062345505
+L2 abs.error  : 0.182483638493948857606242
+L2 rel.error  : 58423.816641099590924568474293
+Linf abs.error: 0.000501036643981933593750
+Linf rel.error: 48037.858638743455230724066496
+Check-norm    : 0.002881820591988016981577
+Validation PASSED
+GFLOPS 48756.3 Afgbced_hb=1_wb=1_cb=1_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00023606,48756,119795.962217,119794.949780,0.182484,58423.816641,0.000501,48037.858639,0.002882
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 1 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbced
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119635.3056182250729762018
+L1 test       : 119634.2289191803429275751
+L2 abs.error  : 0.181998562995417140220056
+L2 rel.error  : 7346.839058631894658901728690
+Linf abs.error: 0.000497311353683471679688
+Linf rel.error: 4438.846833578792029584292322
+Check-norm    : 0.002877121848725351128950
+Validation PASSED
+GFLOPS 63754 Afgbced_hb=1_wb=1_cb=1_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00018052,63754,119635.305618,119634.228919,0.181999,7346.839059,0.000497,4438.846834,0.002877
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 1 1 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcde
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119143.3279296387627255172
+L1 test       : 119144.0897967658238485456
+L2 abs.error  : 0.181349683320983057210896
+L2 rel.error  : 32332.066255818739591632038355
+Linf abs.error: 0.000474154949188232421875
+Linf rel.error: 31791.761904761904588667675853
+Check-norm    : 0.002878752640108716079337
+Validation PASSED
+GFLOPS 50066.9 Afgbcde_hb=1_wb=1_cb=1_kb=1_hg=1_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00022988,50067,119143.327930,119144.089797,0.181350,32332.066256,0.000474,31791.761905,0.002879
+Test parameters: N H W C K R S stride_h stride_w  pad_h pad_w pad_h_in pad_w_in pad_h_out pad_w_out  bc bk zero_output_rims with_bias with_relu: 56  14 14 1024 512  1 1 1 1  0 0 0 0 0 0  32 32  0  0 0
+Tuning parameters: h_block w_block c_block k_block h_in_gemm pack_input logical_padding input_padding_copy: 1 1 1 1 2 0 0 0
+Tuning parameters: avoid_rim_fmas: 0
+Tuning string: Afgbcde
+Extra parameters: avoid_racey_zeroing_in_rims: 0
+##########################################
+#           Correctness - FWD            #
+##########################################
+L1 reference  : 119549.530512668177834712
+L1 test       : 119549.3658521727193146944
+L2 abs.error  : 0.182021786385179462630646
+L2 rel.error  : 6378.743623332134120573755354
+Linf abs.error: 0.000558823347091674804688
+Linf rel.error: 4402.081891580161027377471328
+Check-norm    : 0.002880070602408329582395
+Validation PASSED
+GFLOPS 66826.6 Afgbcde_hb=1_wb=1_cb=1_kb=1_hg=2_pu=0
+PERFDUMP,FP,1.17-3587,56,56,1024,512,14,14,1,1,1,0,0,0.00017222,66827,119549.530513,119549.365852,0.182022,6378.743623,0.000559,4402.081892,0.002880
