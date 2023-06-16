@@ -105,9 +105,11 @@ int spgemm_benchmark(int argc, char** argv) {
   qsort(grid_point_array, n_dense_grid_points, sizeof(unsigned long long), ullcompare);
 
   // Kernel management specifics
-  libxsmm_bitfield l_flags = (use_bf16 == 1 || use_i8 == 1) ? LIBXSMM_GEMM_FLAGS('N', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG : LIBXSMM_GEMM_FLAGS('N', 'N') ;
-  libxsmm_bitfield l_tc_flags = (use_bf16 == 1 || use_i8 == 1) ? LIBXSMM_GEMM_FLAGS('N', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG : LIBXSMM_GEMM_FLAGS('N', 'N') ;
-  libxsmm_bitfield l_tr_flags = (use_bf16 == 1 || use_i8 == 1) ? LIBXSMM_GEMM_FLAGS('N', 'N') | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG : LIBXSMM_GEMM_FLAGS('N', 'N') ;
+  libxsmm_bitfield l_trans_vnni_flags = (use_bf16 == 1 || use_i8 == 1) ? (((use_bf16 > 0 && vnni_block_size == 4) || (use_i8 > 0 && vnni_block_size == 8)) ? LIBXSMM_GEMM_VNNI_FLAGS('N', 'T', 'V', 'V') : LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N'))
+                                                                       : LIBXSMM_GEMM_FLAGS('N', 'N')  ;
+  libxsmm_bitfield l_flags = (use_bf16 == 1 || use_i8 == 1) ? l_trans_vnni_flags | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG : l_trans_vnni_flags;
+  libxsmm_bitfield l_tc_flags = (use_bf16 == 1 || use_i8 == 1) ? l_trans_vnni_flags | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG : l_trans_vnni_flags;
+  libxsmm_bitfield l_tr_flags = (use_bf16 == 1 || use_i8 == 1) ? l_trans_vnni_flags | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG : l_trans_vnni_flags;
   libxsmm_bitfield l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
   libxsmm_gemmfunction tc_kernel;
   libxsmm_gemmfunction tr_kernel;
@@ -353,8 +355,12 @@ int spgemm_benchmark(int argc, char** argv) {
   }
 
   /* Create sparse routines */
+  libxsmm_spgemm_config spgemm_config;
   libxsmm_gemm_shape gemm_shape = libxsmm_create_gemm_shape( 1, 0, K, K, 0, N, dtype, dtype, dtypeout, LIBXSMM_DATATYPE(float) );
-  libxsmm_gemmfunction spmm_kernel_bcsc = libxsmm_create_packed_spgemm_bcsc(gemm_shape, l_flags, l_prefetch_flags, bm, bcsc_bk, bcsc_bn);
+  spgemm_config.packed_width = bm;
+  spgemm_config.bk = bcsc_bk;
+  spgemm_config.bn = bcsc_bn;
+  libxsmm_gemmfunction spmm_kernel_bcsc = libxsmm_create_packed_spgemm_bcsc(gemm_shape, l_flags, l_prefetch_flags, spgemm_config);
   if (spmm_kernel_bcsc == NULL) {
     printf("Could not generate BCSC kernel !!!\n");
     return 0;
@@ -371,8 +377,8 @@ int spgemm_benchmark(int argc, char** argv) {
   }
   if (use_bf16 > 0 || use_i8 > 0) {
     libxsmm_gemm_shape gemm_shape = libxsmm_create_gemm_shape( 1, 0, K, K, -1, N, dtype, dtype, dtypeout, LIBXSMM_DATATYPE(float) );
-    tc_kernel = libxsmm_create_packed_spgemm_bcsc(gemm_shape, l_tc_flags, l_prefetch_flags, bm, bcsc_bk, bcsc_bn);
-    tr_kernel = libxsmm_create_packed_spgemm_bcsc(gemm_shape, l_tr_flags, l_prefetch_flags, bm, bcsc_bk, bcsc_bn);
+    tc_kernel = libxsmm_create_packed_spgemm_bcsc(gemm_shape, l_tc_flags, l_prefetch_flags, spgemm_config);
+    tr_kernel = libxsmm_create_packed_spgemm_bcsc(gemm_shape, l_tr_flags, l_prefetch_flags, spgemm_config);
   }
 
   // JIT requested nested loop specs
