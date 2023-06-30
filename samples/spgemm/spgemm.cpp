@@ -148,6 +148,7 @@ int spgemm_benchmark(int argc, char** argv) {
 
   LIBXSMM_VLA_DECL(2, char, l_p_b_de_i8, (char*)l_b_de, K);
   LIBXSMM_VLA_DECL(3, char, l_p_a_i8, (char*)l_a, K, bm);
+  LIBXSMM_VLA_DECL(3, char, l_p_a_i8_t, (char*)l_a, bm, K);
   
   LIBXSMM_VLA_DECL(4, DType, l_p_a_vnni_spmm, l_a_vnni_spmm, K/vnni_block_size, bm, vnni_block_size);
   LIBXSMM_VLA_DECL(3, float, l_p_spmm_f32, l_c_spmm_f32, N, bm);
@@ -156,6 +157,7 @@ int spgemm_benchmark(int argc, char** argv) {
   LIBXSMM_VLA_DECL(3, float, l_p_c_gold_t, l_c_gold, bm, N);
 
   LIBXSMM_VLA_DECL(3, int, l_p_c_gold_i32, (int*)l_c_gold, N, bm);
+  LIBXSMM_VLA_DECL(3, int, l_p_c_gold_i32_t, (int*)l_c_gold, bm, N);
 
   /* touch A */
   for ( l_i = 0; l_i < Mb; l_i++) {
@@ -383,9 +385,15 @@ int spgemm_benchmark(int argc, char** argv) {
         for ( l_jj = 0; l_jj < K; l_jj++) {
           LIBXSMM_PRAGMA_SIMD
           for (l_k = 0; l_k < bm; l_k++) {
-            LIBXSMM_VLA_ACCESS(3, l_p_c_gold_i32, l_i, l_j, l_k, N, bm)
-              +=   (int)LIBXSMM_VLA_ACCESS(3, l_p_a_i8, l_i, l_jj, l_k, K, bm)
-                 * (int)LIBXSMM_VLA_ACCESS(2, l_p_b_de_i8, l_j, l_jj, K);
+            if (use_trans_a > 0) {      
+              LIBXSMM_VLA_ACCESS(3, l_p_c_gold_i32_t, l_i, l_k, l_j, bm, N)
+                +=   (int)LIBXSMM_VLA_ACCESS(3, l_p_a_i8_t, l_i, l_k, l_jj, bm, K)
+                   * (int)LIBXSMM_VLA_ACCESS(2, l_p_b_de_i8, l_j, l_jj, K);          
+            } else { 
+              LIBXSMM_VLA_ACCESS(3, l_p_c_gold_i32, l_i, l_j, l_k, N, bm)
+                +=   (int)LIBXSMM_VLA_ACCESS(3, l_p_a_i8, l_i, l_jj, l_k, K, bm)
+                   * (int)LIBXSMM_VLA_ACCESS(2, l_p_b_de_i8, l_j, l_jj, K);
+            }
           }
         }
       }
