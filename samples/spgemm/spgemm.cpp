@@ -164,15 +164,33 @@ int spgemm_benchmark(int argc, char** argv) {
     for ( l_j = 0; l_j < K; l_j++) {
       for ( l_k = 0; l_k < bm; l_k++ ) {
         if (use_bf16 > 0) {
-          LIBXSMM_VLA_ACCESS(3, l_p_a, l_i, l_j, l_k, K, bm) = (float)libxsmm_rng_f64();
-          libxsmm_rne_convert_fp32_bf16( &LIBXSMM_VLA_ACCESS(3, l_p_a, l_i, l_j, l_k, K, bm), (libxsmm_bfloat16*)&LIBXSMM_VLA_ACCESS(4, l_p_a_vnni_spmm, l_i, l_j/vnni_block_size, l_k, l_j%vnni_block_size, K/vnni_block_size, bm, vnni_block_size), 1);
-          libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)&LIBXSMM_VLA_ACCESS(4, l_p_a_vnni_spmm, l_i, l_j/vnni_block_size, l_k, l_j%vnni_block_size, K/vnni_block_size, bm, vnni_block_size), &LIBXSMM_VLA_ACCESS(3, l_p_a, l_i, l_j, l_k, K, bm), 1 );
+          if (use_trans_a > 0) {
+            LIBXSMM_VLA_ACCESS(3, l_p_a_t, l_i, l_k, l_j, bm, K) = (float)libxsmm_rng_f64();
+            libxsmm_rne_convert_fp32_bf16( &LIBXSMM_VLA_ACCESS(3, l_p_a_t, l_i, l_k, l_j, bm, K), (libxsmm_bfloat16*)LIBXSMM_ACCESS_RAW(3, sizeof(DType), l_a_vnni_spmm, l_i, l_k, l_j, bm, K), 1);
+            libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)LIBXSMM_ACCESS_RAW(3, sizeof(DType), l_a_vnni_spmm, l_i, l_k, l_j, bm, K), &LIBXSMM_VLA_ACCESS(3, l_p_a_t, l_i, l_k, l_j, bm, K), 1 );      
+          } else {
+            LIBXSMM_VLA_ACCESS(3, l_p_a, l_i, l_j, l_k, K, bm) = (float)libxsmm_rng_f64();
+            libxsmm_rne_convert_fp32_bf16( &LIBXSMM_VLA_ACCESS(3, l_p_a, l_i, l_j, l_k, K, bm), (libxsmm_bfloat16*)&LIBXSMM_VLA_ACCESS(4, l_p_a_vnni_spmm, l_i, l_j/vnni_block_size, l_k, l_j%vnni_block_size, K/vnni_block_size, bm, vnni_block_size), 1);
+            libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)&LIBXSMM_VLA_ACCESS(4, l_p_a_vnni_spmm, l_i, l_j/vnni_block_size, l_k, l_j%vnni_block_size, K/vnni_block_size, bm, vnni_block_size), &LIBXSMM_VLA_ACCESS(3, l_p_a, l_i, l_j, l_k, K, bm), 1 );
+          }
         } else if (use_i8 > 0) {
-          LIBXSMM_VLA_ACCESS(3, l_p_a_i8, l_i, l_j, l_k, K, bm) = (unsigned char) (l_i + l_j)%120;
-          LIBXSMM_VLA_ACCESS(4, l_p_a_vnni_spmm, l_i, l_j/vnni_block_size, l_k, l_j%vnni_block_size, K/vnni_block_size, bm, vnni_block_size) =  LIBXSMM_VLA_ACCESS(3, l_p_a_i8, l_i, l_j, l_k, K, bm); 
+          if (use_trans_a > 0) {
+            char *aux_var = (char*)LIBXSMM_ACCESS_RAW(3, sizeof(DType), l_a_vnni_spmm, l_i, l_k, l_j, bm, K);
+            LIBXSMM_VLA_ACCESS(3, l_p_a_i8_t, l_i, l_k, l_j, bm, K) = (unsigned char) (l_i + l_j)%120;
+            *aux_var = LIBXSMM_VLA_ACCESS(3, l_p_a_i8_t, l_i, l_k, l_j, bm, K);
+          } else {
+            LIBXSMM_VLA_ACCESS(3, l_p_a_i8, l_i, l_j, l_k, K, bm) = (unsigned char) (l_i + l_j)%120;
+            LIBXSMM_VLA_ACCESS(4, l_p_a_vnni_spmm, l_i, l_j/vnni_block_size, l_k, l_j%vnni_block_size, K/vnni_block_size, bm, vnni_block_size) =  LIBXSMM_VLA_ACCESS(3, l_p_a_i8, l_i, l_j, l_k, K, bm); 
+          }
         } else if (use_f32 > 0) {
-          LIBXSMM_VLA_ACCESS(3, l_p_a, l_i, l_j, l_k, K, bm) = (float)libxsmm_rng_f64();
-          LIBXSMM_VLA_ACCESS(4, l_p_a_vnni_spmm, l_i, l_j/vnni_block_size, l_k, l_j%vnni_block_size, K/vnni_block_size, bm, vnni_block_size) = LIBXSMM_VLA_ACCESS(3, l_p_a, l_i, l_j, l_k, K, bm);
+          if (use_trans_a > 0) { 
+            float *aux_var = (float*)LIBXSMM_ACCESS_RAW(3, sizeof(DType), l_a_vnni_spmm, l_i, l_k, l_j, bm, K);
+            LIBXSMM_VLA_ACCESS(3, l_p_a_t, l_i, l_k, l_j, bm, K) = (float)libxsmm_rng_f64();
+            *aux_var = LIBXSMM_VLA_ACCESS(3, l_p_a_t, l_i, l_k, l_j, bm, K);
+          } else {
+            LIBXSMM_VLA_ACCESS(3, l_p_a, l_i, l_j, l_k, K, bm) = (float)libxsmm_rng_f64();
+            LIBXSMM_VLA_ACCESS(4, l_p_a_vnni_spmm, l_i, l_j/vnni_block_size, l_k, l_j%vnni_block_size, K/vnni_block_size, bm, vnni_block_size) = LIBXSMM_VLA_ACCESS(3, l_p_a, l_i, l_j, l_k, K, bm);
+          }
         }
       }
     }
