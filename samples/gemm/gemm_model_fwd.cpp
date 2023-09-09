@@ -233,7 +233,7 @@ int gemm_benchmark(int argc, char** argv) {
   auto l_tr_flags = (sizeof(DType) == 2 || sizeof(DType) == 1) ? ( LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') ) : LIBXSMM_GEMM_FLAGS('N', 'N');
   
   auto dtype      = (sizeof(DType) == 2) ? LIBXSMM_DATATYPE_BF16 : ((sizeof(DType) == 1) ? ((int8_gemm == 0) ? LIBXSMM_DATATYPE_BF8 : LIBXSMM_DATATYPE_I8) : LIBXSMM_DATATYPE_F32);
-  auto l_shape = libxsmm_create_gemm_shape( bm, bn, bk, bm, bk, bm, dtype, dtype, dtype, dtype );
+  auto l_shape = libxsmm_create_gemm_shape( bm, bn, bk, bm, bk, bm, dtype, dtype, dtype, LIBXSMM_DATATYPE_F32 );
   auto l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
   auto l_brconfig = libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, bm*bk*sizeof(DType), bk*bn*sizeof(DType), brcount );
   auto l_unary_shape = libxsmm_create_meltw_unary_shape(bm*bn, 1, bm*bn, bm*bn, dtype, dtype, dtype);

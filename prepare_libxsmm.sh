@@ -26,8 +26,8 @@ else
   CXX_USE=g++
 fi
 
-BRANCH=main
-BRANCHDNN=main
+BRANCH=main_stable
+BRANCHDNN=main_stable
 if [ $# -eq 2 ]; then
   BRANCH=$1
   BRANCHDNN=$2
@@ -67,6 +67,6 @@ echo "switching to $BRANCHDNN branch ..."
 git checkout $BRANCHDNN
 git pull
 export LIBXSMMROOT=../libxsmm
-make realclean && make CC=${CC_USE} CXX=${CXX_USE} FC= -j16
-echo "done building LIBXSMM_DNN"
+#make realclean && make CC=${CC_USE} CXX=${CXX_USE} FC= -j16
+#echo "done building LIBXSMM_DNN"
 cd ..
