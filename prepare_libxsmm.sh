@@ -26,7 +26,8 @@ else
   CXX_USE=g++
 fi
 
-BRANCH=main_stable
+#BRANCH=main_stable
+BRANCH=feature_avx512_gemm_with_A_decompress
 BRANCHDNN=main_stable
 if [ $# -eq 2 ]; then
   BRANCH=$1
