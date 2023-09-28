@@ -260,6 +260,7 @@ int gemm_benchmark(int argc, char** argv) {
 
   if (use_decompress_kernel > 0) {
     unsigned int nnz = 0;
+#ifdef USE_PRECISE_SPARSIFY 
     long long n_grid_points = 0, n_dense_grid_points = 0;
     unsigned long long *grid_point_array; 
     n_grid_points = M * K;
@@ -304,6 +305,37 @@ int gemm_benchmark(int argc, char** argv) {
     printf("Enforcing sparsity takes %.5g secs\n", t0-t1);     
     printf("Total sparsity enforced is %.3g\n", 100.0-100.0*nnz/(M*K));
     free(grid_point_array);
+#else
+    auto t0 = getTime();
+    unsigned long long nnz_counts[128] = {0};
+    for (l_i = 0; l_i < 128; l_i++) {
+      nnz_counts[l_i] = 0;
+    }  
+#if defined(_OPENMP)
+//# pragma omp parallel for collapse(2)
+#endif 
+    for ( l_i = 0; l_i < M; l_i++ ) {
+      for ( l_j = 0; l_j < K; l_j++ ) {
+        int tid = omp_get_thread_num();
+        float *zero_pt = (float*)naive_filter + l_i * K + l_j;      
+        float tmp = (float)libxsmm_rng_f64();
+        if (tmp >= sparse_frac) {
+          if ((*zero_pt) != 0.0) {
+            //nnz_counts[tid] += 1;
+            nnz++;
+          }
+        } else {
+          (*zero_pt) = 0.0; 
+        }
+      }
+    }
+    for (l_i = 0; l_i < 128; l_i++) {
+      //nnz += nnz_counts[l_i];
+    }
+    auto t1 = getTime();
+    printf("Enforcing sparsity takes %.5g secs\n", t1-t0);     
+    printf("Total sparsity enforced is %.3g\n", 100.0-100.0*nnz/(M*K));
+#endif
 
     compressed_filter = (DType*)libxsmm_aligned_malloc( nnz*sizeof(DType), 2097152);
     compressed_a_bitmap = (unsigned int*)libxsmm_aligned_malloc( (M/8)*K, 2097152);
@@ -386,11 +418,40 @@ int gemm_benchmark(int argc, char** argv) {
       }
     }
   } else {
-    matrix_copy_NC_to_NCNC( naive_input,     (float*)ACT[0],     1, N, K, bn, bk );
+    if (use_decompress_kernel == 0) {
+      matrix_copy_NC_to_NCNC( naive_input,     (float*)ACT[0],     1, N, K, bn, bk );
+    } else {
+      memcpy((float*)ACT[0], naive_input, N*K*sizeof(float));
+    }
     //matrix_copy_NC_to_NCNC( naive_output,    (float*)ACT[n_layers],     1, N, M, bn, bm );
     for (i = 0; i < n_layers; i++) {
       matrix_copy_KC_to_KCCK( naive_filter,    (float*)WGT[i]       , K, M, bk, bm );
     }
+    if (use_decompress_kernel > 0) {
+      unsigned short *compressed_a_bitmap_short = (unsigned short*)compressed_a_bitmap;
+      /* Compress weights and create bitmap along with aux structure */
+      l_j = 0;
+      l_c = 0;
+      auto t1 = getTime();     
+      compressed_a_offsets[0] = l_c;
+      __m512i zero_vreg = _mm512_setzero_epi32();
+      for (l_i = 0; l_i < Mb; l_i++) {
+        for (i = 0; i < K*bm; i+=16 ) {
+          int n_elts;
+          __m512i  vreg_dense = _mm512_loadu_si512 ((DType*)WGT[0]+l_i * K * bm + i);
+          __mmask16 cur_mask = _mm512_cmp_epu32_mask (zero_vreg, vreg_dense, _MM_CMPINT_NE);
+          unsigned short int_bitmask = (unsigned short)_cvtmask16_u32 (cur_mask);
+          compressed_a_bitmap_short[l_j] = int_bitmask;
+          l_j++;
+          n_elts = _popcnt32(int_bitmask);
+          _mm512_mask_compressstoreu_epi32((DType*)compressed_filter+l_c, cur_mask, vreg_dense);
+          l_c += n_elts;
+        }
+        if (l_i + 1 < Mb) compressed_a_offsets[l_i+1] = l_c;
+      }
+      auto t0 = getTime();
+      printf("Compressing weight takes %.5g secs\n", t0-t1);  
+    }   
   }
    
   // Setup TPP kernels
@@ -422,7 +483,8 @@ int gemm_benchmark(int argc, char** argv) {
   auto tilerelease_kernel = libxsmm_dispatch_gemm_v2( l_shape, l_tr_flags, l_prefetch_flags );
   auto brgemm_kernel      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
   auto f16_gemm_kernel    = (f16_gemm > 0) ? libxsmm_dispatch_gemm_v2( l_f16_shape, l_flags, l_prefetch_flags ) : tileconfig_kernel;
-  
+  auto f32_gemm_sparse_kernel    = (sizeof(DType) == 4 && use_decompress_kernel > 0) ? libxsmm_dispatch_gemm_v2( l_f16_shape, l_flags, l_prefetch_flags ) : tileconfig_kernel;  
+
   // Setup fused TPP kernels
   libxsmm_gemmfunction_ext brgemm_kernel_fused;
   libxsmm_meltwfunction_unary copy_colbias_kernel;
@@ -616,6 +678,21 @@ int gemm_benchmark(int argc, char** argv) {
           [&]() {},
           [&]() {});
     }
+  } else if (sizeof(DType) == 4 && use_decompress_kernel > 0) {
+    for (i = 0; i < n_layers; i++) {
+      gemm_loop(
+          [&](int* ind) {
+            int i_k = ind[0], i_m = ind[1], i_n = ind[2];
+              libxsmm_gemm_param gemm_param;
+              gemm_param.a.primary = (void*)((DType*)compressed_filter + compressed_a_offsets[i_m]);
+              gemm_param.a.secondary = (void*)((char*)compressed_a_bitmap + i_m * K * (bm/8));
+              gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * bn * K);
+              gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * bn * M + i_m  * bm );
+              f32_gemm_sparse_kernel( &gemm_param );
+          },
+          [&]() {},
+          [&]() {});
+    }
   } else if (int8_gemm == 0) {
     for (i = 0; i < n_layers; i++) {
       gemm_loop(
@@ -751,7 +828,11 @@ int gemm_benchmark(int argc, char** argv) {
         libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)naive_output_bf16, naive_output_opt, N*M );
       }
     } else {
-      matrix_copy_NCNC_to_NC( (float*)ACT[n_layers], naive_output_opt, 1, N, M, bn, bm );
+      if (use_decompress_kernel == 0) {
+        matrix_copy_NCNC_to_NC( (float*)ACT[n_layers], naive_output_opt, 1, N, M, bn, bm );
+      } else {
+        memcpy(naive_output_opt, (float*)ACT[n_layers], N*M*sizeof(float));
+      }
     }
     printf("##########################################\n");
     printf("#           Correctness                  #\n");
@@ -797,6 +878,23 @@ int gemm_benchmark(int argc, char** argv) {
                 gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * bn * K);
                 gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * bn * M + i_m  * bm );
                 f16_gemm_kernel( &gemm_param );
+            },
+            [&]() {},
+            [&]() {});
+      }
+    }
+  } else if (sizeof(DType) == 4 && use_decompress_kernel > 0) {
+    for (long it = 0; it < n_iters; it++) {
+      for (i = 0; i < n_layers; i++) {
+        gemm_loop(
+            [&](int* ind) {
+              int i_k = ind[0], i_m = ind[1], i_n = ind[2];
+                libxsmm_gemm_param gemm_param;
+                gemm_param.a.primary = (void*)((DType*)compressed_filter + compressed_a_offsets[i_m]);
+                gemm_param.a.secondary = (void*)((char*)compressed_a_bitmap + i_m * K * (bm/8));
+                gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * bn * K);
+                gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * bn * M + i_m  * bm );
+                f32_gemm_sparse_kernel( &gemm_param );
             },
             [&]() {},
             [&]() {});
