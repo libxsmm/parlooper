@@ -411,10 +411,39 @@ int gemm_benchmark(int argc, char** argv) {
       libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)naive_output_bf16, naive_output, N*M);
       libxsmm_rne_convert_fp32_bf16( naive_filter,    (libxsmm_bfloat16*)naive_filter_bf16,    M*K );
       libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)naive_filter_bf16, naive_filter, M*K);
-      matrix_copy_NC_to_NCNC_bf16(  (libxsmm_bfloat16*)naive_input_bf16,  (libxsmm_bfloat16*)ACT[0],     1, N, K, bn, bk );  
-      //matrix_copy_NC_to_NCNC_bf16(  (libxsmm_bfloat16*)naive_output_bf16, (libxsmm_bfloat16*)ACT[n_layers],     1, N, M, bn, bm );
-      for (i = 0; i < n_layers; i++) {
-        matrix_copy_KC_to_KCCK_bf16( (libxsmm_bfloat16*)naive_filter_bf16, (libxsmm_bfloat16*)WGT[i]       , K, M, bk, bm );
+      if (use_decompress_kernel > 0) {
+        libxsmm_rne_convert_fp32_bf16( naive_input, (libxsmm_bfloat16*)ACT[0],     N*K ); 
+        for (i = 0; i < n_layers; i++) {
+          matrix_copy_KC_to_KCCK_f16( (libxsmm_float16*)naive_filter_bf16, (libxsmm_float16*)WGT[i]       , K, M, bk, bm );
+        }
+        /* Compress weights and create bitmap along with aux structure */
+        l_j = 0;
+        l_c = 0;
+        auto t1 = getTime();     
+        compressed_a_offsets[0] = l_c;
+        __m512i zero_vreg = _mm512_setzero_epi32();
+        for (l_i = 0; l_i < Mb; l_i++) {
+          for (i = 0; i < K*bm; i+=32 ) {
+            int n_elts;
+            __m512i  vreg_dense = _mm512_loadu_si512 ((DType*)WGT[0]+l_i * K * bm + i);
+            __mmask32 cur_mask = _mm512_cmp_epu16_mask (zero_vreg, vreg_dense, _MM_CMPINT_NE);
+            unsigned int int_bitmask = _cvtmask32_u32 (cur_mask);
+            compressed_a_bitmap[l_j] = int_bitmask;
+            l_j++;
+            n_elts = _popcnt32(int_bitmask);
+            _mm512_mask_compressstoreu_epi16((DType*)compressed_filter+l_c, cur_mask, vreg_dense);
+            l_c += n_elts;
+          }
+          if (l_i + 1 < Mb) compressed_a_offsets[l_i+1] = l_c;
+        }
+        auto t0 = getTime();
+        printf("Compressing weight takes %.5g secs\n", t0-t1);  
+      } else {
+        matrix_copy_NC_to_NCNC_bf16(  (libxsmm_bfloat16*)naive_input_bf16,  (libxsmm_bfloat16*)ACT[0],     1, N, K, bn, bk );  
+        //matrix_copy_NC_to_NCNC_bf16(  (libxsmm_bfloat16*)naive_output_bf16, (libxsmm_bfloat16*)ACT[n_layers],     1, N, M, bn, bm );
+        for (i = 0; i < n_layers; i++) {
+          matrix_copy_KC_to_KCCK_bf16( (libxsmm_bfloat16*)naive_filter_bf16, (libxsmm_bfloat16*)WGT[i]       , K, M, bk, bm );
+        }
       }
     }
   } else {
@@ -462,9 +491,14 @@ int gemm_benchmark(int argc, char** argv) {
   auto dtype      = (sizeof(DType) == 2) ? ((f16_gemm > 0) ? LIBXSMM_DATATYPE_F16 :  LIBXSMM_DATATYPE_BF16) : ((sizeof(DType) == 1) ? ((int8_gemm == 0) ? LIBXSMM_DATATYPE_BF8 : LIBXSMM_DATATYPE_I8) : LIBXSMM_DATATYPE_F32);
   auto l_shape = libxsmm_create_gemm_shape( bm, bn, bk, bm, bk, bm, dtype, dtype, (int8_gemm > 0) ? LIBXSMM_DATATYPE_F32 : dtype, (int8_gemm > 0) ? LIBXSMM_DATATYPE_I32 : LIBXSMM_DATATYPE_F32 );
   auto l_f16_shape = libxsmm_create_gemm_shape( bm, bn, K, bm, K, M, dtype, dtype, dtype, dtype );
+  auto l_bf16_sparse_shape = libxsmm_create_gemm_shape( bm, bn, K, bm, K, M, LIBXSMM_DATATYPE_BF16, LIBXSMM_DATATYPE_BF16, LIBXSMM_DATATYPE_BF16, LIBXSMM_DATATYPE_F32 );
   auto l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
   auto l_brconfig = libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, bm*bk*sizeof(DType), bk*bn*sizeof(DType), brcount );
   auto l_unary_shape = libxsmm_create_meltw_unary_shape(bm*bn, 1, bm*bn, bm*bn, dtype, dtype, dtype);
+
+  if (use_decompress_kernel > 0) {
+    l_flags = LIBXSMM_GEMM_FLAGS('N', 'N');
+  }
 
   if (int8_gemm > 0) {
     l_flags = LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_FLAG_B_UNSIGNED;
@@ -484,6 +518,8 @@ int gemm_benchmark(int argc, char** argv) {
   auto brgemm_kernel      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
   auto f16_gemm_kernel    = (f16_gemm > 0) ? libxsmm_dispatch_gemm_v2( l_f16_shape, l_flags, l_prefetch_flags ) : tileconfig_kernel;
   auto f32_gemm_sparse_kernel    = (sizeof(DType) == 4 && use_decompress_kernel > 0) ? libxsmm_dispatch_gemm_v2( l_f16_shape, l_flags, l_prefetch_flags ) : tileconfig_kernel;  
+  auto bf16_gemm_sparse_kernel   = (sizeof(DType) == 2 && f16_gemm == 0 && use_decompress_kernel > 0) ? libxsmm_dispatch_gemm_v2( l_bf16_sparse_shape, l_flags, l_prefetch_flags ) : tileconfig_kernel;  
+  auto gemm_sparse_kernel = (sizeof(DType) == 4) ? f32_gemm_sparse_kernel : ( (f16_gemm > 0) ? f16_gemm_kernel : bf16_gemm_sparse_kernel);
 
   // Setup fused TPP kernels
   libxsmm_gemmfunction_ext brgemm_kernel_fused;
@@ -678,7 +714,7 @@ int gemm_benchmark(int argc, char** argv) {
           [&]() {},
           [&]() {});
     }
-  } else if (sizeof(DType) == 4 && use_decompress_kernel > 0) {
+  } else if (use_decompress_kernel > 0) {
     for (i = 0; i < n_layers; i++) {
       gemm_loop(
           [&](int* ind) {
@@ -688,7 +724,7 @@ int gemm_benchmark(int argc, char** argv) {
               gemm_param.a.secondary = (void*)((char*)compressed_a_bitmap + i_m * K * (bm/8));
               gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * bn * K);
               gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * bn * M + i_m  * bm );
-              f32_gemm_sparse_kernel( &gemm_param );
+              gemm_sparse_kernel( &gemm_param );
           },
           [&]() {},
           [&]() {});
@@ -823,6 +859,8 @@ int gemm_benchmark(int argc, char** argv) {
     } else if (sizeof(DType) == 2) {
       if (f16_gemm > 0) {
         libxsmm_convert_f16_f32( (libxsmm_float16*)ACT[n_layers], naive_output_opt, N*M );  
+      } else if (use_decompress_kernel > 0  && f16_gemm == 0) {
+        libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)ACT[n_layers], naive_output_opt, N*M );   
       } else {
         matrix_copy_NCNC_to_NC_bf16( (libxsmm_bfloat16*)ACT[n_layers], (libxsmm_bfloat16*)naive_output_bf16, 1, N, M, bn, bm );
         libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)naive_output_bf16, naive_output_opt, N*M );
@@ -883,7 +921,7 @@ int gemm_benchmark(int argc, char** argv) {
             [&]() {});
       }
     }
-  } else if (sizeof(DType) == 4 && use_decompress_kernel > 0) {
+  } else if (use_decompress_kernel > 0) {
     for (long it = 0; it < n_iters; it++) {
       for (i = 0; i < n_layers; i++) {
         gemm_loop(
@@ -894,7 +932,7 @@ int gemm_benchmark(int argc, char** argv) {
                 gemm_param.a.secondary = (void*)((char*)compressed_a_bitmap + i_m * K * (bm/8));
                 gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * bn * K);
                 gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * bn * M + i_m  * bm );
-                f32_gemm_sparse_kernel( &gemm_param );
+                gemm_sparse_kernel( &gemm_param );
             },
             [&]() {},
             [&]() {});
