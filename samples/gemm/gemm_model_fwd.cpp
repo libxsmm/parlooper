@@ -89,6 +89,11 @@ int gemm_benchmark(int argc, char** argv) {
   const char* const env_use_model = getenv("USE_MODEL");
   double sparse_frac = 0.8;
   unsigned int  use_decompress_kernel = 0;
+  const char* env_arch = getenv("LIBXSMM_TARGET");
+  const int is_env_SPR = (
+    env_arch == libxsmm_stristr(env_arch, "spr") ||
+    env_arch == libxsmm_stristr(env_arch, "amx"));
+
   if (0 == env_use_model) {
     use_model = 0;
   } else {
@@ -412,9 +417,15 @@ int gemm_benchmark(int argc, char** argv) {
       libxsmm_rne_convert_fp32_bf16( naive_filter,    (libxsmm_bfloat16*)naive_filter_bf16,    M*K );
       libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)naive_filter_bf16, naive_filter, M*K);
       if (use_decompress_kernel > 0) {
-        libxsmm_rne_convert_fp32_bf16( naive_input, (libxsmm_bfloat16*)ACT[0],     N*K ); 
-        for (i = 0; i < n_layers; i++) {
-          matrix_copy_KC_to_KCCK_f16( (libxsmm_float16*)naive_filter_bf16, (libxsmm_float16*)WGT[i]       , K, M, bk, bm );
+        libxsmm_rne_convert_fp32_bf16( naive_input, (libxsmm_bfloat16*)ACT[0],     N*K );
+        if (is_env_SPR > 0) {
+          for (i = 0; i < n_layers; i++) {
+            matrix_copy_KC_to_KCCK_bf16( (libxsmm_bfloat16*)naive_filter_bf16, (libxsmm_bfloat16*)WGT[i]       , K, M, bk, bm );
+          }
+        } else {
+          for (i = 0; i < n_layers; i++) {
+            matrix_copy_KC_to_KCCK_f16( (libxsmm_float16*)naive_filter_bf16, (libxsmm_float16*)WGT[i]       , K, M, bk, bm );
+          }
         }
         /* Compress weights and create bitmap along with aux structure */
         l_j = 0;
@@ -508,15 +519,19 @@ int gemm_benchmark(int argc, char** argv) {
     if (brcount == Kb) l_flags |= LIBXSMM_GEMM_FLAG_BETA_0;
   }
 
-  if (use_decompress_kernel > 0) {
-    l_flags |= LIBXSMM_GEMM_FLAG_DECOMPRESS_A_VIA_BITMASK;
+  if (use_decompress_kernel > 0 && is_env_SPR > 0) {
+    l_flags = LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG;
   }
 
   auto zero_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);  
-  auto tileconfig_kernel  = libxsmm_dispatch_gemm_v2( l_shape, l_tc_flags, l_prefetch_flags );
-  auto tilerelease_kernel = libxsmm_dispatch_gemm_v2( l_shape, l_tr_flags, l_prefetch_flags );
+  auto tileconfig_kernel  = (use_decompress_kernel > 0) ? libxsmm_dispatch_gemm_v2( l_bf16_sparse_shape, l_tc_flags, l_prefetch_flags ) : libxsmm_dispatch_gemm_v2( l_shape, l_tc_flags, l_prefetch_flags );
+  auto tilerelease_kernel = (use_decompress_kernel > 0) ? libxsmm_dispatch_gemm_v2( l_bf16_sparse_shape, l_tr_flags, l_prefetch_flags ) : libxsmm_dispatch_gemm_v2( l_shape, l_tr_flags, l_prefetch_flags );
   auto brgemm_kernel      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
   auto f16_gemm_kernel    = (f16_gemm > 0) ? libxsmm_dispatch_gemm_v2( l_f16_shape, l_flags, l_prefetch_flags ) : tileconfig_kernel;
+  
+  if (use_decompress_kernel > 0) {
+    l_flags |= LIBXSMM_GEMM_FLAG_DECOMPRESS_A_VIA_BITMASK | LIBXSMM_GEMM_FLAG_BETA_0;
+  }  
   auto f32_gemm_sparse_kernel    = (sizeof(DType) == 4 && use_decompress_kernel > 0) ? libxsmm_dispatch_gemm_v2( l_f16_shape, l_flags, l_prefetch_flags ) : tileconfig_kernel;  
   auto bf16_gemm_sparse_kernel   = (sizeof(DType) == 2 && f16_gemm == 0 && use_decompress_kernel > 0) ? libxsmm_dispatch_gemm_v2( l_bf16_sparse_shape, l_flags, l_prefetch_flags ) : tileconfig_kernel;  
   auto gemm_sparse_kernel = (sizeof(DType) == 4) ? f32_gemm_sparse_kernel : ( (f16_gemm > 0) ? f16_gemm_kernel : bf16_gemm_sparse_kernel);
@@ -726,8 +741,8 @@ int gemm_benchmark(int argc, char** argv) {
               gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * bn * M + i_m  * bm );
               gemm_sparse_kernel( &gemm_param );
           },
-          [&]() {},
-          [&]() {});
+          [&]() {if (sizeof(DType) == 2) tileconfig_kernel(NULL);},
+          [&]() {if (sizeof(DType) == 2) tilerelease_kernel(NULL);});
     }
   } else if (int8_gemm == 0) {
     for (i = 0; i < n_layers; i++) {
@@ -934,8 +949,8 @@ int gemm_benchmark(int argc, char** argv) {
                 gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * bn * M + i_m  * bm );
                 gemm_sparse_kernel( &gemm_param );
             },
-            [&]() {},
-            [&]() {});
+            [&]() {if (sizeof(DType) == 2) tileconfig_kernel(NULL);},
+            [&]() {if (sizeof(DType) == 2) tilerelease_kernel(NULL);});
       }
     }
   } else if (int8_gemm == 0) {
