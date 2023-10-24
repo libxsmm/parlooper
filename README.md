@@ -315,6 +315,7 @@ The compilation toolchain used for LIBXSMM and PARLOOPER can be controlled via t
 ```
 export PARLOOPER_COMPILER=gcc/icc/clang
 bash prepare_libxsmm.sh 
+make
 cd samples/gemm
 make
 cd ../..
