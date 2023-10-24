@@ -1,5 +1,5 @@
 # PARLOOPER : PARallel LOOP gEneratoR
-Threaded Loops Code Generation Infrastructure targeting Tensor Contraction Applications such as GEMMs, Convolutions and Fused Deep Learning Primitives
+Threaded Loops Code Generation Infrastructure targeting Tensor Contraction Applications such as GEMMs, Convolutions and Fused Deep Learning Primitives. For more details see the paper: https://arxiv.org/pdf/2304.12576.pdf
 
 ## Rationale
 In our previous [work](https://arxiv.org/abs/2104.05755) we introduced the Tensor Processing Primitives (TPP), a programming abstraction striving for efficient, portable implementation of Deep Learning and High-Performance-Computing workloads with high-productivity. TPPs define a compact, yet versatile set of 2D-tensor operators (or a virtual Tensor ISA), which subsequently can be utilized as building-blocks to construct complex operators on high-dimensional tensors. 
