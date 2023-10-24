@@ -64,6 +64,30 @@ double get_random_pos_p5_num(void) {
   return tmp;
 }
 
+void naive_fullyconnected_fused_int4( naive_fullyconnected_t* param, const unsigned char* input_ptr, unsigned char* output_ptr, const char* filter_ptr, const float* bias_ptr, float* scf_quant, float* tmp_f32_output_ptr ) {
+  const long nImg = param->N;
+  const long nIFm = param->C;
+  const long nOFm = param->K;
+  long img, ifm, ofm;
+  LIBXSMM_VLA_DECL(2, const unsigned char, input,  input_ptr,  nIFm);
+  LIBXSMM_VLA_DECL(2, const char, filter, filter_ptr, nIFm);
+  LIBXSMM_VLA_DECL(2, int, output, (int*)output_ptr, nOFm);
+
+#if defined(_OPENMP)
+  LIBXSMM_OMP_VAR(img); LIBXSMM_OMP_VAR(ifm); LIBXSMM_OMP_VAR(ofm);
+# pragma omp parallel for collapse(2)
+#endif
+  for (ofm = 0; ofm < nOFm; ++ofm) {
+    for(img = 0; img < nImg; ++img) {
+      int accum = 0;
+      for (ifm = 0; ifm < nIFm; ++ifm) {
+        accum += (int)(((int)LIBXSMM_VLA_ACCESS(2, filter, ofm, ifm, nIFm)) * ((unsigned int)LIBXSMM_VLA_ACCESS(2, input, img, ifm, nIFm)));
+      }
+      LIBXSMM_VLA_ACCESS(2, output, img, ofm, nOFm) = accum;
+    }
+  }
+}
+
 void naive_fullyconnected_fused_int8( naive_fullyconnected_t* param, const unsigned char* input_ptr, unsigned char* output_ptr, const char* filter_ptr, const float* bias_ptr, float* scf_quant, float* tmp_f32_output_ptr ) {
   const int nImg = param->N;
   const int nIFm = param->C;

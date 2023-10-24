@@ -24,6 +24,7 @@ int gemm_benchmark(int argc, char** argv) {
   long fuse_bias = 0;
   long fuse_relu = 0;
   long int8_gemm = 0;
+  long int4_gemm = 0;
   long use_ping_pong_bufs = 0;
   char prec_string[255];
   char fuse_string[255];
@@ -74,10 +75,19 @@ int gemm_benchmark(int argc, char** argv) {
   if (sizeof(DType) == 1) {
     if (strcmp(argv[13], "INT8") == 0) {
       int8_gemm = 1;
+    }  
+  }
+
+  if (sizeof(DType) == 1) {
+    if (strcmp(argv[13], "INT4") == 0) {
+     int4_gemm = 1;
     }
   }
 
-  if (int8_gemm > 0) {
+
+  if (int4_gemm > 0) {
+    sprintf(prec_string, "INT4");
+  } else if (int8_gemm > 0) {
     sprintf(prec_string, "INT8");
   } else if (sizeof(DType) == 1) {
     sprintf(prec_string, "BF8");
@@ -122,33 +132,45 @@ int gemm_benchmark(int argc, char** argv) {
   DType **ACT = (DType**) malloc((n_layers+1)*sizeof(DType*));
   DType **BIAS = (DType**) malloc((n_layers)*sizeof(DType*));
   DType **WGT = (DType**) malloc(n_layers    *sizeof(DType*));
+  DType **WGT_I4 = (DType**) malloc(n_layers    *sizeof(DType*));
   for (i = 0; i < (n_layers+1); i++) {
-    if (use_ping_pong_bufs == 0) {
+    if (int4_gemm > 0) {
       if (i % 2 == 0) {
         ACT[i] = (DType*) libxsmm_aligned_malloc(N*K*sizeof(DType), 2097152);
       } else {
-        ACT[i] = (DType*) libxsmm_aligned_malloc(M*N*sizeof(DType), 2097152);
+        ACT[i] = (DType*) libxsmm_aligned_malloc(M*N*sizeof(DType)*4, 2097152);
       }
     } else {
-      if (i < 2) {
+      if (use_ping_pong_bufs == 0) {
         if (i % 2 == 0) {
           ACT[i] = (DType*) libxsmm_aligned_malloc(N*K*sizeof(DType), 2097152);
         } else {
           ACT[i] = (DType*) libxsmm_aligned_malloc(M*N*sizeof(DType), 2097152);
-        }   
+        }
       } else {
-        ACT[i] = ACT[i-2];
+        if (i < 2) {
+          if (i % 2 == 0) {
+            ACT[i] = (DType*) libxsmm_aligned_malloc(N*K*sizeof(DType), 2097152);
+          } else {
+            ACT[i] = (DType*) libxsmm_aligned_malloc(M*N*sizeof(DType), 2097152);
+          }   
+        } else {
+          ACT[i] = ACT[i-2];
+        }
       }
     }
     if (i < n_layers) {
       WGT[i] = (DType*) libxsmm_aligned_malloc(M*K*sizeof(DType), 2097152);
+      if (int4_gemm > 0) {
+        WGT_I4[i] = (DType*) libxsmm_aligned_malloc(M*(K/2)*sizeof(DType), 2097152);
+      }
       if (fuse_bias > 0) {
         BIAS[i] = (DType*) libxsmm_aligned_malloc(M*sizeof(DType), 2097152);
         naive_bias[i] = (float*) libxsmm_aligned_malloc(M*sizeof(float), 2097152);
         init_buf( naive_bias[i], M, 0, 0 );
-        if (int8_gemm > 0) {
+        if (int8_gemm > 0 || int4_gemm > 0) {
           /* DO nothing, will be using the f32 bias  */
-        } else if ((sizeof(DType) == 1) && (int8_gemm == 0)) {
+        } else if ((sizeof(DType) == 1) && (int8_gemm == 0) && (int4_gemm == 0) ) {
           libxsmm_rne_convert_fp32_bf8(  naive_bias[i],  (libxsmm_bfloat8*)BIAS[i], M );
           libxsmm_convert_bf8_f32( (libxsmm_bfloat8*)BIAS[i], naive_bias[i], M);
         } else if (sizeof(DType) == 2) {
@@ -172,6 +194,7 @@ int gemm_benchmark(int argc, char** argv) {
   unsigned char *naive_output_i8;
   unsigned char *naive_output_opt_i8;
   char *naive_filter_i8;
+  unsigned char *zero_pts_i8;
 
   libxsmm_matdiff_info norms, diff;
   libxsmm_matdiff_clear(&norms);
@@ -195,7 +218,87 @@ int gemm_benchmark(int argc, char** argv) {
     for (i = 0; i < n_layers; i++) {
       matrix_copy_KC_to_KCCK_bf8( (libxsmm_bfloat8*)naive_filter_i8, (libxsmm_bfloat8*)WGT[i]       , K, M, bk, bm );
     }
-  } else if ((sizeof(DType) == 1) && (int8_gemm == 0)) {
+  } else if (int4_gemm > 0) {
+    zero_pts_i8  = (unsigned char*)libxsmm_aligned_malloc( M*sizeof(unsigned char ), 2097152);
+    naive_input_i8  = (unsigned char*)libxsmm_aligned_malloc( K*N*sizeof(unsigned char ), 2097152);
+    naive_output_i8 = (unsigned char*)libxsmm_aligned_malloc( M*N*sizeof(unsigned int ), 2097152);
+    naive_output_opt_i8 = (unsigned char*)libxsmm_aligned_malloc( M*N*sizeof(unsigned int ), 2097152);
+    naive_filter_i8 = (char*)libxsmm_aligned_malloc( M*K*sizeof(unsigned char), 2097152);
+    for (i = 0; i < K*N; i++) naive_input_i8[i] = (unsigned char) (((unsigned char) (get_random_pos_p5_num() * 10.0))%16);
+    for (i = 0; i < M; i++) zero_pts_i8[i] = (((unsigned char) (get_random_pos_p5_num() * 10.0))%16);
+    //for (i = 0; i < M*N*4; i++) naive_output_i8[i] = (unsigned char) 0;
+    for (i = 0; i < M*K; i++) naive_filter_i8[i] = (unsigned char) (((unsigned char) (get_random_pos_p5_num() * 10.0))%16);
+    /* Use the following 8-bit formating routines */
+    matrix_copy_NC_to_NCNC_bf8(  (libxsmm_bfloat8*)naive_input_i8,  (libxsmm_bfloat8*)ACT[0],     1, N, K, bn, bk );
+    //matrix_copy_NC_to_NCNC_bf8(  (libxsmm_bfloat8*)naive_output_i8, (libxsmm_bfloat8*)ACT[n_layers],     1, N, M, bn, bm );
+    for (i = 0; i < n_layers; i++) {
+      matrix_copy_KC_to_KCCK_bf8( (libxsmm_bfloat8*)naive_filter_i8, (libxsmm_bfloat8*)WGT[i]       , K, M, bk, bm );
+      /* Convert to the I4 corresponding weight */
+      {
+        DType *l_a_i4  = (DType*)libxsmm_aligned_malloc( M*(K/2)*sizeof(DType), 2097152);
+        long long l_ar = 0, l_am = 0, l_ak = 0, l_akk = 0;
+        unsigned char *uc_a = (unsigned char*) WGT[i];
+        unsigned char *uc_ai4 = (unsigned char*) l_a_i4;
+        long long l_br = M/bm;
+        long long l_lda = bm;
+        long long l_m = bm;
+        long long l_k = K;
+
+        for (l_ar = 0; l_ar < l_br; l_ar++) {
+          for (l_am = 0; l_am < l_m; l_am++) {
+            for (l_ak = 0; l_ak < l_k; l_ak+=8) {
+              unsigned char even = uc_a[(size_t)(l_ar * l_lda * l_k) + ((l_ak/4+0) * l_lda * 4) + l_am * 4 + 0];
+              unsigned char odd =  uc_a[(size_t)(l_ar * l_lda * l_k) + ((l_ak/4+1) * l_lda * 4) + l_am * 4 + 0];
+              unsigned char result;
+              even = even & 0x0f;
+              odd = (odd & 0x0f) << 4;
+              result = even | odd;
+              uc_ai4[(l_ar * l_lda * (l_k/2)) + ((l_ak/8) * l_lda * 4) + 4 * l_am + 0] = result;
+
+              even = uc_a[(size_t)(l_ar * l_lda * l_k) + ((l_ak/4+0) * l_lda * 4) + l_am * 4 + 1];
+              odd =  uc_a[(size_t)(l_ar * l_lda * l_k) + ((l_ak/4+1) * l_lda * 4) + l_am * 4 + 1];
+              even = even & 0x0f;
+              odd = (odd & 0x0f) << 4;
+              result = even | odd;
+              uc_ai4[(l_ar * l_lda * (l_k/2)) + ((l_ak/8) * l_lda * 4) + 4 * l_am + 1] = result;
+
+              even = uc_a[(size_t)(l_ar * l_lda * l_k) + ((l_ak/4+0) * l_lda * 4) + l_am * 4 + 2];
+              odd =  uc_a[(size_t)(l_ar * l_lda * l_k) + ((l_ak/4+1) * l_lda * 4) + l_am * 4 + 2];
+              even = even & 0x0f;
+              odd = (odd & 0x0f) << 4;
+              result = even | odd;
+              uc_ai4[(l_ar * l_lda * (l_k/2)) + ((l_ak/8) * l_lda * 4) + 4 * l_am + 2] = result;
+
+              even = uc_a[(size_t)(l_ar * l_lda * l_k) + ((l_ak/4+0) * l_lda * 4) + l_am * 4 + 3];
+              odd =  uc_a[(size_t)(l_ar * l_lda * l_k) + ((l_ak/4+1) * l_lda * 4) + l_am * 4 + 3];
+              even = even & 0x0f;
+              odd = (odd & 0x0f) << 4;
+              result = even | odd;
+              uc_ai4[(l_ar * l_lda * (l_k/2)) + ((l_ak/8) * l_lda * 4) + 4 * l_am + 3] = result;
+            }
+          }
+        }
+        WGT_I4[i] = l_a_i4;
+
+        /* Subtract zero points from weights... they are assumed to be in flat format KC */
+        unsigned char *uc_a_flat = (unsigned char*) naive_filter_i8;
+        for (l_ar = 0; l_ar < l_br; l_ar++) {
+          for (l_ak = 0; l_ak < l_k/4; l_ak++) {
+            for (l_am = 0; l_am < l_m; l_am++) {
+              unsigned char zero_pt = zero_pts_i8[l_ar * l_m + l_am];
+              for (l_akk = 0; l_akk < 4; l_akk++) {
+                long long _ik_ = l_ar * l_m + l_am;
+                long long _ic_ = l_ak * 4 + l_akk;
+                unsigned char elt = uc_a_flat[(long long)_ik_*K+_ic_];
+                char res = (char)((int)((unsigned int)elt - (int)zero_pt));
+                uc_a_flat[_ik_*K+_ic_] = (char)res;
+              }
+            }
+          }
+        }
+      }
+    }
+  } else if ((sizeof(DType) == 1) && (int8_gemm == 0) && (int4_gemm == 0) ) {
     libxsmm_rne_convert_fp32_bf8( naive_input,     (libxsmm_bfloat8*)naive_input_bf16,     N*K );
     libxsmm_convert_bf8_f32( (libxsmm_bfloat8*)naive_input_bf16, naive_input, N*K);
     libxsmm_rne_convert_fp32_bf8( naive_output,    (libxsmm_bfloat8*)naive_output_bf16,    N*M );
@@ -233,12 +336,20 @@ int gemm_benchmark(int argc, char** argv) {
   auto l_tr_flags = (sizeof(DType) == 2 || sizeof(DType) == 1) ? ( LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') ) : LIBXSMM_GEMM_FLAGS('N', 'N');
   
   auto dtype      = (sizeof(DType) == 2) ? LIBXSMM_DATATYPE_BF16 : ((sizeof(DType) == 1) ? ((int8_gemm == 0) ? LIBXSMM_DATATYPE_BF8 : LIBXSMM_DATATYPE_I8) : LIBXSMM_DATATYPE_F32);
+  if (int4_gemm > 0) {
+    dtype = LIBXSMM_DATATYPE_I8;
+  }
   auto l_shape = libxsmm_create_gemm_shape( bm, bn, bk, bm, bk, bm, dtype, dtype, dtype, LIBXSMM_DATATYPE_F32 );
   auto l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
   auto l_brconfig = libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, bm*bk*sizeof(DType), bk*bn*sizeof(DType), brcount );
   auto l_unary_shape = libxsmm_create_meltw_unary_shape(bm*bn, 1, bm*bn, bm*bn, dtype, dtype, dtype);
 
-  if (int8_gemm > 0) {
+  if (int4_gemm > 0) {
+    l_flags = LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_FLAG_B_UNSIGNED | LIBXSMM_GEMM_FLAG_INTERPRETE_A_AS_INT4_VNNI8_INTLV | LIBXSMM_GEMM_FLAG_USE_COL_VEC_ZPT;
+    l_shape = libxsmm_create_gemm_shape( bm, bn, bk, bm, bk, bm, LIBXSMM_DATATYPE_I8, LIBXSMM_DATATYPE_I8, LIBXSMM_DATATYPE_I32, LIBXSMM_DATATYPE_I32 );
+    l_unary_shape = libxsmm_create_meltw_unary_shape(bm*bn, 1, bm*bn, bm*bn, LIBXSMM_DATATYPE_F32, LIBXSMM_DATATYPE_F32, LIBXSMM_DATATYPE_F32);
+    l_brconfig = libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, bm*(bk/2)*sizeof(DType), bk*bn*sizeof(DType), brcount );
+  } else if (int8_gemm > 0) {
     l_flags = LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_FLAG_B_UNSIGNED;
     l_shape = libxsmm_create_gemm_shape( bm, bn, bk, bm, bk, bm, LIBXSMM_DATATYPE_I8, LIBXSMM_DATATYPE_I8, LIBXSMM_DATATYPE_F32, LIBXSMM_DATATYPE_I32 );
     l_unary_shape = libxsmm_create_meltw_unary_shape(bm*bn, 1, bm*bn, bm*bn, LIBXSMM_DATATYPE_F32, LIBXSMM_DATATYPE_F32, LIBXSMM_DATATYPE_F32);
@@ -273,6 +384,8 @@ int gemm_benchmark(int argc, char** argv) {
       // Create relu TPP
       relu_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_RELU, l_relu_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);  
     }
+  } else if (int4_gemm > 0) {
+    /* Do nothing  */
   } else {
     if (fuse_bias > 0) {
       auto l_colbias_unary_shape = libxsmm_create_meltw_unary_shape(bm, bn, bm, bm, dtype, dtype, dtype);
@@ -326,7 +439,13 @@ int gemm_benchmark(int argc, char** argv) {
       naive_param.fuse_type = 3;
     }
     for (i = 0; i < n_layers; i++) {
-      if (int8_gemm > 0) {
+      if (int4_gemm > 0) {
+        if (i % 2 == 0) {
+          naive_fullyconnected_fused_int4(&naive_param, naive_input_i8, naive_output_i8, naive_filter_i8, NULL, NULL, NULL );
+        } else {
+          naive_fullyconnected_fused_int4(&naive_param, naive_output_i8, naive_input_i8, naive_filter_i8, NULL, NULL, NULL );
+        }
+      } else if (int8_gemm > 0) {
         if (i % 2 == 0) {
           naive_fullyconnected_fused_int8(&naive_param, naive_input_i8, naive_output_i8, naive_filter_i8, (fuse_bias > 0) ? naive_bias[i] : NULL, &scf_quant[i], itm_f32_out );
         } else {
@@ -415,7 +534,28 @@ int gemm_benchmark(int argc, char** argv) {
   auto t1 = getTime();
 
   // Warmup iteration for i-caches
-  if (int8_gemm == 0) {
+  if (int4_gemm > 0) {
+    for (i = 0; i < n_layers; i++) {
+      gemm_loop(
+          [&](int* ind) {
+            int i_k = ind[0], i_m = ind[1], i_n = ind[2];
+            libxsmm_gemm_param gemm_param;
+            gemm_param.op.tertiary = (void*)&brcount;
+            gemm_param.a.primary = (void*)((DType*)WGT_I4[i] + i_m * (K/2) * bm + i_k * (bk/2) * bm );
+            gemm_param.a.quaternary = (void*)((DType*)zero_pts_i8 + i_m * bm);
+            gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
+            gemm_param.c.primary = (void*)((int*)ACT[i+1] + i_n * M * bn + i_m * bn * bm);
+            if (i_k == 0) {
+              libxsmm_meltw_unary_param zero_param;
+              zero_param.out.primary = (void*)gemm_param.c.primary;
+              zero_kernel( &zero_param );
+            }
+            brgemm_kernel( &gemm_param );
+          },
+          [&]() {tileconfig_kernel(NULL);},
+          [&]() {tilerelease_kernel(NULL);});
+    }
+  } else if (int8_gemm == 0) {
     for (i = 0; i < n_layers; i++) {
       gemm_loop(
           [&](int* ind) {
@@ -537,7 +677,9 @@ int gemm_benchmark(int argc, char** argv) {
   printf("Activation : %s\n", fuse_string);
   printf("Ring buffer: %d\n", use_ping_pong_bufs);
   if (check_correctness) {
-    if (int8_gemm > 0) {
+    if (int4_gemm > 0) {
+       matrix_copy_NCNC_to_NC( (float*)ACT[n_layers], naive_output_opt, 1, N, M, bn, bm );
+    } else if (int8_gemm > 0) {
       matrix_copy_NCNC_to_NC_bf8( (libxsmm_bfloat8*)ACT[n_layers], (libxsmm_bfloat8*)naive_output_opt_i8, 1, N, M, bn, bm );
     } else if (sizeof(DType) == 1) {
       matrix_copy_NCNC_to_NC_bf8( (libxsmm_bfloat8*)ACT[n_layers], (libxsmm_bfloat8*)naive_output_bf16, 1, N, M, bn, bm );
@@ -551,13 +693,19 @@ int gemm_benchmark(int argc, char** argv) {
     printf("##########################################\n");
     printf("#           Correctness                  #\n");
     printf("##########################################\n");
-    if (int8_gemm == 0) {
+    if (int4_gemm > 0) {
+      if (n_layers % 2 == 1) {
+        libxsmm_matdiff(&norms, LIBXSMM_DATATYPE_I32, N*M, 1, naive_output_i8, naive_output_opt, 0, 0);
+      } else {
+        libxsmm_matdiff(&norms, LIBXSMM_DATATYPE_I32, N*M, 1, naive_input, naive_output_opt, 0, 0);
+      }
+    } else if (int8_gemm == 0) {
       if (n_layers % 2 == 1) {
         libxsmm_matdiff(&norms, LIBXSMM_DATATYPE_F32, N*M, 1, naive_output, naive_output_opt, 0, 0);
       } else {
         libxsmm_matdiff(&norms, LIBXSMM_DATATYPE_F32, N*M, 1, naive_input, naive_output_opt, 0, 0);
       }
-    } else {
+    }  else {
       if (n_layers % 2 == 1) {
         libxsmm_matdiff(&norms, LIBXSMM_DATATYPE_I8, N*M, 1, naive_output_i8, naive_output_opt_i8, 0, 0);
       } else {
@@ -574,9 +722,33 @@ int gemm_benchmark(int argc, char** argv) {
     libxsmm_matdiff_reduce(&diff, &norms);
   }
 
+
   // benchmark the GEMM
   auto t_start = getTime();
-  if (int8_gemm == 0) {
+  if (int4_gemm > 0) {
+    for (long it = 0; it < n_iters; it++) {
+      for (i = 0; i < n_layers; i++) {
+        gemm_loop(
+            [&](int* ind) {
+              int i_k = ind[0], i_m = ind[1], i_n = ind[2];
+              libxsmm_gemm_param gemm_param;
+              gemm_param.op.tertiary = (void*)&brcount;
+              gemm_param.a.primary = (void*)((DType*)WGT_I4[i] + i_m * (K/2) * bm + i_k * (bk/2) * bm );
+              gemm_param.a.quaternary = (void*)((DType*)zero_pts_i8 + i_m * bm);
+              gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
+              gemm_param.c.primary = (void*)((int*)ACT[i+1] + i_n * M * bn + i_m * bn * bm);
+              if (i_k == 0) {
+                libxsmm_meltw_unary_param zero_param;
+                zero_param.out.primary = (void*)gemm_param.c.primary;
+                zero_kernel( &zero_param );
+              }
+              brgemm_kernel( &gemm_param );
+            },
+            [&]() {tileconfig_kernel(NULL);},
+            [&]() {tilerelease_kernel(NULL);});
+      }
+    }
+  } else if (int8_gemm == 0) {
     for (long it = 0; it < n_iters; it++) {
       for (i = 0; i < n_layers; i++) {
         gemm_loop(
@@ -724,6 +896,7 @@ int gemm_benchmark(int argc, char** argv) {
   // Print performance/model numbers
   double gflop = (2.0*(double)n_layers*(double)M*(double)N*(double)K) / (1000*1000*1000);
   printf("Time is %.5g ms (%.5g GFLOPS)\n", 1000.0*(t_end-t_start)/(1.0*n_iters), gflop/((t_end-t_start)/(1.0*n_iters)));
+  printf("Effective A BW is %.5g GB/s\n", (((double)((int4_gemm > 0) ? 0.5 : 1.0*sizeof(DType))*(double)n_layers*(double)M*(double)K) / (1024*1024*1024))/((t_end-t_start)/(1.0*n_iters)));
   if (use_model > 0) {
     printf("Model time gemm is %.5g ms (%.5g GFLOPS)\n", modeled_time, gflop/(modeled_time/1000.0));
     printf("Tracing takes %.5g ms and modeling takes %.5g ms\n", 1000.0*(t2-t_trace_start), 1000.0*(t3-t2));
@@ -755,9 +928,12 @@ int gemm_benchmark(int argc, char** argv) {
         libxsmm_free(naive_bias[i]);
       }
       libxsmm_free(WGT[i]);
+      if (int4_gemm > 0) {
+        libxsmm_free(WGT_I4[i]);   
+      }
     }
   }
-  if ((sizeof(DType) == 1) && (int8_gemm == 1)) {
+  if ((sizeof(DType) == 1) && (int8_gemm == 1 || int4_gemm == 1)) {
     libxsmm_free(naive_input_i8);
     libxsmm_free(naive_output_i8);
     libxsmm_free(naive_output_opt_i8);
@@ -765,6 +941,7 @@ int gemm_benchmark(int argc, char** argv) {
   }
   free(ACT);
   free(WGT);
+  free(WGT_I4);
   free(BIAS);
   free(naive_bias);
   free(scf_quant);
@@ -789,8 +966,10 @@ int main(int argc, char** argv) {
         cl_precision = 1;
       } else if (strcmp(cl_str_precision, "INT8") == 0) {
         cl_precision = 5;
+      } else if (strcmp(cl_str_precision, "INT4") == 0) {
+        cl_precision = 6;
       } else {
-        printf("Unsupported precision... Supported precisions are FP32, BF16, BF8, INT8. Exiting...\n");
+        printf("Unsupported precision... Supported precisions are FP32, BF16, BF8, INT8, INT4. Exiting...\n");
         return 0;
       }
     }
@@ -801,7 +980,7 @@ int main(int argc, char** argv) {
     }
   }
   if (use_prec_bf16 == 0) {
-    if (cl_precision == 5) {
+    if (cl_precision == 5 || cl_precision == 6) {
       return gemm_benchmark<char>(argc, argv);
     } else if (cl_precision == 4) {
       return gemm_benchmark<float>(argc, argv);

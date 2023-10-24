@@ -26,7 +26,7 @@ else
   CXX_USE=g++
 fi
 
-BRANCH=main
+BRANCH=feature_i4i8_vnni_gemms
 BRANCHDNN=main
 if [ $# -eq 2 ]; then
   BRANCH=$1
