@@ -24,6 +24,7 @@
 #include <cstring>
 #include <unistd.h>
 #include <libxsmm.h>
+#include <libxsmm_utils.h>
 #include <dnn_common.h>
 #include <vector>
 

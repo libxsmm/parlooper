@@ -26,8 +26,8 @@ else
   CXX_USE=g++
 fi
 
-BRANCH=main_stable
-BRANCHDNN=main_stable
+BRANCH=main
+BRANCHDNN=main
 if [ $# -eq 2 ]; then
   BRANCH=$1
   BRANCHDNN=$2
