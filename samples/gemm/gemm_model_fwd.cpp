@@ -405,7 +405,6 @@ int gemm_benchmark(int argc, char** argv) {
   long l1_m_step = m1 * l0_m_step;
   long l1_n_step = n1 * l0_n_step;
 
-
   auto t0 = getTime();
   auto gemm_loop = ThreadedLoop<3>({
       LoopSpecs{0, Kb, k_step, {l1_k_step, l0_k_step}},   // Logical K loop specs
@@ -413,6 +412,31 @@ int gemm_benchmark(int argc, char** argv) {
       LoopSpecs{0, Nb, n_step, {l1_n_step, l0_n_step}}},  // Logical N loop specs
       loop_specs_str);
   auto t1 = getTime();
+
+  long n_threads = omp_get_max_threads();
+  long n_brgemms = 0;
+  gemm_loop( [&](int* ind) {
+    int i_k = ind[0], i_m = ind[1], i_n = ind[2];
+    int m_id = gemm_loop.get_tid_in_parallel_dim('b', ind);
+    int n_id = gemm_loop.get_tid_in_parallel_dim('c', ind);
+    if (m_id == 2 && n_id == 3) {
+      //printf("I am thread with global ID %d and m_id %d and n_is %d\n", gemm_loop.get_tid(ind), m_id, n_id);
+      n_brgemms++;
+    }
+  },
+  [&]() {},
+  [&]() {});
+
+  printf("In total there are %d BRGEMMS per iter\n", n_brgemms);
+  double *timelines[n_threads];
+  long index_in_timeline[n_threads];
+  long n_record_iters = 3;
+  for (i = 0; i < n_threads; i++) {
+    timelines[i] = (double*) libxsmm_aligned_malloc((n_record_iters*n_brgemms+1)*sizeof(double), 64);
+    memset(timelines[i], 0, (n_record_iters*n_brgemms+1)*sizeof(double));
+  }
+  memset(index_in_timeline, 0 ,n_threads*sizeof(long));
+  long iter_to_record = 800;
 
   // Warmup iteration for i-caches
   if (int8_gemm == 0) {
@@ -623,6 +647,11 @@ int gemm_benchmark(int argc, char** argv) {
                 }
               } else {
                 libxsmm_gemm_param gemm_param;
+                long tid = gemm_loop.get_tid(ind);
+                double t_before = 0.0, t_after = 0.0;
+                long record_iter = ((it >= iter_to_record) && (it <= iter_to_record+n_record_iters-1)) ? 1 : 0;
+                long cur_index_in_timeline = 0;
+
                 gemm_param.op.tertiary = (void*)&brcount;
                 gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
                 gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
@@ -632,7 +661,16 @@ int gemm_benchmark(int argc, char** argv) {
                   zero_param.out.primary = (void*)gemm_param.c.primary;
                   zero_kernel( &zero_param );
                 }
+                if (record_iter) {
+                  cur_index_in_timeline = index_in_timeline[tid];
+                  index_in_timeline[tid]++;
+                  t_before = getTime();
+                }
                 brgemm_kernel( &gemm_param );
+                if (record_iter) {
+                  t_after = getTime();
+                  timelines[tid][cur_index_in_timeline+1] = (t_after-t_before)+timelines[tid][cur_index_in_timeline];
+                }
               }
             },
             [&]() {if (sizeof(DType) == 2) tileconfig_kernel(NULL);},
@@ -731,6 +769,29 @@ int gemm_benchmark(int argc, char** argv) {
     printf("MODELED %.5g %s_%d_%d_%d_%d_%d_%d_bf%d_threads%d\n", gflop/(modeled_time/1000.0), loop_specs_str, M, N, K, bm, bn, bk, kbf, omp_get_max_threads());
   }
   printf("MEASURE %.5g %s_%d_%d_%d_%d_%d_%d_bf%d_threads%d\n", gflop/((t_end-t_start)/(1.0*n_iters)), loop_specs_str, M, N, K, bm, bn, bk, kbf, omp_get_max_threads());
+
+  long thread_stats_id = 0;
+  printf("\n\nTmeline stats for thread %d\n", thread_stats_id);
+  double n_flops_per_brgemm = 2.0*bm*bn*bk*brcount;
+  double slab_size = 1.0*bm*bk*brcount*sizeof(DType)/1024.0/1024.0/1024.0;
+  double epsilon = 0.0;
+  for (i = 0; i < n_record_iters * n_brgemms; i++) {
+    double _t0 = timelines[thread_stats_id][i];
+    double _t1 = timelines[thread_stats_id][i+1];
+    double effective_gflops = 1.0*n_flops_per_brgemm/(1000000000.0*(_t1-_t0));
+    double effective_bw_1_slab = 1.0*slab_size/(1.0*(_t1-_t0));
+    double effective_bw_2_slab = 2.0*slab_size/(1.0*(_t1-_t0));
+    if (i % n_brgemms == 0) {
+      printf("New set of n_brgemms\n");
+    }
+    //printf("Effective Gflops is %.5g\n", effective_gflops);
+    //printf("Effective GB/s 1 slab is %.5g\n", effective_bw_1_slab);
+    //printf("Effective GB/s 2 slab is %.5g\n", effective_bw_2_slab);
+    /* Print two time points: _t0 and _t1 - epsilon with the effective GFLOPS */
+    epsilon = (_t1 -_t0)/1000.0;
+    printf("%.10g\t%.5g\n", _t0, effective_gflops);
+    printf("%.10g\t%.5g\n", _t1-epsilon, effective_gflops);
+  }
 
   // Free buffers
   libxsmm_free(itm_f32_out);
