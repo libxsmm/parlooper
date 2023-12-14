@@ -10,6 +10,25 @@
 #include "threaded_loops.h"
 #include "gemm_common_utils.h"
 
+int print_bw_iters(int *data, int n_vals) {
+  int i, j, max_value = 0;
+  for (i = 0; i < n_vals; i++) {
+    data[i] = data[i]/10;
+    if (data[i] > max_value) max_value = data[i];
+  }
+  for (i = max_value; i >= 0; --i) {
+    for (j = 0; j < n_vals; ++j) {
+      if (data[j] >= i) {
+        printf("x ");
+      } else {
+        printf("  ");
+      }
+    }
+    printf("\n");
+  }
+  return 0;
+}
+
 int ullcompare( const void* a , const void* b ) {
   const unsigned long long aull = *( const unsigned long long* )a;
   const unsigned long long bull = *( const unsigned long long* )b;
@@ -913,6 +932,12 @@ int gemm_benchmark(int argc, char** argv) {
     libxsmm_matdiff_reduce(&diff, &norms);
   }
 
+  double *iter_times;
+  int    *iter_bw;
+  iter_times = (double*) malloc(n_iters*sizeof(double));
+  iter_bw = (int*) malloc(n_iters*sizeof(int));
+
+
   // benchmark the GEMM
   auto t_start = getTime();
   if (f16_gemm > 0) {
@@ -938,6 +963,7 @@ int gemm_benchmark(int argc, char** argv) {
     }
   } else if (use_decompress_kernel > 0) {
     for (long it = 0; it < n_iters; it++) {
+      auto iter_start = getTime();   
       for (i = 0; i < n_layers; i++) {
         gemm_loop(
             [&](int* ind) {
@@ -952,9 +978,12 @@ int gemm_benchmark(int argc, char** argv) {
             [&]() {if (sizeof(DType) == 2) tileconfig_kernel(NULL);},
             [&]() {if (sizeof(DType) == 2) tilerelease_kernel(NULL);});
       }
+      auto iter_end = getTime();
+      iter_times[it] = iter_end - iter_start;   
     }
   } else if (int8_gemm == 0) {
     for (long it = 0; it < n_iters; it++) {
+      auto iter_start = getTime();       
       for (i = 0; i < n_layers; i++) {
         gemm_loop(
             [&](int* ind) {
@@ -1015,6 +1044,8 @@ int gemm_benchmark(int argc, char** argv) {
             [&]() {if (sizeof(DType) == 2) tileconfig_kernel(NULL);},
             [&]() {if (sizeof(DType) == 2) tilerelease_kernel(NULL);});
       }
+      auto iter_end = getTime();
+      iter_times[it] = iter_end - iter_start;   
     }
   } else {
     for (long it = 0; it < n_iters; it++) {
@@ -1109,6 +1140,29 @@ int gemm_benchmark(int argc, char** argv) {
     printf("MODELED %.5g %s_%d_%d_%d_%d_%d_%d_bf%d_threads%d\n", gflop/(modeled_time/1000.0), loop_specs_str, M, N, K, bm, bn, bk, kbf, omp_get_max_threads());
   }
   printf("MEASURE %.5g %s_%d_%d_%d_%d_%d_%d_bf%d_threads%d\n", gflop/((t_end-t_start)/(1.0*n_iters)), loop_specs_str, M, N, K, bm, bn, bk, kbf, omp_get_max_threads());
+
+  double data_size_moved = 1.0*sizeof(DType)*((double)1.0*M*K*n_layers)/1024.0/1024.0/1024.0;
+  double min_time = iter_times[0];
+  double max_time = iter_times[0];
+  double avg_time = 0.0;
+  long argmin = 0;
+  long argmax = 0;
+  for (long it = 0; it < n_iters; it++) {
+    iter_bw[it] = (int)(data_size_moved/iter_times[it]);
+    if (iter_times[it] < min_time) {
+      min_time = iter_times[it];
+      argmin = it;
+    }
+    if (iter_times[it] > max_time) {
+      max_time = iter_times[it];
+      argmax = it;
+    }
+    avg_time += iter_times[it];
+  }
+  avg_time = avg_time/(double)n_iters;
+  printf("Effective BW across iters: MAX %.5g (iter %ld), MIN %.5g (iter %ld), AVG %.5g\n", data_size_moved/min_time, argmin,  data_size_moved/max_time, argmax, data_size_moved/avg_time);
+
+  print_bw_iters(iter_bw, n_iters);
 
   // Free buffers
   libxsmm_free(itm_f32_out);

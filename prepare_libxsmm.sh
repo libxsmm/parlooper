@@ -27,7 +27,7 @@ else
 fi
 
 #BRANCH=main_stable
-BRANCH=feature_avx512_gemm_with_A_decompress
+BRANCH=feature_avx512_gemm_with_A_decompress_BCSC_AT_CT_enabled
 BRANCHDNN=main_stable
 if [ $# -eq 2 ]; then
   BRANCH=$1
