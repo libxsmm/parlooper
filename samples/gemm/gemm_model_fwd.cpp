@@ -98,11 +98,13 @@ int gemm_benchmark(int argc, char** argv) {
   } else {
     sprintf(fuse_string, "NONE");
   }
-  
+ 
+#if 0 
   if ((n_layers > 1) && !(bm == bk && bk == bn) ) {
     printf("MLP support only for M == K and bm == bn == bk\n");
     return 1;
   }
+#endif
 
   long Mb = M/bm, Nb = N/bn, Kb = K/bk;
   long brcount = Kb/kbf;
@@ -726,6 +728,9 @@ int gemm_benchmark(int argc, char** argv) {
   // Print performance/model numbers
   double gflop = (2.0*(double)n_layers*(double)M*(double)N*(double)K) / (1000*1000*1000);
   printf("Time is %.5g ms (%.5g GFLOPS)\n", 1000.0*(t_end-t_start)/(1.0*n_iters), gflop/((t_end-t_start)/(1.0*n_iters)));
+  printf("Effective model sizes: %.5g GB\n", ((double)sizeof(DType)*(double)n_layers*(double)M*(double)K)/(1024.0*1024.0*1024.0));
+  printf("Effective A BW is %.5g GB/s\n", (((double)sizeof(DType)*(double)n_layers*(double)M*(double)K) / (1024.0*1024.0*1024.0))/((t_end-t_start)/(1.0*n_iters)));
+  
   if (use_model > 0) {
     printf("Model time gemm is %.5g ms (%.5g GFLOPS)\n", modeled_time, gflop/(modeled_time/1000.0));
     printf("Tracing takes %.5g ms and modeling takes %.5g ms\n", 1000.0*(t2-t_trace_start), 1000.0*(t3-t2));
