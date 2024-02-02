@@ -6,6 +6,47 @@
 * Further information: https://github.com/libxsmm/libxsmm/                    *
 * SPDX-License-Identifier: BSD-3-Clause                                       *
 ******************************************************************************/
+LIBXSMM_INLINE void matrix_copy_NC_to_NCNC_bf16_local(libxsmm_bfloat16 *src, libxsmm_bfloat16 *dst, int N, int C, int bn, int bc)
+{
+  int nBlocks = N/bn;
+  int cBlocks = C/bc;
+  LIBXSMM_VLA_DECL(3, libxsmm_bfloat16, real_src, src, N, C);
+  LIBXSMM_VLA_DECL(5, libxsmm_bfloat16, real_dst, dst, nBlocks, cBlocks, bn, bc);
+
+# pragma omp parallel for 
+  for (int n1 = 0; n1 < nBlocks; n1++) {
+    for (int c1 = 0; c1 < cBlocks; c1++) {
+      for (int n2 = 0; n2 < bn; n2++) {
+        for (int c2 = 0; c2 < bc; c2++) {
+          LIBXSMM_VLA_ACCESS(5, real_dst, 0, n1, c1, n2, c2, nBlocks, cBlocks, bn, bc) =
+            LIBXSMM_VLA_ACCESS(3, real_src, 0, n1*bn+n2, c1*bc+c2, N, C);
+        }
+      }
+    }
+  }
+}
+
+LIBXSMM_INLINE void matrix_copy_KC_to_KCCK_bf16_local(libxsmm_bfloat16 *src, libxsmm_bfloat16 *dst, int C, int K, int bc, int bk)
+{
+  int kBlocks = K/bk;
+  int cBlocks = C/bc;
+  int vnni_block = libxsmm_cpuid_dot_pack_factor(LIBXSMM_DATATYPE_BF16);
+  LIBXSMM_VLA_DECL(2, libxsmm_bfloat16, real_src, src, C);
+  LIBXSMM_VLA_DECL(5, libxsmm_bfloat16, real_dst, dst, cBlocks, bc/vnni_block, bk, vnni_block);
+
+# pragma omp parallel for
+  for (int k1 = 0; k1 < kBlocks; k1++) {
+    for (int c1 = 0; c1 < cBlocks; c1++) {
+      for (int c2 = 0; c2 < bc; c2++) {
+        for (int k2 = 0; k2 < bk; k2++) {
+          LIBXSMM_VLA_ACCESS(5, real_dst, k1, c1, c2/vnni_block, k2, c2%vnni_block, cBlocks, bc/vnni_block, bk, vnni_block) =
+            LIBXSMM_VLA_ACCESS(2, real_src, k1*bk+k2, c1*bc+c2, C);
+        }
+      }
+    }
+  }
+}
+
 double get_random_posneg_p5_num(void) {
   double tmp = libxsmm_rng_f64()-0.5;
   if ( tmp < -0.4 ) {
