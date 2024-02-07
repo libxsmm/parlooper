@@ -227,6 +227,8 @@ class LoopingScheme {
           openmp_flag = std::string(" -fopenmp=libomp ");  
         } else if (strcmp(env_compiler, "icc") == 0) {
           openmp_flag = std::string(" -fopenmp -std=c++11 ");  
+        } else if (strcmp(env_compiler, "icx") == 0) {
+          openmp_flag = std::string(" -fopenmp -std=c++11 ");  
         } else if (strcmp(env_compiler, "gcc") == 0) {
           openmp_flag = std::string(" -fopenmp ");  
         }   

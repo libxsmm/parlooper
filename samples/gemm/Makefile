@@ -25,6 +25,10 @@ ifeq ($(PARLOOPER_COMPILER),icc)
   CXX := icpc
   CXXFLAGS := -fopenmp -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14 -O2 
 endif
+ifeq ($(PARLOOPER_COMPILER),icx)
+  CXX := icpx
+  CXXFLAGS := -fopenmp -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14 -O2 
+endif
 LDFLAGS = -ldl 
 IFLAGS = -I$(PARLOOPER_ROOT)/include -I$(PARLOOPER_ROOT)/utils -I$(LIBXSMM_ROOT)/include -I$(LIBXSMM_DNN_ROOT)/include
 SRCDIRS = $(PARLOOPER_ROOT)/utils $(PARLOOPER_ROOT)/src .

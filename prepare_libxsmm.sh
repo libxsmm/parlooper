@@ -15,6 +15,9 @@ if [[ -z "${PARLOOPER_COMPILER}" ]]; then
 elif [[ "${PARLOOPER_COMPILER}" == "icc" ]]; then
   CC_USE=icc
   CXX_USE=icpc
+elif [[ "${PARLOOPER_COMPILER}" == "icx" ]]; then
+  CC_USE=icx
+  CXX_USE=icpx
 elif [[ "${PARLOOPER_COMPILER}" == "clang" ]]; then
   CC_USE=clang
   CXX_USE=clang++
