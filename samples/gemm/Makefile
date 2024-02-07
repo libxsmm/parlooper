@@ -30,7 +30,8 @@ IFLAGS = -I$(PARLOOPER_ROOT)/include -I$(PARLOOPER_ROOT)/utils -I$(LIBXSMM_ROOT)
 SRCDIRS = $(PARLOOPER_ROOT)/utils $(PARLOOPER_ROOT)/src .
 #SRCFILES := par_loop_cost_estimator.cpp common_loops.cpp gemm_model_fwd.cpp
 #OBJFILES := $(patsubst %,$(BLDDIR)/%,$(notdir $(SRCFILES:.cpp=-cpp.o)))
-XFILES := $(OUTDIR)/gemm $(OUTDIR)/gemm_bwd $(OUTDIR)/gemm_upd $(OUTDIR)/loop_permute_generator
+#XFILES := $(OUTDIR)/gemm $(OUTDIR)/gemm_bwd $(OUTDIR)/gemm_upd $(OUTDIR)/loop_permute_generator
+XFILES := $(OUTDIR)/gemm
 vpath %.cpp $(SRCDIRS) 
 
 .PHONY: all

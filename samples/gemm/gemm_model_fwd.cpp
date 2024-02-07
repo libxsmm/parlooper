@@ -49,7 +49,7 @@ int gemm_benchmark(int argc, char** argv) {
   }
   
   long Mb = M/bm, Nb = N/bn, Kb = K/bk;
-  long brcount = Kb/kbf;
+  long  brcount = Kb/kbf;
   while (Kb % kbf != 0) {
     kbf--;
   }
@@ -57,20 +57,31 @@ int gemm_benchmark(int argc, char** argv) {
 
   // Allocate buffers
   DType **ACT = (DType**) malloc((n_layers+1)*sizeof(DType*));
+  check_null_ptr(ACT, "ACT array");
   DType **WGT = (DType**) malloc(n_layers    *sizeof(DType*));
+  check_null_ptr(WGT, "WGT array");
   for (i = 0; i < (n_layers+1); i++) {
     ACT[i] = (DType*) libxsmm_aligned_malloc(LIBXSMM_MAX(K,M)*N*sizeof(DType), 64);
+    check_null_ptr(ACT[i], "ACT[i] array"); 
     if (i < n_layers) {
       WGT[i] = (DType*) libxsmm_aligned_malloc(M*K*sizeof(DType), 64);
+      check_null_ptr(WGT[i], "WGT[i] array"); 
     }
   }
   float *naive_input  = (float*)libxsmm_aligned_malloc( LIBXSMM_MAX(K,M)*N*sizeof(float), 64);
+  check_null_ptr(naive_input, "naive_input array");
   float *naive_output = (float*)libxsmm_aligned_malloc( LIBXSMM_MAX(K,M)*N*sizeof(float), 64);
+  check_null_ptr(naive_output, "naive_output array");
   float *naive_output_opt = (float*)libxsmm_aligned_malloc( LIBXSMM_MAX(K,M)*N*sizeof(float), 64);
+  check_null_ptr(naive_output_opt, "naive_output_opt array");
   float *naive_filter = (float*)libxsmm_aligned_malloc( M*K*sizeof(float), 64);
+  check_null_ptr(naive_filter, "naive_filter array");
   DType *naive_input_bf16  = (DType*)libxsmm_aligned_malloc( LIBXSMM_MAX(K,M)*N*sizeof(DType), 64);
+  check_null_ptr(naive_input_bf16, "naive_input_bf16 array");
   DType *naive_output_bf16 = (DType*)libxsmm_aligned_malloc( LIBXSMM_MAX(K,M)*N*sizeof(DType), 64);
+  check_null_ptr(naive_output_bf16, "naive_output_bf16 array");
   DType *naive_filter_bf16 = (DType*)libxsmm_aligned_malloc( M*K*sizeof(DType), 64);
+  check_null_ptr(naive_filter_bf16, "naive_filter_bf16 array");
   
   // Init buffers
   init_buf( naive_input,     LIBXSMM_MAX(K,M)*N, 0, 0 );
@@ -102,10 +113,14 @@ int gemm_benchmark(int argc, char** argv) {
 
   if (brcount == Kb) l_flags |= LIBXSMM_GEMM_FLAG_BETA_0;
 
-  auto zero_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);  
+  auto zero_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
+  check_null_ptr((void*)zero_kernel, "zero_kernel TPP");
   auto tileconfig_kernel  = libxsmm_dispatch_gemm_v2( l_shape, l_tc_flags, l_prefetch_flags );
+  check_null_ptr((void*)tileconfig_kernel, "tileconfig_kernel TPP");
   auto tilerelease_kernel = libxsmm_dispatch_gemm_v2( l_shape, l_tr_flags, l_prefetch_flags );
+  check_null_ptr((void*)tilerelease_kernel, "tilerelease_kernel TPP");
   auto brgemm_kernel      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
+  check_null_ptr((void*)brgemm_kernel, "brgemm_kernel TPP");
 
   // Compute reference if requested
   if (check_correctness) {
@@ -265,6 +280,7 @@ int gemm_benchmark(int argc, char** argv) {
   // Free buffers
   libxsmm_free(naive_input);
   libxsmm_free(naive_output);
+  libxsmm_free(naive_output_opt);
   libxsmm_free(naive_filter);
   libxsmm_free(naive_input_bf16);
   libxsmm_free(naive_output_bf16);

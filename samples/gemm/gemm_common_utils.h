@@ -6,6 +6,13 @@
 * Further information: https://github.com/libxsmm/libxsmm/                    *
 * SPDX-License-Identifier: BSD-3-Clause                                       *
 ******************************************************************************/
+void check_null_ptr(void* ptr, const char* ptr_name) {
+  if (ptr == NULL) {
+    printf("Pointer for %s is NULL. Exiting...\n", ptr_name);
+    exit(0);
+  } 
+}
+
 LIBXSMM_INLINE void matrix_copy_NC_to_NCNC_bf16_local(libxsmm_bfloat16 *src, libxsmm_bfloat16 *dst, int N, int C, int bn, int bc)
 {
   int nBlocks = N/bn;
