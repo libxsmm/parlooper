@@ -916,7 +916,7 @@ std::string loop_generator(const char* ____loop_nest_desc_extended) {
 
     if (occurence_id == 0) {
       if (loop_params_map[loop_abs_index].jit_start > 0) {
-        sprintf(start_var_name, "%d", loop_params_map[loop_abs_index].start);
+        sprintf(start_var_name, "%ld", loop_params_map[loop_abs_index].start);
       } else {
         sprintf(
             start_var_name, "%s[%d].start", spec_array_name, loop_abs_index);
@@ -928,7 +928,7 @@ std::string loop_generator(const char* ____loop_nest_desc_extended) {
 
     if (occurence_id == 0) {
       if (loop_params_map[loop_abs_index].jit_end > 0) {
-        sprintf(end_var_name, "%d", loop_params_map[loop_abs_index].end);
+        sprintf(end_var_name, "%ld", loop_params_map[loop_abs_index].end);
       } else {
         sprintf(end_var_name, "%s[%d].end", spec_array_name, loop_abs_index);
       }
@@ -936,7 +936,7 @@ std::string loop_generator(const char* ____loop_nest_desc_extended) {
       if (loop_params_map[loop_abs_index].jit_block_sizes > 0) {
         sprintf(
             end_var_name,
-            "%c%d + %d",
+            "%c%d + %ld",
             tolower(loop_nest_desc[i]),
             occurence_id - 1,
             loop_params_map[loop_abs_index].block_size[occurence_id - 1]);
@@ -955,7 +955,7 @@ std::string loop_generator(const char* ____loop_nest_desc_extended) {
     if (is_blocked) {
       if (occurence_id == loop_map[tolower(loop_nest_desc[i])] - 1) {
         if (loop_params_map[loop_abs_index].jit_step > 0) {
-          sprintf(step_var_name, "%d", loop_params_map[loop_abs_index].step);
+          sprintf(step_var_name, "%ld", loop_params_map[loop_abs_index].step);
         } else {
           sprintf(
               step_var_name, "%s[%d].step", spec_array_name, loop_abs_index);
@@ -964,7 +964,7 @@ std::string loop_generator(const char* ____loop_nest_desc_extended) {
         if (loop_params_map[loop_abs_index].jit_block_sizes > 0) {
           sprintf(
               step_var_name,
-              "%d",
+              "%ld",
               loop_params_map[loop_abs_index].block_size[occurence_id]);
         } else {
           sprintf(
@@ -977,7 +977,7 @@ std::string loop_generator(const char* ____loop_nest_desc_extended) {
       }
     } else {
       if (loop_params_map[loop_abs_index].jit_step > 0) {
-        sprintf(step_var_name, "%d", loop_params_map[loop_abs_index].step);
+        sprintf(step_var_name, "%ld", loop_params_map[loop_abs_index].step);
       } else {
         sprintf(step_var_name, "%s[%d].step", spec_array_name, loop_abs_index);
       }

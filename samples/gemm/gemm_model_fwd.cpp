@@ -234,11 +234,11 @@ int gemm_benchmark(int argc, char** argv) {
   // Check correctness if requested
   if (n_layers == 1) {
     printf("##########################################\n");
-    printf("#  GEMM %d x %d x %d  (M x N x K)        \n", M, N, K);
+    printf("#  GEMM %ld x %ld x %ld  (M x N x K)        \n", M, N, K);
     printf("##########################################\n");
   } else {
     printf("##############################################################\n");
-    printf("    %d Layer MLP with sizes  %d x %d x %d  (M x N x K)  \n", n_layers, M, N, K);
+    printf("    %ld Layer MLP with sizes  %ld x %ld x %ld  (M x N x K)  \n", n_layers, M, N, K);
     printf("##############################################################\n");
   }
 
@@ -313,7 +313,7 @@ int gemm_benchmark(int argc, char** argv) {
   printf("Time is %.5g ms (%.5g GFLOPS)\n", 1000.0*(t_end-t_start)/(1.0*n_iters), gflop/((t_end-t_start)/(1.0*n_iters)));
   printf("Effective model sizes: %.5g GB\n", ((double)sizeof(DType)*(double)n_layers*(double)M*(double)K)/(1024.0*1024.0*1024.0));
   printf("Effective A BW is %.5g GB/s\n", (((double)sizeof(DType)*(double)n_layers*(double)M*(double)K) / (1024.0*1024.0*1024.0))/((t_end-t_start)/(1.0*n_iters)));
-  printf("MEASURE %.5g %s_%d_%d_%d_%d_%d_%d_bf%d_threads%d\n", gflop/((t_end-t_start)/(1.0*n_iters)), loop_specs_str, M, N, K, bm, bn, bk, kbf, omp_get_max_threads());
+  printf("MEASURE %.5g %s_%ld_%ld_%ld_%ld_%ld_%ld_bf%ld_threads%d\n", gflop/((t_end-t_start)/(1.0*n_iters)), loop_specs_str, M, N, K, bm, bn, bk, kbf, omp_get_max_threads());
 
   // Free buffers
   libxsmm_free(naive_input);
