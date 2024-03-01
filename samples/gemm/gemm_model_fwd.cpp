@@ -10,10 +10,6 @@
 #include "threaded_loops.h"
 #include "gemm_common_utils.h"
 
-#define N_BRGEMMS_PER_GEMM 128
-#define N_TASKS_PER_GEMM 8
-
-
 template<typename DType>
 int gemm_benchmark(int argc, char** argv) {
   // Setup default GEMM sizes
@@ -27,7 +23,8 @@ int gemm_benchmark(int argc, char** argv) {
   long check_correctness = 0;
   long cache_resident_acts = 0;
   long flat_act = 0;
-
+  long N_BRGEMMS_PER_GEMM = 128;
+  long N_TASKS_PER_GEMM = 8;
   ifreq = 1.0 / getFreq();
   if (argc > 1) {
     sprintf(loop_specs_str, "%s", argv[1]);
@@ -195,6 +192,7 @@ int gemm_benchmark(int argc, char** argv) {
 
   long n_threads = omp_get_max_threads();
   long n_brgemms = 0;
+  long n_tasks = 0;
 
   auto gemm_loop = ThreadedLoop<3>({
       LoopSpecs{0, Kb, k_step, {l1_k_step, l0_k_step}},   // Logical K loop specs
@@ -209,12 +207,19 @@ int gemm_benchmark(int argc, char** argv) {
       int n_id = gemm_loop.get_tid_in_parallel_dim('c', ind);
       if (m_id == 0 && n_id == 0) {
         //printf("I am thread with global ID %d and m_id %d and n_is %d\n", gemm_loop.get_tid(ind), m_id, n_id);
+        if (n_brgemms == 0) {
+          n_tasks = Nb/gemm_loop.get_loop_parallel_degree('c', ind);   
+        }
         n_brgemms++;
       }
     },
     [&]() {},
     [&]() {});
   }
+  printf("Infer %d brgemms per gemm\n", n_brgemms/(n_layers*kbf));
+  printf("Measure %d N brgemm tasks\n", n_tasks);
+  N_BRGEMMS_PER_GEMM = n_brgemms/(n_layers*kbf);
+  N_TASKS_PER_GEMM = n_tasks;
 
   printf("In total there are %d BRGEMMS per iter\n", n_brgemms);
   double *timelines[n_threads];
