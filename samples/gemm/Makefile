@@ -23,14 +23,14 @@ ifeq ($(PARLOOPER_COMPILER),clang)
 endif
 ifeq ($(PARLOOPER_COMPILER),icc)
   CXX := icpc
-  CXXFLAGS := -fopenmp -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14 -O2 
+  CXXFLAGS := -fopenmp -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14 -O2
 endif
 LDFLAGS = -ldl 
 IFLAGS = -I$(PARLOOPER_ROOT)/include -I$(PARLOOPER_ROOT)/utils -I$(LIBXSMM_ROOT)/include -I$(LIBXSMM_DNN_ROOT)/include
 SRCDIRS = $(PARLOOPER_ROOT)/utils $(PARLOOPER_ROOT)/src .
 #SRCFILES := par_loop_cost_estimator.cpp common_loops.cpp gemm_model_fwd.cpp
 #OBJFILES := $(patsubst %,$(BLDDIR)/%,$(notdir $(SRCFILES:.cpp=-cpp.o)))
-XFILES := $(OUTDIR)/gemm $(OUTDIR)/gemm_bwd $(OUTDIR)/gemm_upd $(OUTDIR)/loop_permute_generator
+XFILES := $(OUTDIR)/gemm 
 vpath %.cpp $(SRCDIRS) 
 
 .PHONY: all
