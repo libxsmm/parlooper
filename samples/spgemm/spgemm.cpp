@@ -116,8 +116,8 @@ int spgemm_benchmark(int argc, char** argv) {
   libxsmm_bitfield l_tc_flags = (use_bf16 == 1 || use_i8 == 1) ? l_trans_vnni_flags | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG : l_trans_vnni_flags;
   libxsmm_bitfield l_tr_flags = (use_bf16 == 1 || use_i8 == 1) ? l_trans_vnni_flags | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG : l_trans_vnni_flags;
   libxsmm_bitfield l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
-  libxsmm_gemmfunction tc_kernel;
-  libxsmm_gemmfunction tr_kernel;
+  libxsmm_tilecfgfunction tc_kernel;
+  libxsmm_tilecfgfunction tr_kernel;
   libxsmm_meltwfunction_unary kernels_zero[N_target_blocks+1];
 
   // Allocate buffers
@@ -434,14 +434,14 @@ int spgemm_benchmark(int argc, char** argv) {
     libxsmm_datatype dtypeoutzero = (use_bf16 == 0) ? ((use_i8 == 0) ? LIBXSMM_DATATYPE_F32 : LIBXSMM_DATATYPE_F32) : LIBXSMM_DATATYPE_BF16;
     if (use_trans_a == 0) {
       auto l_unary_shape = libxsmm_create_meltw_unary_shape(bm*cur_n_cols, 1, bm*cur_n_cols, bm*cur_n_cols, dtypeoutzero, dtypeoutzero, dtypeoutzero);
-      kernels_zero[l_i]  = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE); 
+      kernels_zero[l_i]  = libxsmm_dispatch_meltw_unary(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE); 
       if (kernels_zero[l_i] == NULL) {
         printf("Could not generate zero kernel[%d] !!!\n", l_i);
         return 0;
       }
     } else {
       auto l_unary_shape = libxsmm_create_meltw_unary_shape(cur_n_cols, bm, N, N, dtypeoutzero, dtypeoutzero, dtypeoutzero);
-      kernels_zero[l_i]  = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE); 
+      kernels_zero[l_i]  = libxsmm_dispatch_meltw_unary(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE); 
       if (kernels_zero[l_i] == NULL) {
         printf("Could not generate zero kernel[%d] !!!\n", l_i);
         return 0;
@@ -450,8 +450,8 @@ int spgemm_benchmark(int argc, char** argv) {
   }
   if (use_bf16 > 0 || use_i8 > 0) {
     libxsmm_gemm_shape gemm_shape = libxsmm_create_gemm_shape( 1, 0, K, K, -1, N, dtype, dtype, dtypeout, LIBXSMM_DATATYPE(float) );
-    tc_kernel = libxsmm_create_packed_spgemm_bcsc(gemm_shape, l_tc_flags, l_prefetch_flags, spgemm_config);
-    tr_kernel = libxsmm_create_packed_spgemm_bcsc(gemm_shape, l_tr_flags, l_prefetch_flags, spgemm_config);
+    tc_kernel = libxsmm_create_tilecfg_packed_spgemm_bcsc(gemm_shape, l_tc_flags, spgemm_config);
+    tr_kernel = libxsmm_create_tilecfg_packed_spgemm_bcsc(gemm_shape, l_tr_flags, spgemm_config);
   }
 
   // JIT requested nested loop specs
