@@ -121,26 +121,26 @@ int gemm_benchmark(int argc, char** argv) {
   auto l_brconfig = (sizeof(DType) == 2) ? libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, bm*bn*sizeof(DType), bk*bn*sizeof(DType), brcount )
                                          : libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, M*bn*sizeof(DType), K*bn*sizeof(DType), brcount );
   auto l_unary_shape = libxsmm_create_meltw_unary_shape(bk*bm, 1, bk*bm, bk*bm, dtype, dtype, dtype);
-  auto zero_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);  
-  auto tileconfig_kernel  = libxsmm_dispatch_gemm_v2( l_shape, l_tc_flags, l_prefetch_flags );
-  auto tilerelease_kernel = libxsmm_dispatch_gemm_v2( l_shape, l_tr_flags, l_prefetch_flags );
+  auto zero_kernel = libxsmm_dispatch_meltw_unary(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);  
+  auto tileconfig_kernel  = libxsmm_dispatch_tilecfg_gemm( l_shape, l_tc_flags );
+  auto tilerelease_kernel = libxsmm_dispatch_tilecfg_gemm( l_shape, l_tr_flags );
   if (brcount == Nb) {
     l_flags |= LIBXSMM_GEMM_FLAG_BETA_0;
     if (sizeof(DType) == 2) {
       l_flags |= LIBXSMM_GEMM_FLAG_VNNI_C;  
     }
   }
-  auto brgemm_kernel      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
+  auto brgemm_kernel      = libxsmm_dispatch_brgemm( l_shape, l_flags, l_prefetch_flags, l_brconfig );
   libxsmm_meltwfunction_unary inp_trans_kernel, out_trans_kernel, wt_vnni_kernel, wt_copy_kernel, wt_reduce_kernel0, wt_reduce_kernel1;
 
   if (dtype == LIBXSMM_DATATYPE_BF16) {
     auto tr_unary_shape = libxsmm_create_meltw_unary_shape(bk, bn, bk, bn, dtype, dtype, dtype);
-    inp_trans_kernel = libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_NORMT, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
+    inp_trans_kernel = libxsmm_dispatch_meltw_unary( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_NORMT, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
     tr_unary_shape = libxsmm_create_meltw_unary_shape(bm, bn, bm, bm, dtype, dtype, dtype);
-    out_trans_kernel = libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI2, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
+    out_trans_kernel = libxsmm_dispatch_meltw_unary( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI2, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
     tr_unary_shape = libxsmm_create_meltw_unary_shape(bm, bk, bm, bm, dtype, dtype, dtype);
-    wt_vnni_kernel = libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI2, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
-    wt_copy_kernel = libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_IDENTITY, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
+    wt_vnni_kernel = libxsmm_dispatch_meltw_unary( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI2, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
+    wt_copy_kernel = libxsmm_dispatch_meltw_unary( LIBXSMM_MELTW_TYPE_UNARY_IDENTITY, tr_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
   }
 
   if (n_partial_filters > 0) {
@@ -150,10 +150,10 @@ int gemm_benchmark(int argc, char** argv) {
     const int chunk0 = reduce_chunksize * fm_blocking;
     const int chunk1 = (reduce_work - (reduce_work/reduce_chunksize) * reduce_chunksize) * fm_blocking;
     auto reduce_unary_shape = libxsmm_create_meltw_unary_shape(chunk0, n_partial_filters, K*M, chunk0, dtype, dtype, dtype);
-    wt_reduce_kernel0 = libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_REDUCE_X_OP_ADD, reduce_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_REDUCE_COLS ) ;
+    wt_reduce_kernel0 = libxsmm_dispatch_meltw_unary( LIBXSMM_MELTW_TYPE_UNARY_REDUCE_X_OP_ADD, reduce_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_REDUCE_COLS ) ;
     if (chunk1 > 0) {
       auto reduce_unary_shape1 = libxsmm_create_meltw_unary_shape(chunk1, n_partial_filters, K*M, chunk1, dtype, dtype, dtype);
-      wt_reduce_kernel1 = libxsmm_dispatch_meltw_unary_v2( LIBXSMM_MELTW_TYPE_UNARY_REDUCE_X_OP_ADD, reduce_unary_shape1, LIBXSMM_MELTW_FLAG_UNARY_REDUCE_COLS ) ;
+      wt_reduce_kernel1 = libxsmm_dispatch_meltw_unary( LIBXSMM_MELTW_TYPE_UNARY_REDUCE_X_OP_ADD, reduce_unary_shape1, LIBXSMM_MELTW_FLAG_UNARY_REDUCE_COLS ) ;
     }
   }
 
