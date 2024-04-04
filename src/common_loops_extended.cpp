@@ -36,6 +36,27 @@ void par_nested_loops_aBc(LoopSpecs *loopSpecs, std::function<void(int *)> body_
   }
 }
 
+void par_nested_loops_abc(LoopSpecs *loopSpecs, std::function<void(int *)> body_func, std::function<void()> init_func, std::function<void()> term_func) {
+  {
+    if (init_func) init_func();
+    for (int a0 = loopSpecs[0].start; a0 < loopSpecs[0].end; a0 += loopSpecs[0].step) {
+      for (int b0 = loopSpecs[1].start; b0 < loopSpecs[1].end; b0 += loopSpecs[1].step) {
+        for (int c0 = loopSpecs[2].start; c0 < loopSpecs[2].end; c0 += loopSpecs[2].step) {
+          int idx[13];
+          idx[0] = a0;
+          idx[1] = b0;
+          idx[2] = c0;
+          idx[3] = 0;
+          idx[4] = 1;
+          idx[5] = 0;
+          body_func(idx);
+        }
+      }
+    }
+    if (term_func) term_func();
+  }
+}
+
 void par_nested_loops_acB(LoopSpecs *loopSpecs, std::function<void(int *)> body_func, std::function<void()> init_func, std::function<void()> term_func) {
   #pragma omp parallel
   {
@@ -31061,7 +31082,8 @@ void par_nested_loops_cacbBCb(LoopSpecs *loopSpecs, std::function<void(int *)> b
 }
 
 std::unordered_map<std::string, par_loop_kernel> pre_defined_loops = {
-	{"aBc", par_nested_loops_aBc},
+	{"abc", par_nested_loops_abc},
+  {"aBc", par_nested_loops_aBc},
 	{"acB", par_nested_loops_acB},
 	{"Bac", par_nested_loops_Bac},
 	{"Bca", par_nested_loops_Bca},
