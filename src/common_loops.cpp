@@ -10,7 +10,7 @@
 #include <string>
 #include <unordered_map>
 #include "threaded_loops.h"
-#define EXTENDED_COMMON_LOOPS
+//#define EXTENDED_COMMON_LOOPS
 
 #ifdef EXTENDED_COMMON_LOOPS
 #include <omp.h>
