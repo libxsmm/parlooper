@@ -34,6 +34,7 @@ void brgemm_microkernel_8m_4n_32k(unsigned char *a_ptr, unsigned char *scf_ptr, 
   __m256 m_vreg_k0, m_vreg_k1;
   __m256 n_vreg_k0, n_vreg_k1;
   __m256 tmp_vreg;
+  __m256 acc0, acc1, acc2, acc3;
 
   /* Load 8x4 C output */
   acc00 = _mm256_setzero_ps();//_mm256_loadu_ps((float*)c_ptr + (0 + 0 * 8));
@@ -46,42 +47,44 @@ void brgemm_microkernel_8m_4n_32k(unsigned char *a_ptr, unsigned char *scf_ptr, 
     /* Load scale factors for 32 K values */
     scale_vreg0 = _mm256_cvtepu8_epi32(_mm_loadu_si64((unsigned char*)scf_ptr + (0 + i_br * 8)));
     scale_vreg0 = _mm256_slli_epi32(scale_vreg0, 23);
+    acc0 = _mm256_setzero_ps();
+    acc1 = _mm256_setzero_ps();
+    acc2 = _mm256_setzero_ps();
+    acc3 = _mm256_setzero_ps();
+#pragma unroll (4)
     for (i_k = 0; i_k < 16; i_k++) {
       /* Load for 8m2k and 8 fmas */
       m_vreg_k0 = _mm256_cvtepu8_epi32(_mm_loadl_epi64( (const __m128i*)((unsigned char*)a_ptr + i_k * 8 + i_br * 128)));
-      _mm_prefetch ((unsigned char*)a_ptr + i_k * 8 + (i_br+1) * 128, _MM_HINT_T0);
       m_vreg_k1 = _mm256_srli_epi32(m_vreg_k0, 4);
       tmp_vreg  = _mm256_permutevar8x32_ps(lut_mant, m_vreg_k0);
       m_vreg_k0 = _mm256_srli_epi32(m_vreg_k0, 3);
       m_vreg_k0 = _mm256_permutevar8x32_ps(lut_sign, m_vreg_k0);
       m_vreg_k0 = _mm256_or_ps(m_vreg_k0, tmp_vreg);
-      m_vreg_k0 = _mm256_mul_ps(m_vreg_k0, scale_vreg0);
       tmp_vreg  = _mm256_permutevar8x32_ps(lut_mant, m_vreg_k1);
       m_vreg_k1 = _mm256_srli_epi32(m_vreg_k1, 3);
       m_vreg_k1 = _mm256_permutevar8x32_ps(lut_sign, m_vreg_k1);
       m_vreg_k1 = _mm256_or_ps(m_vreg_k1, tmp_vreg);
-      m_vreg_k1 = _mm256_mul_ps(m_vreg_k1, scale_vreg0);
-
       n_vreg_k0 = _mm256_broadcast_ss((float*)b_ptr + (i_k * 2 + 0 + 0 * 32 + i_br * 4 * 32));
       n_vreg_k1 = _mm256_broadcast_ss((float*)b_ptr + (i_k * 2 + 1 + 0 * 32 + i_br * 4 * 32));
-      acc00     = _mm256_fmadd_ps(m_vreg_k0, n_vreg_k0, acc00);
-      acc00     = _mm256_fmadd_ps(m_vreg_k1, n_vreg_k1, acc00);
-
+      acc0     = _mm256_fmadd_ps(m_vreg_k0, n_vreg_k0, acc0);
+      acc0     = _mm256_fmadd_ps(m_vreg_k1, n_vreg_k1, acc0);
       n_vreg_k0 = _mm256_broadcast_ss((float*)b_ptr + (i_k * 2 + 0 + 1 * 32 + i_br * 4 * 32));
       n_vreg_k1 = _mm256_broadcast_ss((float*)b_ptr + (i_k * 2 + 1 + 1 * 32 + i_br * 4 * 32));
-      acc01     = _mm256_fmadd_ps(m_vreg_k0, n_vreg_k0, acc01);
-      acc01     = _mm256_fmadd_ps(m_vreg_k1, n_vreg_k1, acc01);
-
+      acc1     = _mm256_fmadd_ps(m_vreg_k0, n_vreg_k0, acc1);
+      acc1     = _mm256_fmadd_ps(m_vreg_k1, n_vreg_k1, acc1);
       n_vreg_k0 = _mm256_broadcast_ss((float*)b_ptr + (i_k * 2 + 0 + 2 * 32 + i_br * 4 * 32));
       n_vreg_k1 = _mm256_broadcast_ss((float*)b_ptr + (i_k * 2 + 1 + 2 * 32 + i_br * 4 * 32));
-      acc02     = _mm256_fmadd_ps(m_vreg_k0, n_vreg_k0, acc02);
-      acc02     = _mm256_fmadd_ps(m_vreg_k1, n_vreg_k1, acc02);
-
+      acc2     = _mm256_fmadd_ps(m_vreg_k0, n_vreg_k0, acc2);
+      acc2     = _mm256_fmadd_ps(m_vreg_k1, n_vreg_k1, acc2);
       n_vreg_k0 = _mm256_broadcast_ss((float*)b_ptr + (i_k * 2 + 0 + 3 * 32 + i_br * 4 * 32));
       n_vreg_k1 = _mm256_broadcast_ss((float*)b_ptr + (i_k * 2 + 1 + 3 * 32 + i_br * 4 * 32));
-      acc03     = _mm256_fmadd_ps(m_vreg_k0, n_vreg_k0, acc03);
-      acc03     = _mm256_fmadd_ps(m_vreg_k1, n_vreg_k1, acc03);
+      acc3     = _mm256_fmadd_ps(m_vreg_k0, n_vreg_k0, acc3);
+      acc3     = _mm256_fmadd_ps(m_vreg_k1, n_vreg_k1, acc3);
     }
+    acc00     = _mm256_fmadd_ps(scale_vreg0, acc0, acc00);
+    acc01     = _mm256_fmadd_ps(scale_vreg0, acc1, acc01);
+    acc02     = _mm256_fmadd_ps(scale_vreg0, acc2, acc02);
+    acc03     = _mm256_fmadd_ps(scale_vreg0, acc3, acc03);
   }
 
   /* Store 8x4 C output */
@@ -111,10 +114,11 @@ void brgemm_microkernel_8m_1n_32k(unsigned char *a_ptr, unsigned char *scf_ptr, 
     /* Load scale factors for 32 K values */
     scale_vreg0 = _mm256_cvtepu8_epi32(_mm_loadu_si64((unsigned char*)scf_ptr + (0 + i_br * 8)));
     scale_vreg0 = _mm256_slli_epi32(scale_vreg0, 23);
+#pragma unroll (2) 
     for (i_k = 0; i_k < 16; i_k++) {
       /* Load for 8m2k and 8 fmas */
       m_vreg_k0 = _mm256_cvtepu8_epi32(_mm_loadl_epi64( (const __m128i*)((unsigned char*)a_ptr + i_k * 8 + i_br * 128)));
-      _mm_prefetch ((unsigned char*)a_ptr + i_k * 8 + (i_br+1) * 128, _MM_HINT_T0);
+      //_mm_prefetch ((unsigned char*)a_ptr + i_k * 8 + (i_br+1) * 128, _MM_HINT_T0);
       m_vreg_k1 = _mm256_srli_epi32(m_vreg_k0, 4);
       tmp_vreg_0= _mm256_permutevar8x32_ps(lut_mant, m_vreg_k0);
       m_vreg_k0 = _mm256_srli_epi32(m_vreg_k0, 3);
@@ -259,7 +263,7 @@ void brgemm_microkernel_16m_1n_32k(unsigned char *a_ptr, unsigned char *scf_ptr,
     for (i_k = 0; i_k < 16; i_k ++) {
       /* Load for 8m2k and 8 fmas */
       m0_vreg_k0 = _mm256_cvtepu8_epi32(_mm_loadl_epi64((const __m128i*)((unsigned char*)a_ptr + 0 * 8 + i_k * 16 + i_br * 256)));
-      _mm_prefetch ((unsigned char*)a_ptr + 0 * 8 + i_k * 16 + (i_br+1) * 256, _MM_HINT_T0);
+      //_mm_prefetch ((unsigned char*)a_ptr + 0 * 8 + i_k * 16 + (i_br+1) * 256, _MM_HINT_T0);
       m0_vreg_k1 = _mm256_srli_epi32(m0_vreg_k0, 4);
       tmp_vreg_0= _mm256_permutevar8x32_ps(lut_mant, m0_vreg_k0);
       m0_vreg_k0 = _mm256_srli_epi32(m0_vreg_k0, 3);
