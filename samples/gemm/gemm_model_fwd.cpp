@@ -10,6 +10,55 @@
 #include "threaded_loops.h"
 #include "gemm_common_utils.h"
 
+/*
+ *
+ *   A: [brcount][bk/2][bm][2]
+ * Scf: [brcount][bk/32][bm]
+ * Out: [brcount][bk/2][bm][2]
+ *
+ */
+void cvt_kernel_mxfp4(unsigned char *in_ptr, unsigned char *scf_ptr, libxsmm_bfloat16 *out_ptr, long brcount, long bm, long bk) {
+  long i_br, i_k, i_bk, i_m;
+  __m512i zero_vreg = _mm512_setzero_si512();
+  __m512i ones_vreg = _mm512_set_epi16(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+  __m512i lut_vreg = _mm512_set_epi16(33216, 33152, 33088, 33024, 32960, 32896, 32768, 1, 448, 384, 320, 256, 192, 128, 0, 1, 33216, 33152, 33088, 33024, 32960, 32896, 32768, 1, 448, 384, 320, 256, 192, 128, 0, 1);
+  __m512i vnni_perm_reg_lo = _mm512_set_epi16(47, 15, 46, 14, 45, 13, 44, 12, 43, 11, 42, 10, 41, 9, 40, 8, 39, 7, 38, 6, 37, 5, 36, 4, 35, 3, 34, 2, 33, 1, 32, 0);
+  __m512i vnni_perm_reg_hi = _mm512_set_epi16(63, 31, 62, 30, 61, 29, 60, 28, 59, 27, 58, 26, 57, 25, 56, 24, 55, 23, 54, 22, 53, 21, 52, 20, 51, 19, 50, 18, 49, 17, 48, 16);
+  /* batch reduce iteration */
+  for (i_br = 0; i_br < brcount; i_br++) {
+    for (i_bk = 0; i_bk < bk/32; i_bk++) {
+      for (i_m = 0; i_m < bm/32; i_m++) {
+        __m512i scale_vreg = _mm512_cvtepu8_epi16(_mm256_loadu_epi16((unsigned char*)scf_ptr + (i_br * (bk/32) * bm + i_bk * bm + i_m * 32)));
+        __mmask32 mask_scf_zero =  _mm512_cmpeq_epi16_mask(scale_vreg, zero_vreg);    
+        _mm_prefetch ((unsigned char*)scf_ptr + ((i_br+1) * (bk/32) * bm + i_bk * bm + i_m * 32), _MM_HINT_T0);     
+        scale_vreg  = _mm512_sub_epi16(scale_vreg, ones_vreg);
+        scale_vreg  = _mm512_slli_epi16(scale_vreg, 7);
+        for (i_k = 0; i_k < 16; i_k++) {
+          __mmask32 mask_vreg_zero_k0, mask_vreg_zero_k1;
+          __m512i out_vreg_16m0_2k, out_vreg_16m1_2k;     
+          __m512i input_vreg_k0 = _mm512_cvtepu8_epi16(_mm256_loadu_epi16((unsigned char*)in_ptr + (i_br * (bk/2) * bm + (i_bk * 16 + i_k) * bm + i_m * 32)));
+          __m512i input_vreg_k1 = _mm512_srli_epi16(input_vreg_k0, 4);
+          _mm_prefetch ((unsigned char*)in_ptr + ((i_br+1) * (bk/2) * bm + (i_bk * 16 + i_k) * bm + i_m * 32), _MM_HINT_T0);   
+          input_vreg_k0  = _mm512_permutexvar_epi16(input_vreg_k0, lut_vreg);
+          mask_vreg_zero_k0 =  _mm512_cmpeq_epi16_mask(input_vreg_k0, ones_vreg);
+          mask_vreg_zero_k0 = _kor_mask32(mask_vreg_zero_k0, mask_scf_zero);
+          input_vreg_k0 = _mm512_add_epi16(input_vreg_k0, scale_vreg);
+          input_vreg_k0 = _mm512_mask_blend_epi16(mask_vreg_zero_k0, input_vreg_k0, zero_vreg);
+          input_vreg_k1  = _mm512_permutexvar_epi16(input_vreg_k1, lut_vreg);
+          mask_vreg_zero_k1 =  _mm512_cmpeq_epi16_mask(input_vreg_k1, ones_vreg);
+          mask_vreg_zero_k1 = _kor_mask32(mask_vreg_zero_k1, mask_scf_zero);
+          input_vreg_k1 = _mm512_add_epi16(input_vreg_k1, scale_vreg);
+          input_vreg_k1 = _mm512_mask_blend_epi16(mask_vreg_zero_k1, input_vreg_k1, zero_vreg);
+          out_vreg_16m0_2k  = _mm512_permutex2var_epi16(input_vreg_k0, vnni_perm_reg_lo, input_vreg_k1);
+          out_vreg_16m1_2k  = _mm512_permutex2var_epi16(input_vreg_k0, vnni_perm_reg_hi, input_vreg_k1);
+          _mm512_storeu_epi16((libxsmm_bfloat16*) out_ptr + (i_br * (bk/2) * bm * 2 + (i_bk * 16 + i_k) * bm * 2 + (2 * i_m + 0) * 32), out_vreg_16m0_2k);
+          _mm512_storeu_epi16((libxsmm_bfloat16*) out_ptr + (i_br * (bk/2) * bm * 2 + (i_bk * 16 + i_k) * bm * 2 + (2 * i_m + 1) * 32), out_vreg_16m1_2k);
+        }
+      }
+    }
+  }
+}
+
 LIBXSMM_INLINE
 float convert_mxfp4_to_float(unsigned char x) {
   float fp4_e1m2_lut[16] = {0.0, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, -0.0, -0.5, -1.0, -1.5, -2.0, -3.0, -4.0, -6.0};
@@ -28,10 +77,12 @@ int gemm_benchmark(int argc, char** argv) {
   long n_iters = 1;
   long i, j;
   long check_correctness = 1;
+  long fuse_cvts = 1;
   long cache_resident_acts = 0;
   long is_A_bf8 = 0;
   long is_A_bf16 = 0;
   long is_A_mxfp4 = 0;
+  long nThreads = omp_get_max_threads();
 
   if (strcmp(argv[13], "BF16") == 0) {
     is_A_bf16 = 1;
@@ -65,7 +116,10 @@ int gemm_benchmark(int argc, char** argv) {
     }
     if (argc > 15) {
       cache_resident_acts = atoi(argv[15]);
-    } 
+    }
+    if (argc > 16) {
+      fuse_cvts = atoi(argv[16]);
+    }     
   }
   
   long Mb = M/bm, Nb = N/bn, Kb = K/bk;
@@ -98,7 +152,18 @@ int gemm_benchmark(int argc, char** argv) {
   DType *naive_output_bf16 = (DType*)libxsmm_aligned_malloc( LIBXSMM_MAX(K,M)*N*sizeof(DType), 64);
   DTypeLP *naive_filter_lp = (DTypeLP*)libxsmm_aligned_malloc( M*(K/a_dtype_scale)*sizeof(DTypeLP), 64);
   unsigned char *mxfp4_scf = (unsigned char*)libxsmm_aligned_malloc( M*(K/32)*sizeof(unsigned char), 64);
-  
+
+  DType *weight_scratch  = (DType*)libxsmm_aligned_malloc( bk*brcount*bm*sizeof(DType)*nThreads, 64);
+  long long *last_slice_cvted = (long long*)libxsmm_aligned_malloc( 64*sizeof(long long)*nThreads, 64);
+  for (i = 0; i < 64*nThreads; i++) {
+    last_slice_cvted[i] = -1;
+  }
+
+  auto dtype_up      = LIBXSMM_DATATYPE_BF16;
+  auto dtype_down    = LIBXSMM_DATATYPE_BF8;
+  auto l_cvt_shape = libxsmm_create_meltw_unary_shape(bm*2, (bk/2)*brcount, bm*2, bm*2, dtype_down, dtype_up, dtype_up);
+  auto cvt_kernel = libxsmm_dispatch_meltw_unary(LIBXSMM_MELTW_TYPE_UNARY_IDENTITY, l_cvt_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);  
+
   // Init buffers
   init_buf( naive_input,     LIBXSMM_MAX(K,M)*N, 0, 0 );
   init_buf( naive_output,    LIBXSMM_MAX(K,M)*N, 0, 0 );
@@ -224,7 +289,7 @@ int gemm_benchmark(int argc, char** argv) {
   auto dtype      = LIBXSMM_DATATYPE_BF16;
   auto l_shape = libxsmm_create_gemm_shape( bm, bn, bk, bm, bk, bm, (is_A_bf16 > 0) ? dtype : ( (is_A_mxfp4 > 0) ? LIBXSMM_DATATYPE_I8 : LIBXSMM_DATATYPE_BF8), dtype, dtype, LIBXSMM_DATATYPE_F32 );
   auto l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
-  auto l_brconfig = libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, bm*(bk/a_dtype_scale)*sizeof(DTypeLP), bk*bn*sizeof(DType), brcount );
+  auto l_brconfig = libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, bm*(bk/a_dtype_scale)*sizeof(DTypeLP), bk*bn*sizeof(DType), 0 );
   auto l_unary_shape = libxsmm_create_meltw_unary_shape(bm*bn, 1, bm*bn, bm*bn, dtype, dtype, dtype);
 
   if (brcount == Kb) l_flags |= LIBXSMM_GEMM_FLAG_BETA_0;
@@ -233,6 +298,10 @@ int gemm_benchmark(int argc, char** argv) {
   auto tileconfig_kernel  = libxsmm_dispatch_tilecfg_gemm( l_shape, l_tc_flags );
   auto tilerelease_kernel = libxsmm_dispatch_tilecfg_gemm( l_shape, l_tr_flags );
   auto brgemm_kernel      = libxsmm_dispatch_brgemm( l_shape, l_flags, l_prefetch_flags, l_brconfig );
+
+  auto l_shape_full = libxsmm_create_gemm_shape( bm, bn, bk, bm, bk, bm, dtype, dtype, dtype, LIBXSMM_DATATYPE_F32 );
+  auto l_brconfig_full = libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, bm*bk*sizeof(DType), bk*bn*sizeof(DType), 0 );
+  auto brgemm_kernel_full = libxsmm_dispatch_brgemm( l_shape_full, l_flags, l_prefetch_flags, l_brconfig_full );
 
   // Compute reference if requested
   if (check_correctness) {
@@ -293,25 +362,72 @@ int gemm_benchmark(int argc, char** argv) {
 
   // Warmup iteration for i-caches
   for (i = 0; i < n_layers; i++) {
-    gemm_loop(
-      [&](int* ind) {
-        int i_k = ind[0], i_m = ind[1], i_n = ind[2];
-        libxsmm_gemm_param gemm_param;
-        gemm_param.op.tertiary = (void*)&brcount;
-        gemm_param.a.primary = (void*)((DTypeLP*)WGT[i] + (i_m * K * bm + i_k * bk * bm)/a_dtype_scale);
-        if (is_A_mxfp4 > 0) {
-          gemm_param.a.tertiary = (void*)((unsigned char*)MXFP_SCALES[i] + (i_m * (K/32) * bm + i_k * (bk/32) * bm));
-        }
-        if (cache_resident_acts > 0) {
-          gemm_param.b.primary = (void*)((DType*)ACT[0] + i_n * K * bn + i_k * bk * bn );
-        } else {
-          gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
-        }
-        gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
-        brgemm_kernel( &gemm_param );
-      },
-      [&]() {tileconfig_kernel(NULL);},
-      [&]() {tilerelease_kernel(NULL);});
+    if (fuse_cvts > 0) {
+      gemm_loop(
+        [&](int* ind) {
+          int i_k = ind[0], i_m = ind[1], i_n = ind[2];
+          libxsmm_gemm_param gemm_param;
+          gemm_param.op.tertiary = (void*)&brcount;
+          gemm_param.a.primary = (void*)((DTypeLP*)WGT[i] + (i_m * K * bm + i_k * bk * bm)/a_dtype_scale);
+          if (is_A_mxfp4 > 0) {
+            gemm_param.a.tertiary = (void*)((unsigned char*)MXFP_SCALES[i] + (i_m * (K/32) * bm + i_k * (bk/32) * bm));
+          }
+          if (cache_resident_acts > 0) {
+            gemm_param.b.primary = (void*)((DType*)ACT[0] + i_n * K * bn + i_k * bk * bn );
+          } else {
+            gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
+          }
+          gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+          if (brcount != Kb && i_k == 0) {
+            libxsmm_meltw_unary_param zero_param;
+            zero_param.out.primary = (void*)gemm_param.c.primary;
+            zero_kernel( &zero_param );
+          }
+          brgemm_kernel( &gemm_param );
+        },
+        [&]() {tileconfig_kernel(NULL);},
+        [&]() {tilerelease_kernel(NULL);});
+    } else {
+      gemm_loop(
+        [&](int* ind) {
+          int i_k = ind[0], i_m = ind[1], i_n = ind[2];
+          libxsmm_gemm_param gemm_param;
+          libxsmm_meltw_unary_param cvt_param;
+          //int tid = gemm_loop.get_tid(ind);
+          int tid = omp_get_thread_num();
+          long long slice_id = (i_k/brcount)*Mb+i_m;
+          gemm_param.op.tertiary = (void*)&brcount;
+
+          cvt_param.in.primary = (void*)((DTypeLP*)WGT[i] + (i_m * K * bm + i_k * bk * bm)/a_dtype_scale);
+          cvt_param.out.primary = (void*)((DType*)weight_scratch + tid * bk * brcount * bm);
+
+          if (last_slice_cvted[64*tid] != slice_id) {
+            if (is_A_mxfp4 > 0) {
+              cvt_kernel_mxfp4((unsigned char*)cvt_param.in.primary, (unsigned char*)MXFP_SCALES[i] + (i_m * (K/32) * bm + i_k * (bk/32) * bm),
+                               (libxsmm_bfloat16*)cvt_param.out.primary, brcount, bm, bk);
+            } else {
+              cvt_kernel( &cvt_param );
+            }
+            last_slice_cvted[64*tid] = slice_id;        
+          }
+          gemm_param.a.primary = (void*)cvt_param.out.primary;
+
+          if (cache_resident_acts > 0) {
+            gemm_param.b.primary = (void*)((DType*)ACT[0] + i_n * K * bn + i_k * bk * bn );
+          } else {
+            gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
+          }
+          gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+          if (brcount != Kb && i_k == 0) {
+            libxsmm_meltw_unary_param zero_param;
+            zero_param.out.primary = (void*)gemm_param.c.primary;
+            zero_kernel( &zero_param );
+          }
+          brgemm_kernel_full( &gemm_param );
+        },
+        [&]() {int _tid = omp_get_thread_num(); tileconfig_kernel(NULL); last_slice_cvted[64*_tid] = -1;},
+        [&]() {tilerelease_kernel(NULL);});
+    }
   }
 
   // Check correctness if requested
@@ -353,25 +469,67 @@ int gemm_benchmark(int argc, char** argv) {
   auto t_start = getTime();
   for (long it = 0; it < n_iters; it++) {
     for (i = 0; i < n_layers; i++) {
-      gemm_loop(
-        [&](int* ind) {
-          int i_k = ind[0], i_m = ind[1], i_n = ind[2];
-          libxsmm_gemm_param gemm_param;
-          gemm_param.op.tertiary = (void*)&brcount;
-          gemm_param.a.primary = (void*)((DTypeLP*)WGT[i] + (i_m * K * bm + i_k * bk * bm)/a_dtype_scale);
-          if (is_A_mxfp4 > 0) {
-            gemm_param.a.tertiary = (void*)((unsigned char*)MXFP_SCALES[i] + (i_m * (K/32) * bm + i_k * (bk/32) * bm));
-          }
-          if (cache_resident_acts > 0) {
-            gemm_param.b.primary = (void*)((DType*)ACT[0] + i_n * K * bn + i_k * bk * bn );
-          } else {
-            gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
-          }
-          gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
-          brgemm_kernel( &gemm_param );
-        },
-        [&]() {tileconfig_kernel(NULL);},
-        [&]() {tilerelease_kernel(NULL);});
+      if (fuse_cvts > 0) {
+        gemm_loop(
+          [&](int* ind) {
+            int i_k = ind[0], i_m = ind[1], i_n = ind[2];
+            libxsmm_gemm_param gemm_param;
+            gemm_param.op.tertiary = (void*)&brcount;
+            gemm_param.a.primary = (void*)((DTypeLP*)WGT[i] + (i_m * K * bm + i_k * bk * bm)/a_dtype_scale);
+            if (is_A_mxfp4 > 0) {
+              gemm_param.a.tertiary = (void*)((unsigned char*)MXFP_SCALES[i] + (i_m * (K/32) * bm + i_k * (bk/32) * bm));
+            }
+            if (cache_resident_acts > 0) {
+              gemm_param.b.primary = (void*)((DType*)ACT[0] + i_n * K * bn + i_k * bk * bn );
+            } else {
+              gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
+            }
+            gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+            brgemm_kernel( &gemm_param );
+          },
+          [&]() {tileconfig_kernel(NULL);},
+          [&]() {tilerelease_kernel(NULL);});
+      } else {
+        gemm_loop(
+          [&](int* ind) {
+            int i_k = ind[0], i_m = ind[1], i_n = ind[2];
+            libxsmm_gemm_param gemm_param;
+            libxsmm_meltw_unary_param cvt_param;
+            //int tid = gemm_loop.get_tid(ind);
+            int tid = omp_get_thread_num();
+            long long slice_id = (i_k/brcount)*Mb+i_m;
+            gemm_param.op.tertiary = (void*)&brcount;
+
+            cvt_param.in.primary = (void*)((DTypeLP*)WGT[i] + (i_m * K * bm + i_k * bk * bm)/a_dtype_scale);
+            cvt_param.out.primary = (void*)((DType*)weight_scratch + tid * bk * brcount * bm);
+
+            if (last_slice_cvted[64*tid] != slice_id) {
+              if (is_A_mxfp4 > 0) {
+                cvt_kernel_mxfp4((unsigned char*)cvt_param.in.primary, (unsigned char*)MXFP_SCALES[i] + (i_m * (K/32) * bm + i_k * (bk/32) * bm),
+                                 (libxsmm_bfloat16*)cvt_param.out.primary, brcount, bm, bk);
+              } else {
+                cvt_kernel( &cvt_param );
+              }
+              last_slice_cvted[64*tid] = slice_id;        
+            }
+            gemm_param.a.primary = (void*)cvt_param.out.primary;
+
+            if (cache_resident_acts > 0) {
+              gemm_param.b.primary = (void*)((DType*)ACT[0] + i_n * K * bn + i_k * bk * bn );
+            } else {
+              gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
+            }
+            gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+            if (brcount != Kb && i_k == 0) {
+              libxsmm_meltw_unary_param zero_param;
+              zero_param.out.primary = (void*)gemm_param.c.primary;
+              zero_kernel( &zero_param );
+            }
+            brgemm_kernel_full( &gemm_param );
+          },
+          [&]() {int _tid = omp_get_thread_num(); tileconfig_kernel(NULL); last_slice_cvted[64*_tid] = -1;},
+          [&]() {tilerelease_kernel(NULL);});
+      }
     }
   }
   auto t_end = getTime();
