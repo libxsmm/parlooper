@@ -133,12 +133,12 @@ int gemm_benchmark(int argc, char** argv) {
     naive_output[i] = 0.0;
   }
 
-  // Weight scales init
+  // Weight scales init with positive values
   // [Mb][K/group_size_k][bm]
   for (int imb = 0; imb < Mb; imb++) {
     for (int igk = 0; igk < K/group_size_k; igk++) {
       for (int ibm = 0; ibm < bm; ibm++) {
-        float tmp = get_random_posneg_p5_num();  
+        float tmp = get_random_pos_p5_num();  
         libxsmm_float16 tmpf16 = 0;  
         libxsmm_rne_convert_fp32_f16(&tmp, &tmpf16, 1);
         naive_filter_scales[imb * (K/group_size_k) * bm + igk * bm + ibm] = tmpf16;       
@@ -146,7 +146,7 @@ int gemm_benchmark(int argc, char** argv) {
     }
   }
 
-  // Weights init
+  // Weights init with positive values
   // [Mb][Kb][bk/4][bm][4]
   for (int imb = 0; imb < Mb; imb++) {
     for (int ikb = 0; ikb < Kb; ikb++) {
@@ -158,7 +158,7 @@ int gemm_benchmark(int argc, char** argv) {
             int igk = logical_k/group_size_k;
             libxsmm_float16 cur_scale = naive_filter_scales[imb * (K/group_size_k) * bm + igk * bm + ibm];
             float f32_scale = 0.0;
-            char tmp = (char) (get_random_posneg_p5_num() * 10.0);
+            char tmp = (char) (get_random_pos_p5_num() * 10.0);
             naive_filter_lp[imb * Kb * bk * bm + ikb * bk * bm + ibk * bm * 4 + ibm * 4  + ibkk] = tmp;
             libxsmm_convert_f16_f32( &cur_scale, &f32_scale, 1 );
             naive_filter[logical_m * K + logical_k] = f32_scale * ((float)tmp);
@@ -167,12 +167,6 @@ int gemm_benchmark(int argc, char** argv) {
       }
     }
   }
- 
-  //init_buf( naive_input,     LIBXSMM_MAX(K,M)*N, 0, 0 );
-  //init_buf( naive_output,    LIBXSMM_MAX(K,M)*N, 0, 0 );
-  //init_buf( naive_filter,    M*K, 0, 0 );
-  //init_buf( (float*)naive_filter_lp, M*(K/4), 0, 0 );
-  //init_buf( (float*)naive_filter_scales, (M/2)*(K/group_size_k), 0, 0 );
 
   for (i = 0; i < n_layers; i++) {
     memcpy(WGT[i], naive_filter_lp, M * K * sizeof(unsigned char));
@@ -183,7 +177,7 @@ int gemm_benchmark(int argc, char** argv) {
 
 
   // Setup TPP kernels
-  auto l_flags    = LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_FLAG_BETA_0;
+  auto l_flags    = LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_FLAG_BETA_0 | LIBXSMM_GEMM_FLAG_A_UNSIGNED;
   auto l_tc_flags = LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N');
   auto l_tr_flags = LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N');
   
