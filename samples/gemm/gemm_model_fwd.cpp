@@ -45,7 +45,206 @@ void quantize_K_dim(float *in_ptr, unsigned char *out_ptr, float *out_scales, in
   }
 }
 
-void dequantize_bm_x_bn(unsigned int *int32_acc_ptr, float *f32_acc_ptr,  unsigned short *wei_scales_ptr, float *inp_scales, long k_groups, long gid, long M, long bm, long bn) {
+void quantize_64_x_K_gs_64(float *in_ptr, unsigned char *out_ptr, float *out_scales, int i_n, long K, float scale) {
+  int in = 0;
+  int g = 0;
+  int ik = 0;
+  float d = 0.0f;
+  float id = 0.0f;
+  const int group_size_k = 64;
+  const int bn = 64;
+  int k_groups = K/group_size_k;
+  for (in = 0; in < bn; in++) {
+    for (g = 0; g < k_groups; g++) {
+      /* Find max of current group */
+      __m512 max_acc = _mm512_setzero_ps();
+      __m512 v_id;  
+      float max_val = 0.0;
+      float cur_scale = 0.0;;
+      for (ik = 0; ik < group_size_k; ik += 16) {
+        max_acc = _mm512_max_ps(max_acc, _mm512_abs_ps(_mm512_load_ps((float*)in_ptr + (i_n * bn + in) * K + g * group_size_k + ik)));  
+      }
+      max_val = _mm512_reduce_max_ps(max_acc);
+      d = max_val / 127;
+      id = (d != 0) ? (1.0f / d) : 0;
+      cur_scale = d * scale;
+      out_scales[(i_n * bn + in) * k_groups + g] = cur_scale;
+      v_id = _mm512_set1_ps(id);
+      for (ik = 0; ik < group_size_k; ik += 16) {
+        __m512 v = _mm512_load_ps((float*)in_ptr + (i_n * bn + in) * K + g * group_size_k + ik);
+        v = _mm512_mul_round_ps(v, v_id, (_MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC));
+        __m512i v_i32 = _mm512_cvt_roundps_epi32(v, (_MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC));
+        __m128i res = _mm512_cvtepi32_epi8(v_i32);
+        _mm_storeu_epi8((unsigned char*)out_ptr + (i_n * bn + in) * K + g * group_size_k + ik, res);
+      }
+    }
+  }
+}
+
+void quantize_64_x_K_gs_128(float *in_ptr, unsigned char *out_ptr, float *out_scales, int i_n, long K, float scale) {
+  int in = 0;
+  int g = 0;
+  int ik = 0;
+  float d = 0.0f;
+  float id = 0.0f;
+  const int group_size_k = 128;
+  const int bn = 64;
+  int k_groups = K/group_size_k;
+  for (in = 0; in < bn; in++) {
+    for (g = 0; g < k_groups; g++) {
+      /* Find max of current group */
+      __m512 max_acc = _mm512_setzero_ps();
+      __m512 v_id;  
+      float max_val = 0.0;
+      float cur_scale = 0.0;;
+      for (ik = 0; ik < group_size_k; ik += 16) {
+        max_acc = _mm512_max_ps(max_acc, _mm512_abs_ps(_mm512_load_ps((float*)in_ptr + (i_n * bn + in) * K + g * group_size_k + ik)));  
+      }
+      max_val = _mm512_reduce_max_ps(max_acc);
+      d = max_val / 127;
+      id = (d != 0) ? (1.0f / d) : 0;
+      cur_scale = d * scale;
+      out_scales[(i_n * bn + in) * k_groups + g] = cur_scale;
+      v_id = _mm512_set1_ps(id);
+      for (ik = 0; ik < group_size_k; ik += 16) {
+        __m512 v = _mm512_load_ps((float*)in_ptr + (i_n * bn + in) * K + g * group_size_k + ik);
+        v = _mm512_mul_round_ps(v, v_id, (_MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC));
+        __m512i v_i32 = _mm512_cvt_roundps_epi32(v, (_MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC));
+        __m128i res = _mm512_cvtepi32_epi8(v_i32);
+        _mm_storeu_epi8((unsigned char*)out_ptr + (i_n * bn + in) * K + g * group_size_k + ik, res);
+      }
+    }
+  }
+}
+
+void quantize_64_x_K_gs_256(float *in_ptr, unsigned char *out_ptr, float *out_scales, int i_n, long K, float scale) {
+  int in = 0;
+  int g = 0;
+  int ik = 0;
+  float d = 0.0f;
+  float id = 0.0f;
+  const int group_size_k = 256;
+  const int bn = 64;
+  int k_groups = K/group_size_k;
+  for (in = 0; in < bn; in++) {
+    for (g = 0; g < k_groups; g++) {
+      /* Find max of current group */
+      __m512 max_acc = _mm512_setzero_ps();
+      __m512 v_id;  
+      float max_val = 0.0;
+      float cur_scale = 0.0;;
+      for (ik = 0; ik < group_size_k; ik += 16) {
+        max_acc = _mm512_max_ps(max_acc, _mm512_abs_ps(_mm512_load_ps((float*)in_ptr + (i_n * bn + in) * K + g * group_size_k + ik)));  
+      }
+      max_val = _mm512_reduce_max_ps(max_acc);
+      d = max_val / 127;
+      id = (d != 0) ? (1.0f / d) : 0;
+      cur_scale = d * scale;
+      out_scales[(i_n * bn + in) * k_groups + g] = cur_scale;
+      v_id = _mm512_set1_ps(id);
+      for (ik = 0; ik < group_size_k; ik += 16) {
+        __m512 v = _mm512_load_ps((float*)in_ptr + (i_n * bn + in) * K + g * group_size_k + ik);
+        v = _mm512_mul_round_ps(v, v_id, (_MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC));
+        __m512i v_i32 = _mm512_cvt_roundps_epi32(v, (_MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC));
+        __m128i res = _mm512_cvtepi32_epi8(v_i32);
+        _mm_storeu_epi8((unsigned char*)out_ptr + (i_n * bn + in) * K + g * group_size_k + ik, res);
+      }
+    }
+  }
+}
+
+void quantize_64_x_K_gs_512(float *in_ptr, unsigned char *out_ptr, float *out_scales, int i_n, long K, float scale) {
+  int in = 0;
+  int g = 0;
+  int ik = 0;
+  float d = 0.0f;
+  float id = 0.0f;
+  const int group_size_k = 512;
+  const int bn = 64;
+  int k_groups = K/group_size_k;
+  for (in = 0; in < bn; in++) {
+    for (g = 0; g < k_groups; g++) {
+      /* Find max of current group */
+      __m512 max_acc = _mm512_setzero_ps();
+      __m512 v_id;  
+      float max_val = 0.0;
+      float cur_scale = 0.0;;
+      for (ik = 0; ik < group_size_k; ik += 16) {
+        max_acc = _mm512_max_ps(max_acc, _mm512_abs_ps(_mm512_load_ps((float*)in_ptr + (i_n * bn + in) * K + g * group_size_k + ik)));  
+      }
+      max_val = _mm512_reduce_max_ps(max_acc);
+      d = max_val / 127;
+      id = (d != 0) ? (1.0f / d) : 0;
+      cur_scale = d * scale;
+      out_scales[(i_n * bn + in) * k_groups + g] = cur_scale;
+      v_id = _mm512_set1_ps(id);
+      for (ik = 0; ik < group_size_k; ik += 16) {
+        __m512 v = _mm512_load_ps((float*)in_ptr + (i_n * bn + in) * K + g * group_size_k + ik);
+        v = _mm512_mul_round_ps(v, v_id, (_MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC));
+        __m512i v_i32 = _mm512_cvt_roundps_epi32(v, (_MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC));
+        __m128i res = _mm512_cvtepi32_epi8(v_i32);
+        _mm_storeu_epi8((unsigned char*)out_ptr + (i_n * bn + in) * K + g * group_size_k + ik, res);
+      }
+    }
+  }
+}
+
+void quantize_bn_x_K_generic(float *in_ptr, unsigned char *out_ptr, float *out_scales, int group_size_k, int i_n, long bn, long K, float scale) {
+  int in = 0;
+  int k_groups = K/group_size_k;
+  int g = 0;
+  int ik = 0;
+  float d = 0.0f;
+  float id = 0.0f;
+  for (in = 0; in < bn; in++) {
+    for (g = 0; g < k_groups; g++) {
+      /* Find max of current group */
+      __m512 max_acc = _mm512_setzero_ps();
+      __m512 v_id;  
+      float max_val = 0.0;
+      float cur_scale = 0.0;;
+      for (ik = 0; ik < group_size_k; ik += 16) {
+        max_acc = _mm512_max_ps(max_acc, _mm512_abs_ps(_mm512_load_ps((float*)in_ptr + (i_n * bn + in) * K + g * group_size_k + ik)));  
+      }
+      max_val = _mm512_reduce_max_ps(max_acc);
+      d = max_val / 127;
+      id = (d != 0) ? (1.0f / d) : 0;
+      cur_scale = d * scale;
+      out_scales[(i_n * bn + in) * k_groups + g] = cur_scale;
+      v_id = _mm512_set1_ps(id);
+      for (ik = 0; ik < group_size_k; ik += 16) {
+        __m512 v = _mm512_load_ps((float*)in_ptr + (i_n * bn + in) * K + g * group_size_k + ik);
+        v = _mm512_mul_round_ps(v, v_id, (_MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC));
+        __m512i v_i32 = _mm512_cvt_roundps_epi32(v, (_MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC));
+        __m128i res = _mm512_cvtepi32_epi8(v_i32);
+        _mm_storeu_epi8((unsigned char*)out_ptr + (i_n * bn + in) * K + g * group_size_k + ik, res);
+      }
+    }
+  }
+}
+
+
+void quantize_bn_x_K(float *in_ptr, unsigned char *out_ptr, float *out_scales, int group_size_k, int i_n, long bn, long K, float scale) {
+  if (bn == 64) {
+    if (group_size_k == 64) {
+      quantize_64_x_K_gs_64(in_ptr, out_ptr, out_scales, i_n, K, scale);
+    } else if (group_size_k == 128) {
+      quantize_64_x_K_gs_128(in_ptr, out_ptr, out_scales, i_n, K, scale);  
+    } else if (group_size_k == 256) {
+      quantize_64_x_K_gs_256(in_ptr, out_ptr, out_scales, i_n, K, scale);
+    } else if (group_size_k == 512) {
+      quantize_64_x_K_gs_512(in_ptr, out_ptr, out_scales, i_n, K, scale);  
+    } else {
+      quantize_bn_x_K_generic(in_ptr, out_ptr, out_scales, group_size_k, i_n, bn, K, scale);  
+    }
+  } else {
+    quantize_bn_x_K_generic(in_ptr, out_ptr, out_scales, group_size_k, i_n, bn, K, scale); 
+  }
+}
+
+void dequantize_64_x_64(unsigned int *int32_acc_ptr, float *f32_acc_ptr,  unsigned short *wei_scales_ptr, float *inp_scales, long k_groups, long gid, long M) {
+  const int bm = 64;
+  const int bn =64;
   int i_n = 0, i_m = 0;
   for (i_n = 0; i_n < bn; i_n++) {
     __m512 dx = _mm512_set1_ps(inp_scales[i_n * k_groups + gid]);
@@ -56,6 +255,25 @@ void dequantize_bm_x_bn(unsigned int *int32_acc_ptr, float *f32_acc_ptr,  unsign
       __m512 f32_vec_acc = _mm512_load_ps((float*)f32_acc_ptr + i_n * M + i_m * 16);
       f32_vec_acc = _mm512_fmadd_ps(scale, i32_vec_acc, f32_vec_acc);
       _mm512_store_ps ((float*)f32_acc_ptr + i_n * M + i_m * 16, f32_vec_acc);
+    }
+  }
+}
+
+void dequantize_bm_x_bn(unsigned int *int32_acc_ptr, float *f32_acc_ptr,  unsigned short *wei_scales_ptr, float *inp_scales, long k_groups, long gid, long M, long bm, long bn) {
+  if (bm == 64 && bn == 64) {
+    dequantize_64_x_64(int32_acc_ptr, f32_acc_ptr, wei_scales_ptr, inp_scales, k_groups, gid, M);
+  } else {
+    int i_n = 0, i_m = 0;
+    for (i_n = 0; i_n < bn; i_n++) {
+      __m512 dx = _mm512_set1_ps(inp_scales[i_n * k_groups + gid]);
+      for (i_m = 0; i_m < bm/16; i_m++) {
+        __m512 dw = _mm512_cvtph_ps (_mm256_loadu_epi16((unsigned short*)wei_scales_ptr + i_m * 16));
+        __m512 scale = _mm512_mul_ps(dx, dw);
+        __m512 i32_vec_acc = _mm512_cvtepi32_ps(_mm512_loadu_epi32((unsigned int*)int32_acc_ptr + i_n * bm + i_m * 16));
+        __m512 f32_vec_acc = _mm512_load_ps((float*)f32_acc_ptr + i_n * M + i_m * 16);
+        f32_vec_acc = _mm512_fmadd_ps(scale, i32_vec_acc, f32_vec_acc);
+        _mm512_store_ps ((float*)f32_acc_ptr + i_n * M + i_m * 16, f32_vec_acc);
+      }
     }
   }
 }
@@ -249,19 +467,16 @@ int gemm_benchmark(int argc, char** argv) {
   // Warmup iteration for i-caches
   for (i = 0; i < n_layers; i++) {
     /* Here quantize the input activations from fp32 to int8 */
-
 #pragma omp parallel for
-    for (int iin = 0; iin < N; iin++) {
+    for (int in = 0; in < Nb; in++) {
       /* Quantize current input block and calculate also scale factor */
-      quantize_K_dim((float*)ACT[i], (unsigned char*)int8_acts, (float*)inp_scales, group_size_k, iin, K, scale);   
+      quantize_bn_x_K((float*)ACT[i], (unsigned char*)int8_acts, (float*)inp_scales, group_size_k, in, bn, K, scale);   
     }
-
     gemm_loop(
       [&](int* ind) {
         int i_k = ind[0], i_m = ind[1], i_n = ind[2];
         int i_k_group;
-        int tid = omp_get_thread_num();
-        unsigned int *int32_scratch_ptr = (unsigned int*)int32_scratch + tid * bm * bn; 
+        unsigned int int32_scratch_ptr[bm*bn];     
 
         if (i_k == 0) {
           /* Initialize bm x bn f32 accumulator to zero */
@@ -333,19 +548,16 @@ int gemm_benchmark(int argc, char** argv) {
   for (long it = 0; it < n_iters; it++) {
     for (i = 0; i < n_layers; i++) {
       /* Here quantize the input activations from fp32 to int8 */
-
 #pragma omp parallel for
-      for (int iin = 0; iin < N; iin++) {
+      for (int in = 0; in < Nb; in++) {
         /* Quantize current input block and calculate also scale factor */
-        quantize_K_dim((float*)ACT[i], (unsigned char*)int8_acts, (float*)inp_scales, group_size_k, iin, K, scale);   
+        quantize_bn_x_K((float*)ACT[i], (unsigned char*)int8_acts, (float*)inp_scales, group_size_k, in, bn, K, scale);   
       }
-
       gemm_loop(
         [&](int* ind) {
           int i_k = ind[0], i_m = ind[1], i_n = ind[2];
           int i_k_group;
-          int tid = omp_get_thread_num();
-          unsigned int *int32_scratch_ptr = (unsigned int*)int32_scratch + tid * bm * bn; 
+          unsigned int int32_scratch_ptr[bm*bn];     
 
           if (i_k == 0) {
             /* Initialize bm x bn f32 accumulator to zero */

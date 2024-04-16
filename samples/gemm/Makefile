@@ -23,7 +23,7 @@ ifeq ($(PARLOOPER_COMPILER),clang)
 endif
 ifeq ($(PARLOOPER_COMPILER),icc)
   CXX := icpx
-  CXXFLAGS := -xsapphirerapids -fopenmp -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14 -O2 
+  CXXFLAGS := -xsapphirerapids -qopt-zmm-usage=high -qopenmp -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14 -O3
 endif
 LDFLAGS = -ldl 
 IFLAGS = -I$(PARLOOPER_ROOT)/include -I$(PARLOOPER_ROOT)/utils -I$(LIBXSMM_ROOT)/include -I$(LIBXSMM_DNN_ROOT)/include
