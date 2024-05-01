@@ -229,7 +229,7 @@ void quantize_bn_x_K_generic(float *in_ptr, unsigned char *out_ptr, float *out_s
   }
 }
 
-void quantize_bn_x_K(float *in_ptr, unsigned char *out_ptr, float *out_scales, int group_size_k, int i_n, long bn, long K, float scale) {
+void quantize_bn_x_K(float *in_ptr, unsigned char *out_ptr, float *out_scales, int group_size_k, int i_n, long bn, long bk, long K, float scale) {
   if (use_tpp_for_quant > 0) {
     libxsmm_meltw_unary_param unary_param;
     int in = 0;
@@ -238,6 +238,7 @@ void quantize_bn_x_K(float *in_ptr, unsigned char *out_ptr, float *out_scales, i
     int ik = 0;
     float d = 0.0f;
     float id = 0.0f;
+    int k_subgroup = 0;
     for (in = 0; in < bn; in++) {
       for (g = 0; g < k_groups; g++) {
         float max_val = 0.0;
@@ -249,10 +250,12 @@ void quantize_bn_x_K(float *in_ptr, unsigned char *out_ptr, float *out_scales, i
         id = (d != 0) ? (1.0f / d) : 0;
         cur_scale = d * scale;
         out_scales[(i_n * bn + in) * k_groups + g] = cur_scale;
-        unary_param.in.primary  = (void*)((float*)in_ptr + (i_n * bn + in) * K + g * group_size_k);
-        unary_param.in.secondary  = (void*)&id;
-        unary_param.out.primary = (void*)((unsigned char*)out_ptr + (i_n * bn + in) * K + g * group_size_k);
-        unary_kernel_quant( &unary_param );
+        for (k_subgroup = 0; k_subgroup < group_size_k/bk; k_subgroup++) {
+          unary_param.in.primary  = (void*)((float*)in_ptr + (i_n * bn + in) * K + g * group_size_k + k_subgroup * bk);
+          unary_param.in.secondary  = (void*)&id;
+          unary_param.out.primary = (void*)((unsigned char*)out_ptr + i_n * bn * K + in * bk + g * group_size_k * bn + k_subgroup * bk * bn);
+          unary_kernel_quant( &unary_param );
+        }
       }
     }
   } else {
@@ -391,10 +394,10 @@ int gemm_benchmark(int argc, char** argv) {
     unary_kernel_absmax = libxsmm_dispatch_meltw_unary( unary_type, unary_shape, unary_flags );
     
     /* Quant TPP */
-    unary_shape.m = group_size_k;
+    unary_shape.m = bk;
     unary_shape.n = 1;
-    unary_shape.ldi = group_size_k;
-    unary_shape.ldo = group_size_k;
+    unary_shape.ldi = bk;
+    unary_shape.ldo = bk;
     unary_shape.in0_type = LIBXSMM_DATATYPE_F32;
     unary_shape.out_type = LIBXSMM_DATATYPE_I8;
     unary_shape.comp_type = LIBXSMM_DATATYPE_F32;
@@ -506,9 +509,9 @@ int gemm_benchmark(int argc, char** argv) {
   auto l_tr_flags = LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N');
   
   auto dtype      = LIBXSMM_DATATYPE_BF16;
-  auto l_shape = libxsmm_create_gemm_shape( bm, bn, bk, bm, K, bm, LIBXSMM_DATATYPE_I8, LIBXSMM_DATATYPE_I8, LIBXSMM_DATATYPE_I32, LIBXSMM_DATATYPE_I32 );
+  auto l_shape = libxsmm_create_gemm_shape( bm, bn, bk, bm, bk, bm, LIBXSMM_DATATYPE_I8, LIBXSMM_DATATYPE_I8, LIBXSMM_DATATYPE_I32, LIBXSMM_DATATYPE_I32 );
   auto l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
-  auto l_brconfig = libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, bm*bk*sizeof(char), bk*sizeof(char), group_size_k/bk );
+  auto l_brconfig = libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, bm*bk*sizeof(char), bk*bn*sizeof(char), group_size_k/bk );
   auto l_unary_shape = libxsmm_create_meltw_unary_shape(bm, bn, M, M, LIBXSMM_DATATYPE_F32, LIBXSMM_DATATYPE_F32, LIBXSMM_DATATYPE_F32);
 
   auto zero_kernel = libxsmm_dispatch_meltw_unary(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
@@ -576,7 +579,7 @@ int gemm_benchmark(int argc, char** argv) {
 #pragma omp parallel for
     for (int in = 0; in < Nb; in++) {
       /* Quantize current input block and calculate also scale factor */
-      quantize_bn_x_K((float*)ACT[i], (unsigned char*)int8_acts, (float*)inp_scales, group_size_k, in, bn, K, scale);   
+      quantize_bn_x_K((float*)ACT[i], (unsigned char*)int8_acts, (float*)inp_scales, group_size_k, in, bn, bk, K, scale);   
     }
     gemm_loop(
       [&](int* ind) {
@@ -598,7 +601,7 @@ int gemm_benchmark(int argc, char** argv) {
 
           gemm_param.op.tertiary = (void*)&br_int8;
           gemm_param.a.primary = (void*)((unsigned char*)WGT[i] + i_m * K * bm + i_k * bk * bm + i_k_group * group_size_k * bm );
-          gemm_param.b.primary = (void*)((unsigned char*)int8_acts + i_n * K * bn + i_k * bk + i_k_group * group_size_k);
+          gemm_param.b.primary = (void*)((unsigned char*)int8_acts + i_n * K * bn + i_k * bk * bn + i_k_group * group_size_k * bn);
           gemm_param.c.primary = (void*)int32_scratch_ptr;
           brgemm_kernel( &gemm_param );
 
@@ -657,7 +660,7 @@ int gemm_benchmark(int argc, char** argv) {
 #pragma omp parallel for
       for (int in = 0; in < Nb; in++) {
         /* Quantize current input block and calculate also scale factor */
-        quantize_bn_x_K((float*)ACT[i], (unsigned char*)int8_acts, (float*)inp_scales, group_size_k, in, bn, K, scale);   
+        quantize_bn_x_K((float*)ACT[i], (unsigned char*)int8_acts, (float*)inp_scales, group_size_k, in, bn, bk, K, scale);   
       }
       gemm_loop(
         [&](int* ind) {
@@ -679,7 +682,7 @@ int gemm_benchmark(int argc, char** argv) {
 
             gemm_param.op.tertiary = (void*)&br_int8;
             gemm_param.a.primary = (void*)((unsigned char*)WGT[i] + i_m * K * bm + i_k * bk * bm + i_k_group * group_size_k * bm );
-            gemm_param.b.primary = (void*)((unsigned char*)int8_acts + i_n * K * bn + i_k * bk + i_k_group * group_size_k);
+            gemm_param.b.primary = (void*)((unsigned char*)int8_acts + i_n * K * bn + i_k * bk * bn + i_k_group * group_size_k * bn);
             gemm_param.c.primary = (void*)int32_scratch_ptr;
             brgemm_kernel( &gemm_param );
 
@@ -689,6 +692,7 @@ int gemm_benchmark(int argc, char** argv) {
                                                   (float*)inp_scales + i_n * (K/group_size_k) * bn, 
                                                   K/group_size_k, ((i_k * bk)/group_size_k) + i_k_group, M, bm, bn);    
           }
+
         },
         [&]() {tileconfig_kernel(NULL);},
         [&]() {tilerelease_kernel(NULL);});
