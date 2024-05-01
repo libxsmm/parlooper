@@ -14,6 +14,11 @@
    [N][K]
 */
 
+libxsmm_meltwfunction_unary unary_kernel_quant;
+libxsmm_meltwfunction_unary unary_kernel_absmax;
+libxsmm_meqn_function dequant_func;
+int use_tpp_for_quant = 0;
+
 void quantize_K_dim(float *in_ptr, unsigned char *out_ptr, float *out_scales, int group_size_k, int i_n, long K, float scale) {
   int k_groups = K/group_size_k;
   int g = 0;
@@ -214,7 +219,8 @@ void quantize_bn_x_K_generic(float *in_ptr, unsigned char *out_ptr, float *out_s
       v_id = _mm512_set1_ps(id);
       for (ik = 0; ik < group_size_k; ik += 16) {
         __m512 v = _mm512_load_ps((float*)in_ptr + (i_n * bn + in) * K + g * group_size_k + ik);
-        v = _mm512_mul_round_ps(v, v_id, (_MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC));
+        //v = _mm512_mul_round_ps(v, v_id, (_MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC));
+        v = _mm512_mul_ps(v, v_id);
         __m512i v_i32 = _mm512_cvt_roundps_epi32(v, (_MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC));
         __m128i res = _mm512_cvtepi32_epi8(v_i32);
         _mm_storeu_epi8((unsigned char*)out_ptr + (i_n * bn + in) * K + g * group_size_k + ik, res);
@@ -223,22 +229,48 @@ void quantize_bn_x_K_generic(float *in_ptr, unsigned char *out_ptr, float *out_s
   }
 }
 
-
 void quantize_bn_x_K(float *in_ptr, unsigned char *out_ptr, float *out_scales, int group_size_k, int i_n, long bn, long K, float scale) {
-  if (bn == 64) {
-    if (group_size_k == 64) {
-      quantize_64_x_K_gs_64(in_ptr, out_ptr, out_scales, i_n, K, scale);
-    } else if (group_size_k == 128) {
-      quantize_64_x_K_gs_128(in_ptr, out_ptr, out_scales, i_n, K, scale);  
-    } else if (group_size_k == 256) {
-      quantize_64_x_K_gs_256(in_ptr, out_ptr, out_scales, i_n, K, scale);
-    } else if (group_size_k == 512) {
-      quantize_64_x_K_gs_512(in_ptr, out_ptr, out_scales, i_n, K, scale);  
-    } else {
-      quantize_bn_x_K_generic(in_ptr, out_ptr, out_scales, group_size_k, i_n, bn, K, scale);  
+  if (use_tpp_for_quant > 0) {
+    libxsmm_meltw_unary_param unary_param;
+    int in = 0;
+    int k_groups = K/group_size_k;
+    int g = 0;
+    int ik = 0;
+    float d = 0.0f;
+    float id = 0.0f;
+    for (in = 0; in < bn; in++) {
+      for (g = 0; g < k_groups; g++) {
+        float max_val = 0.0;
+        float cur_scale = 0.0;
+        unary_param.in.primary  = (void*)((float*)in_ptr + (i_n * bn + in) * K + g * group_size_k);
+        unary_param.out.primary = (void*)&max_val;
+        unary_kernel_absmax( &unary_param );
+        d = max_val / 127;
+        id = (d != 0) ? (1.0f / d) : 0;
+        cur_scale = d * scale;
+        out_scales[(i_n * bn + in) * k_groups + g] = cur_scale;
+        unary_param.in.primary  = (void*)((float*)in_ptr + (i_n * bn + in) * K + g * group_size_k);
+        unary_param.in.secondary  = (void*)&id;
+        unary_param.out.primary = (void*)((unsigned char*)out_ptr + (i_n * bn + in) * K + g * group_size_k);
+        unary_kernel_quant( &unary_param );
+      }
     }
   } else {
-    quantize_bn_x_K_generic(in_ptr, out_ptr, out_scales, group_size_k, i_n, bn, K, scale); 
+    if (bn == 64) {
+      if (group_size_k == 64) {
+        quantize_64_x_K_gs_64(in_ptr, out_ptr, out_scales, i_n, K, scale);
+      } else if (group_size_k == 128) {
+        quantize_64_x_K_gs_128(in_ptr, out_ptr, out_scales, i_n, K, scale);  
+      } else if (group_size_k == 256) {
+        quantize_64_x_K_gs_256(in_ptr, out_ptr, out_scales, i_n, K, scale);
+      } else if (group_size_k == 512) {
+        quantize_64_x_K_gs_512(in_ptr, out_ptr, out_scales, i_n, K, scale);  
+      } else {
+        quantize_bn_x_K_generic(in_ptr, out_ptr, out_scales, group_size_k, i_n, bn, K, scale);  
+      }
+    } else {
+      quantize_bn_x_K_generic(in_ptr, out_ptr, out_scales, group_size_k, i_n, bn, K, scale); 
+    }
   }
 }
 
@@ -260,19 +292,31 @@ void dequantize_64_x_64(unsigned int *int32_acc_ptr, float *f32_acc_ptr,  unsign
 }
 
 void dequantize_bm_x_bn(unsigned int *int32_acc_ptr, float *f32_acc_ptr,  unsigned short *wei_scales_ptr, float *inp_scales, long k_groups, long gid, long M, long bm, long bn) {
-  if (bm == 64 && bn == 64) {
-    dequantize_64_x_64(int32_acc_ptr, f32_acc_ptr, wei_scales_ptr, inp_scales, k_groups, gid, M);
+  if (use_tpp_for_quant > 0) {
+    libxsmm_meqn_param eqn_param;
+    libxsmm_matrix_arg  arg_array[4];
+    arg_array[0].primary = wei_scales_ptr;
+    arg_array[1].primary = &inp_scales[gid];
+    arg_array[2].primary = int32_acc_ptr;
+    arg_array[3].primary = f32_acc_ptr;
+    eqn_param.inputs = arg_array;
+    eqn_param.output.primary = f32_acc_ptr;
+    dequant_func(&eqn_param);
   } else {
-    int i_n = 0, i_m = 0;
-    for (i_n = 0; i_n < bn; i_n++) {
-      __m512 dx = _mm512_set1_ps(inp_scales[i_n * k_groups + gid]);
-      for (i_m = 0; i_m < bm/16; i_m++) {
-        __m512 dw = _mm512_cvtph_ps (_mm256_loadu_epi16((unsigned short*)wei_scales_ptr + i_m * 16));
-        __m512 scale = _mm512_mul_ps(dx, dw);
-        __m512 i32_vec_acc = _mm512_cvtepi32_ps(_mm512_loadu_epi32((unsigned int*)int32_acc_ptr + i_n * bm + i_m * 16));
-        __m512 f32_vec_acc = _mm512_load_ps((float*)f32_acc_ptr + i_n * M + i_m * 16);
-        f32_vec_acc = _mm512_fmadd_ps(scale, i32_vec_acc, f32_vec_acc);
-        _mm512_store_ps ((float*)f32_acc_ptr + i_n * M + i_m * 16, f32_vec_acc);
+    if (bm == 64 && bn == 64) {
+      dequantize_64_x_64(int32_acc_ptr, f32_acc_ptr, wei_scales_ptr, inp_scales, k_groups, gid, M);
+    } else {
+      int i_n = 0, i_m = 0;
+      for (i_n = 0; i_n < bn; i_n++) {
+        __m512 dx = _mm512_set1_ps(inp_scales[i_n * k_groups + gid]);
+        for (i_m = 0; i_m < bm/16; i_m++) {
+          __m512 dw = _mm512_cvtph_ps (_mm256_loadu_epi16((unsigned short*)wei_scales_ptr + i_m * 16));
+          __m512 scale = _mm512_mul_ps(dx, dw);
+          __m512 i32_vec_acc = _mm512_cvtepi32_ps(_mm512_loadu_epi32((unsigned int*)int32_acc_ptr + i_n * bm + i_m * 16));
+          __m512 f32_vec_acc = _mm512_load_ps((float*)f32_acc_ptr + i_n * M + i_m * 16);
+          f32_vec_acc = _mm512_fmadd_ps(scale, i32_vec_acc, f32_vec_acc);
+          _mm512_store_ps ((float*)f32_acc_ptr + i_n * M + i_m * 16, f32_vec_acc);
+        }
       }
     }
   }
@@ -309,6 +353,9 @@ int gemm_benchmark(int argc, char** argv) {
     n_layers = atoi(argv[10]);
     n_iters = atoi(argv[11]);
     check_correctness = atoi(argv[12]);
+    if (argc > 13) {
+      use_tpp_for_quant = atoi(argv[13]);
+    }
   }
   
   long Mb = M/bm, Nb = N/bn, Kb = K/bk;
@@ -317,6 +364,64 @@ int gemm_benchmark(int argc, char** argv) {
     kbf--;
   }
   brcount = Kb/kbf;
+
+  // Create some auxiliary TPPs
+  if (use_tpp_for_quant > 0) {
+    libxsmm_blasint my_eqn0;
+    libxsmm_meqn_arg_metadata arg_metadata;
+    libxsmm_meqn_op_metadata  op_metadata;
+    libxsmm_meqn_arg_shape          arg_shape_in, arg_shape_out;
+    libxsmm_matrix_arg_attributes   arg_singular_attr = libxsmm_create_matrix_arg_attributes( LIBXSMM_MATRIX_ARG_TYPE_SINGULAR, LIBXSMM_MATRIX_ARG_SET_TYPE_NONE, 0, 0);
+    int k_groups = K/group_size_k;
+
+    libxsmm_meltw_unary_shape unary_shape;
+    libxsmm_meltw_unary_flags unary_flags;
+    libxsmm_meltw_unary_type  unary_type;
+
+    /* Abs max reduce TPP */
+    unary_shape.m = group_size_k;
+    unary_shape.n = 1;
+    unary_shape.ldi = group_size_k;
+    unary_shape.ldo = 1;
+    unary_shape.in0_type = LIBXSMM_DATATYPE_F32;
+    unary_shape.out_type = LIBXSMM_DATATYPE_F32;
+    unary_shape.comp_type = LIBXSMM_DATATYPE_F32;
+    unary_type = LIBXSMM_MELTW_TYPE_UNARY_REDUCE_X_OP_MAX;
+    unary_flags = LIBXSMM_MELTW_FLAG_UNARY_REDUCE_ROWS;  
+    unary_kernel_absmax = libxsmm_dispatch_meltw_unary( unary_type, unary_shape, unary_flags );
+    
+    /* Quant TPP */
+    unary_shape.m = group_size_k;
+    unary_shape.n = 1;
+    unary_shape.ldi = group_size_k;
+    unary_shape.ldo = group_size_k;
+    unary_shape.in0_type = LIBXSMM_DATATYPE_F32;
+    unary_shape.out_type = LIBXSMM_DATATYPE_I8;
+    unary_shape.comp_type = LIBXSMM_DATATYPE_F32;
+    unary_type = LIBXSMM_MELTW_TYPE_UNARY_QUANT;
+    unary_flags = LIBXSMM_MELTW_FLAG_UNARY_NONE;  
+    unary_kernel_quant = libxsmm_dispatch_meltw_unary( unary_type, unary_shape, unary_flags );
+
+    /* Create dequant equation */
+    my_eqn0 = libxsmm_meqn_create();
+    op_metadata   = libxsmm_create_meqn_op_metadata(my_eqn0, -1);
+    libxsmm_meqn_push_back_ternary_op( op_metadata, LIBXSMM_MELTW_TYPE_TERNARY_MULADD, LIBXSMM_DATATYPE_F32, LIBXSMM_MELTW_FLAG_TERNARY_REUSE_IN_2_AS_OUT );
+    libxsmm_meqn_push_back_binary_op( op_metadata, LIBXSMM_MELTW_TYPE_BINARY_MUL, LIBXSMM_DATATYPE_F32, LIBXSMM_MELTW_FLAG_BINARY_BCAST_COL_IN_0 |  LIBXSMM_MELTW_FLAG_BINARY_BCAST_ROW_IN_1);
+    arg_shape_in  = libxsmm_create_meqn_arg_shape( bm, 1, bm, LIBXSMM_DATATYPE_F16 );
+    arg_metadata  = libxsmm_create_meqn_arg_metadata(my_eqn0, 0);
+    libxsmm_meqn_push_back_arg(arg_metadata, arg_shape_in, arg_singular_attr);
+    arg_shape_in  = libxsmm_create_meqn_arg_shape( 1, bn, k_groups, LIBXSMM_DATATYPE_F32 );
+    arg_metadata  = libxsmm_create_meqn_arg_metadata(my_eqn0, 1);
+    libxsmm_meqn_push_back_arg(arg_metadata, arg_shape_in, arg_singular_attr);
+    arg_shape_in  = libxsmm_create_meqn_arg_shape( bm, bn, bm, LIBXSMM_DATATYPE_I32 );
+    arg_metadata  = libxsmm_create_meqn_arg_metadata(my_eqn0, 2);
+    libxsmm_meqn_push_back_arg(arg_metadata, arg_shape_in, arg_singular_attr);
+    arg_shape_in  = libxsmm_create_meqn_arg_shape( bm, bn, M, LIBXSMM_DATATYPE_F32 );
+    arg_metadata  = libxsmm_create_meqn_arg_metadata(my_eqn0, 3);
+    libxsmm_meqn_push_back_arg(arg_metadata, arg_shape_in, arg_singular_attr);    
+    arg_shape_out = libxsmm_create_meqn_arg_shape( bm, bn, M, LIBXSMM_DATATYPE_F32 );
+    dequant_func = libxsmm_dispatch_meqn( my_eqn0, arg_shape_out );
+  }
 
   // Allocate buffers
   DType **ACT = (DType**) malloc((n_layers+1)*sizeof(DType*));
@@ -345,7 +450,8 @@ int gemm_benchmark(int argc, char** argv) {
 
   // Init buffers
   for (i = 0; i < LIBXSMM_MAX(K,M)*N; i++) {
-    naive_input[i] = get_random_posneg_p5_num();
+//    naive_input[i] = get_random_posneg_p5_num();
+    naive_input[i] = get_random_pos_p5_num();
   }
   for (i = 0; i < LIBXSMM_MAX(K,M)*N; i++) {
     naive_output[i] = 0.0;
