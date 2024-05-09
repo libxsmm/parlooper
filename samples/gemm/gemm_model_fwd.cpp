@@ -386,7 +386,7 @@ int gemm_benchmark(int argc, char** argv) {
     unary_shape.in0_type = LIBXSMM_DATATYPE_F32;
     unary_shape.out_type = LIBXSMM_DATATYPE_F32;
     unary_shape.comp_type = LIBXSMM_DATATYPE_F32;
-    unary_type = LIBXSMM_MELTW_TYPE_UNARY_REDUCE_X_OP_MAX;
+    unary_type = LIBXSMM_MELTW_TYPE_UNARY_REDUCE_X_OP_ABSMAX;
     unary_flags = LIBXSMM_MELTW_FLAG_UNARY_REDUCE_ROWS;  
     unary_kernel_absmax = libxsmm_dispatch_meltw_unary( unary_type, unary_shape, unary_flags );
     
@@ -450,8 +450,8 @@ int gemm_benchmark(int argc, char** argv) {
 
   // Init buffers
   for (i = 0; i < LIBXSMM_MAX(K,M)*N; i++) {
-//    naive_input[i] = get_random_posneg_p5_num();
-    naive_input[i] = get_random_pos_p5_num();
+    naive_input[i] = get_random_posneg_p5_num();
+//    naive_input[i] = get_random_pos_p5_num();
   }
   for (i = 0; i < LIBXSMM_MAX(K,M)*N; i++) {
     naive_output[i] = 0.0;
