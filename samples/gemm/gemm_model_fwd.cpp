@@ -25,6 +25,7 @@ int gemm_benchmark(int argc, char** argv) {
   long fuse_relu = 0;
   long int8_gemm = 0;
   long use_ping_pong_bufs = 0;
+  long use_sf_curve = 0;
   char prec_string[255];
   char fuse_string[255];
   // Setup model and trace
@@ -68,6 +69,9 @@ int gemm_benchmark(int argc, char** argv) {
     }
     if (argc > 14) {
       use_ping_pong_bufs = atoi(argv[14]);
+    }
+    if (argc > 15) {
+      use_sf_curve = atoi(argv[15]);
     }
   }
 
@@ -398,6 +402,7 @@ int gemm_benchmark(int argc, char** argv) {
   n0 = n_factors[0];
   n1 = (n_factors.size() > 1) ? n_factors[1] : 1;
  
+  long unit_step = 1;
   long l0_k_step = k0 * k_step;
   long l0_m_step = m0 * m_step;
   long l0_n_step = n0 * n_step;
@@ -407,19 +412,37 @@ int gemm_benchmark(int argc, char** argv) {
 
 
   auto t0 = getTime();
-  auto gemm_loop = ThreadedLoop<3>({
+  auto gemm_loop = (use_sf_curve == 0) ?
+      ThreadedLoop<3>({
       LoopSpecs{0, Kb, k_step, {l1_k_step, l0_k_step}},   // Logical K loop specs
       LoopSpecs{0, Mb, m_step, {l1_m_step, l0_m_step}},   // Logical M loop specs
       LoopSpecs{0, Nb, n_step, {l1_n_step, l0_n_step}}},  // Logical N loop specs
-      loop_specs_str);
+      loop_specs_str) :
+      ThreadedLoop<3>({
+      LoopSpecs{0, Kb, k_step, {}},             // Logical K loop 
+      LoopSpecs{0, Mb*Nb, unit_step,{}},        // Logical MxN loop over the SF curve index space
+      LoopSpecs{0, unit_step, unit_step, {}}},  // Degenerate loop, just to match types with gemm_loop of 3 nested loops
+      "aB");
   auto t1 = getTime();
+
+  unsigned char *sf_curve_index_map = NULL;
+  unsigned int index_tsize = 4;
+  if (use_sf_curve > 0) {
+    index_tsize = fill_sf_curve_index_map(&sf_curve_index_map, Mb, Nb);
+  }
 
   // Warmup iteration for i-caches
   if (int8_gemm == 0) {
     for (i = 0; i < n_layers; i++) {
       gemm_loop(
           [&](int* ind) {
-            int i_k = ind[0], i_m = ind[1], i_n = ind[2];
+            int i_k = ind[0], i_m, i_n;
+            if (use_sf_curve > 0) {
+              extract_indices_from_sf_curve(&i_m, &i_n, sf_curve_index_map, ind[1] /* This is the index in the SF curve*/, index_tsize);
+            } else {
+              i_m = ind[1];
+              i_n = ind[2];        
+            }
             if (fuse_bias > 0 || fuse_relu > 0) {
               if (brcount == Kb) {
                 libxsmm_gemm_ext_param gemm_param_ext;
@@ -480,7 +503,13 @@ int gemm_benchmark(int argc, char** argv) {
     for (i = 0; i < n_layers; i++) {
       gemm_loop(
           [&](int* ind) {
-            int i_k = ind[0], i_m = ind[1], i_n = ind[2];
+            int i_k = ind[0], i_m, i_n;
+            if (use_sf_curve > 0) {
+              extract_indices_from_sf_curve(&i_m, &i_n, sf_curve_index_map, ind[1] /* This is the index in the SF curve*/, index_tsize);
+            } else {
+              i_m = ind[1];
+              i_n = ind[2];        
+            }
             const float float_one = 1.0f;
             libxsmm_gemm_param gemm_param;
             gemm_param.op.tertiary = (void*)&brcount;
@@ -581,7 +610,13 @@ int gemm_benchmark(int argc, char** argv) {
       for (i = 0; i < n_layers; i++) {
         gemm_loop(
             [&](int* ind) {
-              int i_k = ind[0], i_m = ind[1], i_n = ind[2];
+              int i_k = ind[0], i_m, i_n;
+              if (use_sf_curve > 0) {
+                extract_indices_from_sf_curve(&i_m, &i_n, sf_curve_index_map, ind[1] /* This is the index in the SF curve*/, index_tsize);
+              } else {
+                i_m = ind[1];
+                i_n = ind[2];        
+              }
               if (fuse_bias > 0 || fuse_relu > 0) {
                 if (brcount == Kb) {
                   libxsmm_gemm_ext_param gemm_param_ext;
@@ -644,7 +679,13 @@ int gemm_benchmark(int argc, char** argv) {
       for (i = 0; i < n_layers; i++) {
         gemm_loop(
             [&](int* ind) {
-              int i_k = ind[0], i_m = ind[1], i_n = ind[2];
+              int i_k = ind[0], i_m, i_n;
+              if (use_sf_curve > 0) {
+                extract_indices_from_sf_curve(&i_m, &i_n, sf_curve_index_map, ind[1] /* This is the index in the SF curve*/, index_tsize);
+              } else {
+                i_m = ind[1];
+                i_n = ind[2];        
+              }
               const float float_one = 1.0f;
               libxsmm_gemm_param gemm_param;
               gemm_param.op.tertiary = (void*)&brcount;
@@ -762,6 +803,9 @@ int gemm_benchmark(int argc, char** argv) {
     libxsmm_free(naive_output_i8);
     libxsmm_free(naive_output_opt_i8);
     libxsmm_free(naive_filter_i8);
+  }
+  if (sf_curve_index_map != NULL) {
+    libxsmm_free(sf_curve_index_map);
   }
   free(ACT);
   free(WGT);
