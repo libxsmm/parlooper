@@ -23,6 +23,7 @@ int gemm_benchmark(int argc, char** argv) {
   long check_correctness = 0;
   long cache_resident_acts = 0;
   long flat_act = 0;
+  long use_sf_curve = 0;
 
   ifreq = 1.0 / getFreq();
   if (argc > 1) {
@@ -52,6 +53,9 @@ int gemm_benchmark(int argc, char** argv) {
     } 
     if (argc > 17) {
       flat_act = atoi(argv[17]);
+    }
+    if (argc > 18) {
+      use_sf_curve = atoi(argv[18]);
     } 
   }
 
@@ -129,13 +133,13 @@ int gemm_benchmark(int argc, char** argv) {
 
   if (brcount == Kb) l_flags |= LIBXSMM_GEMM_FLAG_BETA_0;
 
-  auto zero_kernel = libxsmm_dispatch_meltw_unary_v2(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
+  auto zero_kernel = libxsmm_dispatch_meltw_unary(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);
   check_null_ptr((void*)zero_kernel, "zero_kernel TPP");
-  auto tileconfig_kernel  = libxsmm_dispatch_gemm_v2( l_shape, l_tc_flags, l_prefetch_flags );
+  auto tileconfig_kernel  = libxsmm_dispatch_tilecfg_gemm( l_shape, l_tc_flags );
   check_null_ptr((void*)tileconfig_kernel, "tileconfig_kernel TPP");
-  auto tilerelease_kernel = libxsmm_dispatch_gemm_v2( l_shape, l_tr_flags, l_prefetch_flags );
+  auto tilerelease_kernel = libxsmm_dispatch_tilecfg_gemm( l_shape, l_tr_flags );
   check_null_ptr((void*)tilerelease_kernel, "tilerelease_kernel TPP");
-  auto brgemm_kernel      = libxsmm_dispatch_brgemm_v2( l_shape, l_flags, l_prefetch_flags, l_brconfig );
+  auto brgemm_kernel      = libxsmm_dispatch_brgemm( l_shape, l_flags, l_prefetch_flags, l_brconfig );
   check_null_ptr((void*)brgemm_kernel, "brgemm_kernel TPP");
 
   // Compute reference if requested
@@ -159,6 +163,7 @@ int gemm_benchmark(int argc, char** argv) {
   } 
   
   // JIT requested nested loop specs
+  long unit_step = 1;
   long k_step = brcount;
   long m_step = 1;
   long n_step = 1;
@@ -189,17 +194,35 @@ int gemm_benchmark(int argc, char** argv) {
   long l1_m_step = m1 * l0_m_step;
   long l1_n_step = n1 * l0_n_step;
 
-  auto gemm_loop = ThreadedLoop<3>({
+  auto gemm_loop = (use_sf_curve == 0) ?
+      ThreadedLoop<3>({
       LoopSpecs{0, Kb, k_step, {l1_k_step, l0_k_step}},   // Logical K loop specs
       LoopSpecs{0, Mb, m_step, {l1_m_step, l0_m_step}},   // Logical M loop specs
       LoopSpecs{0, Nb, n_step, {l1_n_step, l0_n_step}}},  // Logical N loop specs
-      loop_specs_str);
+      loop_specs_str) :
+      ThreadedLoop<3>({
+      LoopSpecs{0, Kb, k_step, {}},             // Logical K loop 
+      LoopSpecs{0, Mb*Nb, unit_step,{}},        // Logical MxN loop over the SF curve index space
+      LoopSpecs{0, unit_step, unit_step, {}}},  // Degenerate loop, just to match types with gemm_loop of 3 nested loops
+      "aB");
 
+  unsigned char *sf_curve_index_map = NULL;
+  unsigned int index_tsize = 4;
+  if (use_sf_curve > 0) {
+    index_tsize = fill_sf_curve_index_map(&sf_curve_index_map, Mb, Nb);
+  }
+  
   // Warmup iteration for i-caches
   for (i = 0; i < n_layers; i++) {
     gemm_loop(
       [&](int* ind) {
-        int i_k = ind[0], i_m = ind[1], i_n = ind[2];
+        int i_k = ind[0], i_m, i_n;
+        if (use_sf_curve > 0) {
+          extract_indices_from_sf_curve(&i_m, &i_n, sf_curve_index_map, ind[1] /* This is the index in the SF curve*/, index_tsize);
+        } else {
+          i_m = ind[1];
+          i_n = ind[2];        
+        }
         libxsmm_gemm_param gemm_param;
         gemm_param.op.tertiary = (void*)&brcount;
         gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
@@ -276,7 +299,13 @@ int gemm_benchmark(int argc, char** argv) {
     for (i = 0; i < n_layers; i++) {
       gemm_loop(
         [&](int* ind) {
-          int i_k = ind[0], i_m = ind[1], i_n = ind[2];
+          int i_k = ind[0], i_m, i_n;
+          if (use_sf_curve > 0) {
+            extract_indices_from_sf_curve(&i_m, &i_n, sf_curve_index_map, ind[1] /* This is the index in the SF curve*/, index_tsize);
+          } else {
+            i_m = ind[1];
+            i_n = ind[2];        
+          }
           libxsmm_gemm_param gemm_param;
           gemm_param.op.tertiary = (void*)&brcount;
           gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
@@ -328,6 +357,9 @@ int gemm_benchmark(int argc, char** argv) {
     if (i < n_layers) {
       libxsmm_free(WGT[i]);
     }
+  }
+  if (sf_curve_index_map != NULL) {
+    libxsmm_free(sf_curve_index_map);
   }
   free(ACT);
   free(WGT);
