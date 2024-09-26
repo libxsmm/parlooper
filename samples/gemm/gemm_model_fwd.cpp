@@ -44,6 +44,7 @@ int gemm_benchmark(int argc, char** argv) {
   long is_A_bf8 = 0;
   long is_A_bf16 = 0;
   long is_A_mxfp4 = 0;
+  long use_distributed_quant = 1;
 
   if (strcmp(argv[13], "BF16") == 0) {
     is_A_bf16 = 1;
@@ -339,7 +340,7 @@ int gemm_benchmark(int argc, char** argv) {
     gemm_loop(
       [&](int* ind) {
         int i_k = ind[0], i_m = ind[1], i_n = ind[2];
-        int my_tid = omp_get_thread_num();     
+        int my_tid = (use_distributed_quant > 0) ? 0 : omp_get_thread_num();     
         libxsmm_gemm_param gemm_param;
         gemm_param.op.tertiary = (void*)&brcount;
         gemm_param.a.primary = (void*)((DTypeLP*)WGT[i] + (i_m * K * bm + i_k * bk * bm)/a_dtype_scale);
@@ -355,32 +356,63 @@ int gemm_benchmark(int argc, char** argv) {
       },
       [&]() {
         if (is_A_mxfp4 > 0) {
-          int my_tid = omp_get_thread_num();
-          /* Quantize activations to thread local buffer */
-          libxsmm_meltw_unary_param unary_param;
-          int in = 0, i_n = 0, i_k = 0;
-          int k_groups = bk/32;
-          int g = 0;
-          int ik = 0;
-          float d = 0.0f;
-          float id = 0.0f;
-          for (i_n = 0; i_n < Nb; i_n++) {
-            for (i_k = 0; i_k < Kb; i_k++) {
-              for (in = 0; in < bn; in++) {
-                for (g = 0; g < k_groups; g++) {
-                  float max_val = 0.0;
-                  float cur_scale = 0.0;
-                  unary_param.in.primary  = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bn * bk + in * bk + g * 32);
-                  unary_param.out.primary = (void*)&max_val;
-                  unary_kernel_absmax( &unary_param );
-                  d = max_val/127;
-                  id = (d != 0) ? (1.0f / d) : 0;
-                  cur_scale = d * 1.0;
-                  quant_act_scf[my_tid][i_n * (K/32) * bn + i_k * bn * (bk/32) + in * (bk/32) + g] = cur_scale * (6.0/127.0);
-                  unary_param.in.primary  = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bn * bk + in * bk + g * 32);
-                  unary_param.in.secondary  = (void*)&id;
-                  unary_param.out.primary = (void*)((char*)quant_act[my_tid] + i_n * K * bn + i_k * bn * bk + in * bk + g * 32);
-                  unary_kernel_quant( &unary_param );
+          if (use_distributed_quant > 0) {
+            /* Quantize activations to thread local buffer */
+            int in = 0, i_n = 0, i_k = 0;
+            int k_groups = bk/32;
+            #pragma omp for collapse(3)
+            for (i_n = 0; i_n < Nb; i_n++) {
+              for (i_k = 0; i_k < Kb; i_k++) {
+                for (in = 0; in < bn; in++) {
+                  for (int g = 0; g < k_groups; g++) {
+                    libxsmm_meltw_unary_param unary_param;            
+                    float max_val = 0.0;
+                    float cur_scale = 0.0;
+                    float d = 0.0f;
+                    float id = 0.0f;
+                    unary_param.in.primary  = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bn * bk + in * bk + g * 32);
+                    unary_param.out.primary = (void*)&max_val;
+                    unary_kernel_absmax( &unary_param );
+                    d = max_val/127;
+                    id = (d != 0) ? (1.0f / d) : 0;
+                    cur_scale = d * 1.0;
+                    quant_act_scf[0][i_n * (K/32) * bn + i_k * bn * (bk/32) + in * (bk/32) + g] = cur_scale * (6.0/127.0);
+                    unary_param.in.primary  = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bn * bk + in * bk + g * 32);
+                    unary_param.in.secondary  = (void*)&id;
+                    unary_param.out.primary = (void*)((char*)quant_act[0] + i_n * K * bn + i_k * bn * bk + in * bk + g * 32);
+                    unary_kernel_quant( &unary_param );
+                  }
+                }
+              }
+            }
+          } else {
+            int my_tid = omp_get_thread_num();
+            /* Quantize activations to thread local buffer */
+            libxsmm_meltw_unary_param unary_param;
+            int in = 0, i_n = 0, i_k = 0;
+            int k_groups = bk/32;
+            int g = 0;
+            int ik = 0;
+            float d = 0.0f;
+            float id = 0.0f;
+            for (i_n = 0; i_n < Nb; i_n++) {
+              for (i_k = 0; i_k < Kb; i_k++) {
+                for (in = 0; in < bn; in++) {
+                  for (g = 0; g < k_groups; g++) {
+                    float max_val = 0.0;
+                    float cur_scale = 0.0;
+                    unary_param.in.primary  = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bn * bk + in * bk + g * 32);
+                    unary_param.out.primary = (void*)&max_val;
+                    unary_kernel_absmax( &unary_param );
+                    d = max_val/127;
+                    id = (d != 0) ? (1.0f / d) : 0;
+                    cur_scale = d * 1.0;
+                    quant_act_scf[my_tid][i_n * (K/32) * bn + i_k * bn * (bk/32) + in * (bk/32) + g] = cur_scale * (6.0/127.0);
+                    unary_param.in.primary  = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bn * bk + in * bk + g * 32);
+                    unary_param.in.secondary  = (void*)&id;
+                    unary_param.out.primary = (void*)((char*)quant_act[my_tid] + i_n * K * bn + i_k * bn * bk + in * bk + g * 32);
+                    unary_kernel_quant( &unary_param );
+                  }
                 }
               }
             }
@@ -433,7 +465,7 @@ int gemm_benchmark(int argc, char** argv) {
       gemm_loop(
         [&](int* ind) {
           int i_k = ind[0], i_m = ind[1], i_n = ind[2];
-          int my_tid = omp_get_thread_num();     
+          int my_tid = (use_distributed_quant > 0) ? 0 : omp_get_thread_num();     
           libxsmm_gemm_param gemm_param;
           gemm_param.op.tertiary = (void*)&brcount;
           gemm_param.a.primary = (void*)((DTypeLP*)WGT[i] + (i_m * K * bm + i_k * bk * bm)/a_dtype_scale);
@@ -449,32 +481,63 @@ int gemm_benchmark(int argc, char** argv) {
         },
         [&]() {
           if (is_A_mxfp4 > 0) {
-            int my_tid = omp_get_thread_num();
-            /* Quantize activations to thread local buffer */
-            libxsmm_meltw_unary_param unary_param;
-            int in = 0, i_n = 0, i_k = 0;
-            int k_groups = bk/32;
-            int g = 0;
-            int ik = 0;
-            float d = 0.0f;
-            float id = 0.0f;
-            for (i_n = 0; i_n < Nb; i_n++) {
-              for (i_k = 0; i_k < Kb; i_k++) {
-                for (in = 0; in < bn; in++) {
-                  for (g = 0; g < k_groups; g++) {
-                    float max_val = 0.0;
-                    float cur_scale = 0.0;
-                    unary_param.in.primary  = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bn * bk + in * bk + g * 32);
-                    unary_param.out.primary = (void*)&max_val;
-                    unary_kernel_absmax( &unary_param );
-                    d = max_val/127;
-                    id = (d != 0) ? (1.0f / d) : 0;
-                    cur_scale = d * 1.0;
-                    quant_act_scf[my_tid][i_n * (K/32) * bn + i_k * bn * (bk/32) + in * (bk/32) + g] = cur_scale * (6.0/127.0);
-                    unary_param.in.primary  = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bn * bk + in * bk + g * 32);
-                    unary_param.in.secondary  = (void*)&id;
-                    unary_param.out.primary = (void*)((char*)quant_act[my_tid] + i_n * K * bn + i_k * bn * bk + in * bk + g * 32);
-                    unary_kernel_quant( &unary_param );
+            if (use_distributed_quant > 0) {
+              /* Quantize activations to thread local buffer */
+              int in = 0, i_n = 0, i_k = 0;
+              int k_groups = bk/32;
+              #pragma omp for collapse(3)
+              for (i_n = 0; i_n < Nb; i_n++) {
+                for (i_k = 0; i_k < Kb; i_k++) {
+                  for (in = 0; in < bn; in++) {
+                    for (int g = 0; g < k_groups; g++) {
+                      libxsmm_meltw_unary_param unary_param;            
+                      float max_val = 0.0;
+                      float cur_scale = 0.0;
+                      float d = 0.0f;
+                      float id = 0.0f;
+                      unary_param.in.primary  = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bn * bk + in * bk + g * 32);
+                      unary_param.out.primary = (void*)&max_val;
+                      unary_kernel_absmax( &unary_param );
+                      d = max_val/127;
+                      id = (d != 0) ? (1.0f / d) : 0;
+                      cur_scale = d * 1.0;
+                      quant_act_scf[0][i_n * (K/32) * bn + i_k * bn * (bk/32) + in * (bk/32) + g] = cur_scale * (6.0/127.0);
+                      unary_param.in.primary  = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bn * bk + in * bk + g * 32);
+                      unary_param.in.secondary  = (void*)&id;
+                      unary_param.out.primary = (void*)((char*)quant_act[0] + i_n * K * bn + i_k * bn * bk + in * bk + g * 32);
+                      unary_kernel_quant( &unary_param );
+                    }
+                  }
+                }
+              }
+            } else {
+              int my_tid = omp_get_thread_num();
+              /* Quantize activations to thread local buffer */
+              libxsmm_meltw_unary_param unary_param;
+              int in = 0, i_n = 0, i_k = 0;
+              int k_groups = bk/32;
+              int g = 0;
+              int ik = 0;
+              float d = 0.0f;
+              float id = 0.0f;
+              for (i_n = 0; i_n < Nb; i_n++) {
+                for (i_k = 0; i_k < Kb; i_k++) {
+                  for (in = 0; in < bn; in++) {
+                    for (g = 0; g < k_groups; g++) {
+                      float max_val = 0.0;
+                      float cur_scale = 0.0;
+                      unary_param.in.primary  = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bn * bk + in * bk + g * 32);
+                      unary_param.out.primary = (void*)&max_val;
+                      unary_kernel_absmax( &unary_param );
+                      d = max_val/127;
+                      id = (d != 0) ? (1.0f / d) : 0;
+                      cur_scale = d * 1.0;
+                      quant_act_scf[my_tid][i_n * (K/32) * bn + i_k * bn * (bk/32) + in * (bk/32) + g] = cur_scale * (6.0/127.0);
+                      unary_param.in.primary  = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bn * bk + in * bk + g * 32);
+                      unary_param.in.secondary  = (void*)&id;
+                      unary_param.out.primary = (void*)((char*)quant_act[my_tid] + i_n * K * bn + i_k * bn * bk + in * bk + g * 32);
+                      unary_kernel_quant( &unary_param );
+                    }
                   }
                 }
               }
