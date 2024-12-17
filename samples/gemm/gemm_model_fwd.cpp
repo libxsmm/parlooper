@@ -367,6 +367,7 @@ int gemm_benchmark(int argc, char** argv) {
   long nThreads = omp_get_max_threads();
   float scale = 1.0f;
   long is_int2int8 = 0;
+  long is_int1int8 = 0;
   long bk_scale = 1;
   
   ifreq = 1.0 / getFreq();
@@ -389,11 +390,12 @@ int gemm_benchmark(int argc, char** argv) {
       use_tpp_for_quant = atoi(argv[13]);
     }
     if (argc > 14) {
-      is_int2int8 = atoi(argv[14]);
+      is_int2int8 = (atoi(argv[14]) == 1) ? 1 : 0;
+      is_int1int8 = (atoi(argv[14]) == 2) ? 1 : 0;
     }
   }
    
-  bk_scale = (is_int2int8 > 0) ? 4 : 1;
+  bk_scale = (is_int2int8 > 0) ? 4 : ((is_int1int8 > 0) ? 8 : 1);
 
   long Mb = M/bm, Nb = N/bn, Kb = K/bk;
   long brcount = Kb/kbf;
@@ -520,6 +522,7 @@ int gemm_benchmark(int argc, char** argv) {
             libxsmm_float16 cur_scale = naive_filter_scales[imb * (K/group_size_k) * bm + igk * bm + ibm];
             float f32_scale = 0.0;
             char tmp = (char) ((is_int2int8 > 0) ? ((char)(get_random_posneg_p5_num() * 10.0))%2 : (get_random_pos_p5_num() * 10.0));
+            tmp = (is_int1int8 > 0) ? tmp % 2 : tmp;
             naive_filter_lp[imb * Kb * bk * bm + ikb * bk * bm + ibk * bm * 4 + ibm * 4  + ibkk] = tmp;
             libxsmm_convert_f16_f32( &cur_scale, &f32_scale, 1 );
             naive_filter[logical_m * K + logical_k] = f32_scale * ((float)tmp);
@@ -567,6 +570,29 @@ int gemm_benchmark(int argc, char** argv) {
           }
         }
       }
+    } else if (is_int1int8 > 0) {
+      libxsmm_blasint l_ar = 0, l_am = 0, l_ak = 0, l_bm = 0;
+      for (l_bm = 0; l_bm < Mb; l_bm++) {
+        unsigned char *l_a_i1  = (unsigned char*)WGT[i] + (l_bm * K * bm)/8;
+        char *c_a = (char*) naive_filter_lp + l_bm * K * bm;
+        for (l_ar = 0; l_ar < Kb; l_ar++) {
+          for (l_ak = 0; l_ak < bk; l_ak+=4) {
+           for (l_am = 0; l_am < bm; l_am+=2) {         
+              char m0k0 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am+0) * 4 + 0];
+              char m0k1 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am+0) * 4 + 1];
+              char m0k2 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am+0) * 4 + 2];
+              char m0k3 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am+0) * 4 + 3];
+              char m1k0 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am+1) * 4 + 0];
+              char m1k1 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am+1) * 4 + 1];
+              char m1k2 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am+1) * 4 + 2];
+              char m1k3 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am+1) * 4 + 3];
+              unsigned char packed = 0;
+              packed = m0k0 | (m0k1 << 1) | (m0k2 << 2) | (m0k3 << 3) | (m1k0 << 4) | (m1k1 << 5) | (m1k2 << 6) | (m1k3 << 7);
+              l_a_i1[(l_ar * bm * bk/8) + ((l_ak/4) * bm * 4)/8 + (l_am*4)/8] = packed;
+            }
+          }
+        }
+      } 
     } else {
       memcpy(WGT[i], naive_filter_lp, M * K * sizeof(unsigned char));
     }
@@ -577,7 +603,7 @@ int gemm_benchmark(int argc, char** argv) {
 
 
   // Setup TPP kernels
-  auto l_bit_flag = (is_int2int8 > 0) ? LIBXSMM_GEMM_FLAG_INTERPRETE_A_AS_INT2_VNNI4_INTLV | LIBXSMM_GEMM_FLAG_B_UNSIGNED : LIBXSMM_GEMM_FLAG_A_UNSIGNED;
+  auto l_bit_flag = (is_int2int8 > 0) ? LIBXSMM_GEMM_FLAG_INTERPRETE_A_AS_INT2_VNNI4_INTLV | LIBXSMM_GEMM_FLAG_B_UNSIGNED : ((is_int1int8 > 0) ?  LIBXSMM_GEMM_FLAG_INTERPRETE_A_AS_INT1_VNNI4 | LIBXSMM_GEMM_FLAG_A_UNSIGNED : LIBXSMM_GEMM_FLAG_A_UNSIGNED);
   auto l_flags    = LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_FLAG_BETA_0 | l_bit_flag;
   auto l_tc_flags = LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N');
   auto l_tr_flags = LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N');
