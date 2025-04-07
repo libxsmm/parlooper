@@ -541,31 +541,61 @@ int gemm_benchmark(int argc, char** argv) {
         for (l_ar = 0; l_ar < Kb; l_ar++) {
           for (l_am = 0; l_am < bm; l_am+=4) {
             for (l_ak = 0; l_ak < bk; l_ak+=4) {
-              libxsmm_blasint l_am_load = (l_am/4)%16 + (l_am/4)/16*64;
-              char m0k0 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+0) * 4 + 0];
-              char m0k1 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+0) * 4 + 1];
-              char m0k2 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+0) * 4 + 2];
-              char m0k3 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+0) * 4 + 3];
-              char m1k0 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+16) * 4 + 0];
-              char m1k1 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+16) * 4 + 1];
-              char m1k2 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+16) * 4 + 2];
-              char m1k3 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+16) * 4 + 3];
-              char m2k0 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+32) * 4 + 0];
-              char m2k1 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+32) * 4 + 1];
-              char m2k2 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+32) * 4 + 2];
-              char m2k3 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+32) * 4 + 3];
-              char m3k0 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+48) * 4 + 0];
-              char m3k1 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+48) * 4 + 1];
-              char m3k2 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+48) * 4 + 2];
-              char m3k3 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+48) * 4 + 3];
-              unsigned char packed_k0 = pack_2bit_encoding(m0k0, m1k0, m2k0, m3k0);
-              unsigned char packed_k1 = pack_2bit_encoding(m0k1, m1k1, m2k1, m3k1);
-              unsigned char packed_k2 = pack_2bit_encoding(m0k2, m1k2, m2k2, m3k2);
-              unsigned char packed_k3 = pack_2bit_encoding(m0k3, m1k3, m2k3, m3k3);
-              l_a_i2[(l_ar * bm * bk/4) + (l_ak/4) * bm + (l_am/4) * 4 + 0] = packed_k0;
-              l_a_i2[(l_ar * bm * bk/4) + (l_ak/4) * bm + (l_am/4) * 4 + 1] = packed_k1;
-              l_a_i2[(l_ar * bm * bk/4) + (l_ak/4) * bm + (l_am/4) * 4 + 2] = packed_k2;
-              l_a_i2[(l_ar * bm * bk/4) + (l_ak/4) * bm + (l_am/4) * 4 + 3] = packed_k3;
+              if (bm == 64) {
+                libxsmm_blasint l_am_load = (l_am/4)%16 + (l_am/4)/16*64;
+                char m0k0 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+0) * 4 + 0];
+                char m0k1 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+0) * 4 + 1];
+                char m0k2 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+0) * 4 + 2];
+                char m0k3 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+0) * 4 + 3];
+                char m1k0 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+16) * 4 + 0];
+                char m1k1 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+16) * 4 + 1];
+                char m1k2 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+16) * 4 + 2];
+                char m1k3 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+16) * 4 + 3];
+                char m2k0 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+32) * 4 + 0];
+                char m2k1 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+32) * 4 + 1];
+                char m2k2 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+32) * 4 + 2];
+                char m2k3 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+32) * 4 + 3];
+                char m3k0 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+48) * 4 + 0];
+                char m3k1 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+48) * 4 + 1];
+                char m3k2 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+48) * 4 + 2];
+                char m3k3 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+48) * 4 + 3];
+                unsigned char packed_k0 = pack_2bit_encoding(m0k0, m1k0, m2k0, m3k0);
+                unsigned char packed_k1 = pack_2bit_encoding(m0k1, m1k1, m2k1, m3k1);
+                unsigned char packed_k2 = pack_2bit_encoding(m0k2, m1k2, m2k2, m3k2);
+                unsigned char packed_k3 = pack_2bit_encoding(m0k3, m1k3, m2k3, m3k3);
+                l_a_i2[(l_ar * bm * bk/4) + (l_ak/4) * bm + (l_am/4) * 4 + 0] = packed_k0;
+                l_a_i2[(l_ar * bm * bk/4) + (l_ak/4) * bm + (l_am/4) * 4 + 1] = packed_k1;
+                l_a_i2[(l_ar * bm * bk/4) + (l_ak/4) * bm + (l_am/4) * 4 + 2] = packed_k2;
+                l_a_i2[(l_ar * bm * bk/4) + (l_ak/4) * bm + (l_am/4) * 4 + 3] = packed_k3;
+              } else if (bm ==32) {
+                libxsmm_blasint l_am_load = (l_am/4)%8 + (l_am/4)/8*32;
+                char m0k0 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+0) * 4 + 0];
+                char m0k1 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+0) * 4 + 1];
+                char m0k2 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+0) * 4 + 2];
+                char m0k3 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+0) * 4 + 3];
+                char m1k0 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+8) * 4 + 0];
+                char m1k1 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+8) * 4 + 1];
+                char m1k2 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+8) * 4 + 2];
+                char m1k3 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+8) * 4 + 3];
+                char m2k0 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+16) * 4 + 0];
+                char m2k1 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+16) * 4 + 1];
+                char m2k2 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+16) * 4 + 2];
+                char m2k3 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+16) * 4 + 3];
+                char m3k0 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+24) * 4 + 0];
+                char m3k1 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+24) * 4 + 1];
+                char m3k2 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+24) * 4 + 2];
+                char m3k3 = c_a[(l_ar * bm * bk) + ((l_ak/4) * bm * 4) + (l_am_load+24) * 4 + 3];
+                unsigned char packed_k0 = pack_2bit_encoding(m0k0, m1k0, m2k0, m3k0);
+                unsigned char packed_k1 = pack_2bit_encoding(m0k1, m1k1, m2k1, m3k1);
+                unsigned char packed_k2 = pack_2bit_encoding(m0k2, m1k2, m2k2, m3k2);
+                unsigned char packed_k3 = pack_2bit_encoding(m0k3, m1k3, m2k3, m3k3);
+                l_a_i2[(l_ar * bm * bk/4) + (l_ak/4) * bm + (l_am/4) * 4 + 0] = packed_k0;
+                l_a_i2[(l_ar * bm * bk/4) + (l_ak/4) * bm + (l_am/4) * 4 + 1] = packed_k1;
+                l_a_i2[(l_ar * bm * bk/4) + (l_ak/4) * bm + (l_am/4) * 4 + 2] = packed_k2;
+                l_a_i2[(l_ar * bm * bk/4) + (l_ak/4) * bm + (l_am/4) * 4 + 3] = packed_k3;
+              } else {
+                printf("INVALID INPUT bm block size...\n");  
+              }
             }
           }
         }
@@ -676,7 +706,7 @@ int gemm_benchmark(int argc, char** argv) {
   // Warmup iteration for i-caches
   for (i = 0; i < n_layers; i++) {
     /* Here quantize the input activations from fp32 to int8 */
-#pragma omp parallel for
+    #pragma omp parallel for if(is_int2int8 == 0 && is_int1int8 == 0)
     for (int in = 0; in < Nb; in++) {
       /* Quantize current input block and calculate also scale factor */
       quantize_bn_x_K((float*)ACT[i], (unsigned char*)int8_acts, (float*)inp_scales, group_size_k, in, bn, K, scale);   
@@ -757,7 +787,7 @@ int gemm_benchmark(int argc, char** argv) {
   for (long it = 0; it < n_iters; it++) {
     for (i = 0; i < n_layers; i++) {
       /* Here quantize the input activations from fp32 to int8 */
-#pragma omp parallel for
+      #pragma omp parallel for if(is_int2int8 == 0 && is_int1int8 == 0)
       for (int in = 0; in < Nb; in++) {
         /* Quantize current input block and calculate also scale factor */
         quantize_bn_x_K((float*)ACT[i], (unsigned char*)int8_acts, (float*)inp_scales, group_size_k, in, bn, K, scale);   
