@@ -706,7 +706,7 @@ int gemm_benchmark(int argc, char** argv) {
   // Warmup iteration for i-caches
   for (i = 0; i < n_layers; i++) {
     /* Here quantize the input activations from fp32 to int8 */
-    #pragma omp parallel for if(is_int2int8 == 0 && is_int1int8 == 0)
+    #pragma omp parallel for if((is_int2int8 == 0 && is_int1int8 == 0) || (N > 8))
     for (int in = 0; in < Nb; in++) {
       /* Quantize current input block and calculate also scale factor */
       quantize_bn_x_K((float*)ACT[i], (unsigned char*)int8_acts, (float*)inp_scales, group_size_k, in, bn, K, scale);   
@@ -787,7 +787,7 @@ int gemm_benchmark(int argc, char** argv) {
   for (long it = 0; it < n_iters; it++) {
     for (i = 0; i < n_layers; i++) {
       /* Here quantize the input activations from fp32 to int8 */
-      #pragma omp parallel for if(is_int2int8 == 0 && is_int1int8 == 0)
+      #pragma omp parallel for if((is_int2int8 == 0 && is_int1int8 == 0) || (N > 8))
       for (int in = 0; in < Nb; in++) {
         /* Quantize current input block and calculate also scale factor */
         quantize_bn_x_K((float*)ACT[i], (unsigned char*)int8_acts, (float*)inp_scales, group_size_k, in, bn, K, scale);   
