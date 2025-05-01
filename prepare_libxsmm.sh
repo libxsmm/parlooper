@@ -29,7 +29,7 @@ else
   CXX_USE=g++
 fi
 
-BRANCH=main
+BRANCH=feature_sw_pipeline_panels
 BRANCHDNN=main
 if [ $# -eq 2 ]; then
   BRANCH=$1
