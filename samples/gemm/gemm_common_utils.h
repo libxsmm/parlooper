@@ -6,11 +6,69 @@
 * Further information: https://github.com/libxsmm/libxsmm/                    *
 * SPDX-License-Identifier: BSD-3-Clause                                       *
 ******************************************************************************/
+#include "sf_curves_utils.h"
+
 void check_null_ptr(void* ptr, const char* ptr_name) {
   if (ptr == NULL) {
     printf("Pointer for %s is NULL. Exiting...\n", ptr_name);
     exit(0);
   } 
+}
+
+unsigned int fill_sf_curve_index_map(unsigned char **sf_curve_index_map, unsigned int Mb, unsigned int Nb) {
+  long long i, n_tasks = Mb*Nb;
+  int m_id, n_id;
+  if (Mb < 256 && Nb < 256) {
+    unsigned char *map;
+    *sf_curve_index_map = (unsigned char*) libxsmm_aligned_malloc( 2*Mb*Nb*sizeof(unsigned char), 2097152);
+    map = (unsigned char*) *sf_curve_index_map;
+    for (i = 0; i < n_tasks; i++) {
+      gilbert_d2xy( &m_id, &n_id, i, Mb, Nb );
+      map[2*i+0] = (unsigned char)m_id;
+      map[2*i+1] = (unsigned char)n_id;
+    }
+    return 1;
+  } else if (Mb < 65536 && Nb < 65536) {
+    unsigned short *map;
+    *sf_curve_index_map = (unsigned char*) libxsmm_aligned_malloc( 2*Mb*Nb*sizeof(unsigned short), 2097152);
+    map = (unsigned short*) *sf_curve_index_map;
+    for (i = 0; i < n_tasks; i++) {
+      gilbert_d2xy( &m_id, &n_id, i, Mb, Nb );
+      map[2*i+0] = (unsigned short)m_id;
+      map[2*i+1] = (unsigned short)n_id;
+    }
+    return 2;
+  } else {
+    unsigned int *map;
+    *sf_curve_index_map = (unsigned char*) libxsmm_aligned_malloc( 2*Mb*Nb*sizeof(unsigned int), 2097152);
+    map = (unsigned int*) *sf_curve_index_map;
+    for (i = 0; i < n_tasks; i++) {
+      gilbert_d2xy( &m_id, &n_id, i, Mb, Nb );
+      map[2*i+0] = (unsigned int)m_id;
+      map[2*i+1] = (unsigned int)n_id;
+    }
+    return 4;
+  }
+}
+
+void extract_indices_from_sf_curve(int *i_m, int *i_n, unsigned char *sf_curve_index_map, int sf_curve_index, unsigned int index_tsize) {
+  if (index_tsize == 1) {
+    unsigned char *map;
+    map = (unsigned char*) sf_curve_index_map;
+    *i_m = (int) map[2*sf_curve_index + 0];
+    *i_n = (int) map[2*sf_curve_index + 1];
+  } else if (index_tsize == 2) {
+    unsigned short *map;
+    map = (unsigned short*) sf_curve_index_map;
+    *i_m = (int) map[2*sf_curve_index + 0];
+    *i_n = (int) map[2*sf_curve_index + 1];
+  } else {
+    unsigned int *map;
+    map = (unsigned int*) sf_curve_index_map;
+    *i_m = (int) map[2*sf_curve_index + 0];
+    *i_n = (int) map[2*sf_curve_index + 1];
+  }
+  return;
 }
 
 LIBXSMM_INLINE void matrix_copy_NC_to_NCNC_bf16_local(libxsmm_bfloat16 *src, libxsmm_bfloat16 *dst, int N, int C, int bn, int bc, int trans_b)
