@@ -27,6 +27,7 @@ int gemm_benchmark(int argc, char** argv) {
   long use_sf_curve = 0;
   long unit_step = 1;
   char gemm_config[256] = "VN";
+  long upfront_xforms = 0, xform_A_upfront = 0, xform_B_upfront = 0;
 
   ifreq = 1.0 / getFreq();
   if (argc > 1) {
@@ -65,7 +66,12 @@ int gemm_benchmark(int argc, char** argv) {
     } 
     if (argc > 14) {
       check_correctness = atoi(argv[14]);
-    } 
+    }
+    if (argc > 15) {
+      if (strcmp(argv[15], "UPFRONT_XFORM") == 0) {
+        upfront_xforms = 1;
+      }    
+    }
   }
 
   if (strcmp(argv[1], "SFC") == 0) {
@@ -80,6 +86,8 @@ int gemm_benchmark(int argc, char** argv) {
   brcount = Kb/kbf;
 
   // Allocate buffers
+  DType *scratch_A = NULL;
+  DType *scratch_B = NULL;
   DType **ACT = (DType**) malloc((n_layers+1)*sizeof(DType*));
   check_null_ptr(ACT, "ACT array");
   DType **WGT = (DType**) malloc(n_layers    *sizeof(DType*));
@@ -92,6 +100,7 @@ int gemm_benchmark(int argc, char** argv) {
       check_null_ptr(WGT[i], "WGT[i] array"); 
     }
   }
+
   float *naive_input  = (float*)libxsmm_aligned_malloc( LIBXSMM_MAX(K,M)*N*sizeof(float), 64);
   check_null_ptr(naive_input, "naive_input array");
   float *naive_output = (float*)libxsmm_aligned_malloc( LIBXSMM_MAX(K,M)*N*sizeof(float), 64);
@@ -129,34 +138,75 @@ int gemm_benchmark(int argc, char** argv) {
   auto l_tc_flags = LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N');
   auto l_tr_flags = LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N');
   
-  if (flat_weight_layout > 0 && trans_a == 0 && trans_b == 0) {
-    l_flags    = LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'N', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG ;
-    l_tc_flags = LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'N', 'N');
-    l_tr_flags = LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'N', 'N');
-    strcpy(gemm_config, "NN");  
-  } else if (flat_weight_layout > 0 && trans_a > 0 && trans_b == 0) {
-    l_flags    = LIBXSMM_GEMM_VNNI_FLAGS('T', 'N', 'N', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG ;
-    l_tc_flags = LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('T', 'N', 'N', 'N');
-    l_tr_flags = LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('T', 'N', 'N', 'N');
-    strcpy(gemm_config, "TN");   
-  } else if (flat_weight_layout > 0 && trans_a == 0 && trans_b > 0) {
-    l_flags    = LIBXSMM_GEMM_VNNI_FLAGS('N', 'T', 'N', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG ;
-    l_tc_flags = LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'T', 'N', 'N');
-    l_tr_flags = LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'T', 'N', 'N');
-    strcpy(gemm_config, "NT"); 
-  } else if (flat_weight_layout == 0 && trans_a == 0 && trans_b == 0) {
-    l_flags    = LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG ;
-    l_tc_flags = LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N');
-    l_tr_flags = LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N');
-    strcpy(gemm_config, "VN");
-  } else {
-    printf("INVALID GEMM CONFIGURATION. EXITING...\n");
-    return 0;
+  if (upfront_xforms == 0) {
+    if (flat_weight_layout > 0 && trans_a == 0 && trans_b == 0) {
+      l_flags    = LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'N', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG ;
+      l_tc_flags = LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'N', 'N');
+      l_tr_flags = LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'N', 'N');
+      strcpy(gemm_config, "NN");  
+    } else if (flat_weight_layout > 0 && trans_a > 0 && trans_b == 0) {
+      l_flags    = LIBXSMM_GEMM_VNNI_FLAGS('T', 'N', 'N', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG ;
+      l_tc_flags = LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('T', 'N', 'N', 'N');
+      l_tr_flags = LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('T', 'N', 'N', 'N');
+      strcpy(gemm_config, "TN");   
+    } else if (flat_weight_layout > 0 && trans_a == 0 && trans_b > 0) {
+      l_flags    = LIBXSMM_GEMM_VNNI_FLAGS('N', 'T', 'N', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG ;
+      l_tc_flags = LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'T', 'N', 'N');
+      l_tr_flags = LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'T', 'N', 'N');
+      strcpy(gemm_config, "NT"); 
+    } else if (flat_weight_layout == 0 && trans_a == 0 && trans_b == 0) {
+      l_flags    = LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG ;
+      l_tc_flags = LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N');
+      l_tr_flags = LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N');
+      strcpy(gemm_config, "VN");
+    } else {
+      printf("INVALID GEMM CONFIGURATION. EXITING...\n");
+      return 0;
+    }
   }
-      
-  
-  auto dtype      = LIBXSMM_DATATYPE_BF16;
-  auto l_shape = libxsmm_create_gemm_shape( bm, bn, bk, (trans_a > 0) ? bk : bm, (trans_b > 0) ? bn : bk, bm, dtype, dtype, dtype, LIBXSMM_DATATYPE_F32 );
+
+  auto dtype = LIBXSMM_DATATYPE_BF16;
+  auto a_xform_loop = ThreadedLoop<2>({ LoopSpecs{0, Mb, 1, true}, LoopSpecs{0, Kb, 1, true}}, "AB");
+  auto b_xform_loop = ThreadedLoop<2>({ LoopSpecs{0, Nb, 1, true}, LoopSpecs{0, Kb, 1, true}}, "AB");
+  libxsmm_meltwfunction_unary a_xform_kernel, b_xform_kernel;
+  if (upfront_xforms > 0) {
+    if (flat_weight_layout > 0 && trans_a == 0 && trans_b == 0) {
+      auto xform_unary_shape = libxsmm_create_meltw_unary_shape(bm, bk, bm, bm, dtype, dtype, dtype);
+      a_xform_kernel = libxsmm_dispatch_meltw_unary( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI2, xform_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE ); 
+      xform_A_upfront = 1;
+      strcpy(gemm_config, "NN");
+    } else if (flat_weight_layout > 0 && trans_a > 0 && trans_b == 0) {
+      auto xform_unary_shape = libxsmm_create_meltw_unary_shape(bk/2, bm, bk/2, bm, LIBXSMM_DATATYPE_F32, LIBXSMM_DATATYPE_F32, LIBXSMM_DATATYPE_F32);
+      a_xform_kernel = libxsmm_dispatch_meltw_unary( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_NORMT, xform_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE ); 
+      xform_A_upfront = 1;
+      strcpy(gemm_config, "TN");   
+    } else if (flat_weight_layout > 0 && trans_a == 0 && trans_b > 0) {
+      auto xform_unary_shape = libxsmm_create_meltw_unary_shape(bm, bk, bm, bm, dtype, dtype, dtype);
+      a_xform_kernel = libxsmm_dispatch_meltw_unary( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI2, xform_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE ); 
+      xform_A_upfront = 1;
+      xform_unary_shape = libxsmm_create_meltw_unary_shape(bn, bk, bn, bk, dtype, dtype, dtype);
+      b_xform_kernel = libxsmm_dispatch_meltw_unary( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_NORMT, xform_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE ); 
+      xform_B_upfront = 1;
+      strcpy(gemm_config, "NT"); 
+    } else if (flat_weight_layout == 0 && trans_a == 0 && trans_b == 0) {
+      printf("INVALID GEMM CONFIGURATION. EXITING...\n");
+      return 0;
+    } else {
+      printf("INVALID GEMM CONFIGURATION. EXITING...\n");
+      return 0;
+    }
+  }
+
+  if (xform_A_upfront > 0) {
+    scratch_A = (DType*)libxsmm_aligned_malloc( M*K*sizeof(DType), 64);
+    check_null_ptr(scratch_A, "scratch A array");
+  }
+  if (xform_B_upfront > 0) {
+    scratch_B  = (DType*)libxsmm_aligned_malloc( LIBXSMM_MAX(K,M)*N*sizeof(DType), 64);
+    check_null_ptr(scratch_B, "scratch B array");
+  }
+
+  auto l_shape = libxsmm_create_gemm_shape( bm, bn, bk, (trans_a > 0 && upfront_xforms == 0) ? bk : bm, (trans_b > 0 && upfront_xforms == 0) ? bn : bk, bm, dtype, dtype, dtype, LIBXSMM_DATATYPE_F32 );
   auto l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
   auto l_brconfig = libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, bm*bk*sizeof(DType), bk*bn*sizeof(DType), brcount );
   auto l_unary_shape = libxsmm_create_meltw_unary_shape(bm*bn, 1, bm*bn, bm*bn, dtype, dtype, dtype);
@@ -239,6 +289,32 @@ int gemm_benchmark(int argc, char** argv) {
 
   // Warmup iteration for i-caches
   for (i = 0; i < n_layers; i++) {
+    if (upfront_xforms > 0) {
+      if (xform_A_upfront > 0) {
+        a_xform_loop(
+          [&](int* ind) {
+            int i_m = ind[0], i_k = ind[1];
+            libxsmm_meltw_unary_param xform_param;
+            xform_param.in.primary  = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
+            xform_param.out.primary = (void*)((DType*)scratch_A + i_m * K * bm + i_k * bk * bm );
+            a_xform_kernel(&xform_param);
+          },
+          [&]() {},
+          [&]() {});   
+      }
+      if (xform_B_upfront > 0) {
+        b_xform_loop(
+          [&](int* ind) {
+            int i_n = ind[0], i_k = ind[1];
+            libxsmm_meltw_unary_param xform_param;
+            xform_param.in.primary  = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
+            xform_param.out.primary = (void*)((DType*)scratch_B + i_n * K * bn + i_k * bk * bn);
+            b_xform_kernel(&xform_param);
+          },
+          [&]() {},
+          [&]() {});   
+      }
+    }
     gemm_loop(
       [&](int* ind) {
         int i_k = ind[0], i_m, i_n;
@@ -250,8 +326,16 @@ int gemm_benchmark(int argc, char** argv) {
         }
         libxsmm_gemm_param gemm_param;
         gemm_param.op.tertiary = (void*)&brcount;
-        gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
-        gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
+        if (xform_A_upfront > 0) {
+          gemm_param.a.primary = (void*)((DType*)scratch_A + i_m * K * bm + i_k * bk * bm );   
+        } else {
+          gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
+        }
+        if (xform_B_upfront > 0) {
+          gemm_param.b.primary = (void*)((DType*)scratch_B + i_n * K * bn + i_k * bk * bn );      
+        } else {
+          gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
+        }
         gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
         if ((i_k == 0) && (brcount != Kb)) {
           libxsmm_meltw_unary_param zero_param;
@@ -304,6 +388,32 @@ int gemm_benchmark(int argc, char** argv) {
   auto t_start = getTime();
   for (long it = 0; it < n_iters; it++) {
     for (i = 0; i < n_layers; i++) {
+      if (upfront_xforms > 0) {
+        if (xform_A_upfront > 0) {
+          a_xform_loop(
+            [&](int* ind) {
+              int i_m = ind[0], i_k = ind[1];
+              libxsmm_meltw_unary_param xform_param;
+              xform_param.in.primary  = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
+              xform_param.out.primary = (void*)((DType*)scratch_A + i_m * K * bm + i_k * bk * bm );
+              a_xform_kernel(&xform_param);
+            },
+            [&]() {},
+            [&]() {});   
+        }
+        if (xform_B_upfront > 0) {
+          b_xform_loop(
+            [&](int* ind) {
+              int i_n = ind[0], i_k = ind[1];
+              libxsmm_meltw_unary_param xform_param;
+              xform_param.in.primary  = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
+              xform_param.out.primary = (void*)((DType*)scratch_B + i_n * K * bn + i_k * bk * bn);
+              b_xform_kernel(&xform_param);
+            },
+            [&]() {},
+            [&]() {});   
+        }
+      }
       gemm_loop(
         [&](int* ind) {
           int i_k = ind[0], i_m, i_n;
@@ -315,8 +425,16 @@ int gemm_benchmark(int argc, char** argv) {
           }
           libxsmm_gemm_param gemm_param;
           gemm_param.op.tertiary = (void*)&brcount;
-          gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
-          gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
+          if (xform_A_upfront > 0) {
+            gemm_param.a.primary = (void*)((DType*)scratch_A + i_m * K * bm + i_k * bk * bm );   
+          } else {
+            gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
+          }
+          if (xform_B_upfront > 0) {
+            gemm_param.b.primary = (void*)((DType*)scratch_B + i_n * K * bn + i_k * bk * bn );      
+          } else {
+            gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
+          }
           gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
           if ((i_k == 0) && (brcount != Kb)) {
             libxsmm_meltw_unary_param zero_param;
@@ -354,6 +472,12 @@ int gemm_benchmark(int argc, char** argv) {
   }
   if (sf_curve_index_map != NULL) {
     libxsmm_free(sf_curve_index_map);
+  }
+  if (scratch_A != NULL) {
+    libxsmm_free(scratch_A);
+  }
+  if (scratch_B != NULL) {
+    libxsmm_free(scratch_B);
   }
   free(ACT);
   free(WGT);
