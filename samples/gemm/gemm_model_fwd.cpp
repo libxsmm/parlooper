@@ -26,6 +26,7 @@ int gemm_benchmark(int argc, char** argv) {
   long trans_b = 0;
   long use_sf_curve = 0;
   long unit_step = 1;
+  char gemm_config[256] = "VN";
 
   ifreq = 1.0 / getFreq();
   if (argc > 1) {
@@ -132,18 +133,22 @@ int gemm_benchmark(int argc, char** argv) {
     l_flags    = LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'N', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG ;
     l_tc_flags = LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'N', 'N');
     l_tr_flags = LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'N', 'N');
+    strcpy(gemm_config, "NN");  
   } else if (flat_weight_layout > 0 && trans_a > 0 && trans_b == 0) {
     l_flags    = LIBXSMM_GEMM_VNNI_FLAGS('T', 'N', 'N', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG ;
     l_tc_flags = LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('T', 'N', 'N', 'N');
     l_tr_flags = LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('T', 'N', 'N', 'N');
+    strcpy(gemm_config, "TN");   
   } else if (flat_weight_layout > 0 && trans_a == 0 && trans_b > 0) {
     l_flags    = LIBXSMM_GEMM_VNNI_FLAGS('N', 'T', 'N', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG ;
     l_tc_flags = LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'T', 'N', 'N');
     l_tr_flags = LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'T', 'N', 'N');
+    strcpy(gemm_config, "NT"); 
   } else if (flat_weight_layout == 0 && trans_a == 0 && trans_b == 0) {
     l_flags    = LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N') | LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG ;
     l_tc_flags = LIBXSMM_GEMM_FLAG_NO_RESET_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N');
     l_tr_flags = LIBXSMM_GEMM_FLAG_NO_SETUP_TILECONFIG | LIBXSMM_GEMM_VNNI_FLAGS('N', 'N', 'V', 'N');
+    strcpy(gemm_config, "VN");
   } else {
     printf("INVALID GEMM CONFIGURATION. EXITING...\n");
     return 0;
@@ -331,7 +336,7 @@ int gemm_benchmark(int argc, char** argv) {
   printf("Time is %.5g ms (%.5g GFLOPS)\n", 1000.0*(t_end-t_start)/(1.0*n_iters), gflop/((t_end-t_start)/(1.0*n_iters)));
   printf("Effective model sizes: %.5g GB\n", ((double)sizeof(DType)*(double)n_layers*(double)M*(double)K)/(1024.0*1024.0*1024.0));
   printf("Effective A BW is %.5g GB/s\n", (((double)sizeof(DType)*(double)n_layers*(double)M*(double)K) / (1024.0*1024.0*1024.0))/((t_end-t_start)/(1.0*n_iters)));
-  printf("MEASURE %.5g %s_%ld_%ld_%ld_%ld_%ld_%ld_bf%ld_threads%d\n", gflop/((t_end-t_start)/(1.0*n_iters)), loop_specs_str, M, N, K, bm, bn, bk, kbf, omp_get_max_threads());
+  printf("MEASURE %.5g %s_%ld_%ld_%ld_%ld_%ld_%ld_bf%ld_threads%d_config_%s\n", gflop/((t_end-t_start)/(1.0*n_iters)), loop_specs_str, M, N, K, bm, bn, bk, kbf, omp_get_max_threads(),gemm_config);
 
   // Free buffers
   libxsmm_free(naive_input);
