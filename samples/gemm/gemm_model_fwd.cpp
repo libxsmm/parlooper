@@ -28,6 +28,7 @@ int gemm_benchmark(int argc, char** argv) {
   long unit_step = 1;
   char gemm_config[256] = "VN";
   long upfront_xforms = 0, xform_A_upfront = 0, xform_B_upfront = 0;
+  long split_K_factor = 1;
 
   ifreq = 1.0 / getFreq();
   if (argc > 1) {
@@ -72,6 +73,9 @@ int gemm_benchmark(int argc, char** argv) {
         upfront_xforms = 1;
       }    
     }
+    if (argc > 16) {
+      split_K_factor = atoi(argv[16]);
+    }
   }
 
   if (strcmp(argv[1], "SFC") == 0) {
@@ -79,11 +83,11 @@ int gemm_benchmark(int argc, char** argv) {
   }
   
   long Mb = M/bm, Nb = N/bn, Kb = K/bk;
-  long  brcount = Kb/kbf;
-  while (Kb % kbf != 0) {
+  long  brcount = (Kb/split_K_factor)/kbf;
+  while ((Kb/split_K_factor) % kbf != 0) {
     kbf--;
   }
-  brcount = Kb/kbf;
+  brcount = (Kb/split_K_factor)/kbf;
 
   // Allocate buffers
   DType *scratch_A = NULL;
@@ -120,6 +124,12 @@ int gemm_benchmark(int argc, char** argv) {
   init_buf( naive_input,     LIBXSMM_MAX(K,M)*N, 0, 0 );
   init_buf( naive_output,    LIBXSMM_MAX(K,M)*N, 0, 0 );
   init_buf( naive_filter,    M*K, 0, 0 );
+
+  int n_out_copies = LIBXSMM_MAX(1, split_K_factor-1);
+  DType *output_partial[n_out_copies];
+  for (i = 1; i < split_K_factor; i++) {
+    output_partial[i-1] = (DType*)libxsmm_aligned_malloc( LIBXSMM_MAX(K,M)*N*sizeof(DType), 64);
+  } 
 
   libxsmm_rne_convert_fp32_bf16( naive_input,     (libxsmm_bfloat16*)naive_input_bf16,     N*LIBXSMM_MAX(K,M));
   libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)naive_input_bf16, naive_input, N*LIBXSMM_MAX(K,M));
@@ -211,12 +221,16 @@ int gemm_benchmark(int argc, char** argv) {
   auto l_brconfig = libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, bm*bk*sizeof(DType), bk*bn*sizeof(DType), brcount );
   auto l_unary_shape = libxsmm_create_meltw_unary_shape(bm*bn, 1, bm*bn, bm*bn, dtype, dtype, dtype);
 
-  if (brcount == Kb) l_flags |= LIBXSMM_GEMM_FLAG_BETA_0;
+  if (brcount == (Kb/split_K_factor)) l_flags |= LIBXSMM_GEMM_FLAG_BETA_0;
 
   auto zero_kernel = libxsmm_dispatch_meltw_unary(LIBXSMM_MELTW_TYPE_UNARY_XOR, l_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE);  
   auto tileconfig_kernel  = libxsmm_dispatch_tilecfg_gemm( l_shape, l_tc_flags );
   auto tilerelease_kernel = libxsmm_dispatch_tilecfg_gemm( l_shape, l_tr_flags );
   auto brgemm_kernel      = libxsmm_dispatch_brgemm( l_shape, l_flags, l_prefetch_flags, l_brconfig );
+
+  auto l_binary_shape = libxsmm_create_meltw_binary_shape(bm, bn, bm, bm, bm, dtype, dtype, dtype, LIBXSMM_DATATYPE_F32);
+  auto l_add_kernel = libxsmm_dispatch_meltw_binary( LIBXSMM_MELTW_TYPE_BINARY_ADD, l_binary_shape, LIBXSMM_MELTW_FLAG_BINARY_NONE);
+  auto reduce_output_loop = ThreadedLoop<2>({ LoopSpecs{0, Mb, 1, true}, LoopSpecs{0, Nb, 1, true}}, "AB");
 
   // Compute reference if requested
   if (check_correctness) {
@@ -276,8 +290,8 @@ int gemm_benchmark(int argc, char** argv) {
       LoopSpecs{0, Nb, n_step, {l1_n_step, l0_n_step}}},  // Logical N loop specs
       loop_specs_str) :
       ThreadedLoop<3>({
-      LoopSpecs{0, Kb, k_step, {}},             // Logical K loop
-      LoopSpecs{0, Mb*Nb, unit_step,{}},        // Logical MxN loop over the SF curve index space
+      LoopSpecs{0, Kb/split_K_factor, k_step, {}},             // Logical K loop
+      LoopSpecs{0, Mb*Nb*split_K_factor, unit_step,{}},        // Logical MxN loop over the SF curve index space
       LoopSpecs{0, unit_step, unit_step, {}}},  // Degenerate loop, just to match types with gemm_loop of 3 nested loops
       "aB");
 
@@ -317,9 +331,10 @@ int gemm_benchmark(int argc, char** argv) {
     }
     gemm_loop(
       [&](int* ind) {
-        int i_k = ind[0], i_m, i_n;
+        int i_k = ind[0], i_m, i_n, i_k_split;
         if (use_sf_curve > 0) {
-          extract_indices_from_sf_curve(&i_m, &i_n, sf_curve_index_map, ind[1] /* This is the index in the SF curve*/, index_tsize);
+          extract_indices_from_sf_curve(&i_m, &i_n, sf_curve_index_map, ind[1]%(Mb*Nb) /* This is the index in the SF curve*/, index_tsize);
+          i_k_split = ind[1]/(Mb*Nb);  
         } else {
           i_m = ind[1];
           i_n = ind[2];
@@ -329,15 +344,19 @@ int gemm_benchmark(int argc, char** argv) {
         if (xform_A_upfront > 0) {
           gemm_param.a.primary = (void*)((DType*)scratch_A + i_m * K * bm + i_k * bk * bm );   
         } else {
-          gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
+          gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm + i_k_split * (K/split_K_factor) * bm );
         }
         if (xform_B_upfront > 0) {
           gemm_param.b.primary = (void*)((DType*)scratch_B + i_n * K * bn + i_k * bk * bn );      
         } else {
-          gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
+          gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn + i_k_split * (K/split_K_factor) * bn );
         }
-        gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
-        if ((i_k == 0) && (brcount != Kb)) {
+        if (i_k_split > 0) {
+          gemm_param.c.primary = (void*)((DType*)output_partial[i_k_split-1] + i_n * M * bn + i_m * bn * bm );    
+        } else {
+          gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+        }
+        if ((i_k == 0) && (brcount != (Kb/split_K_factor))) {
           libxsmm_meltw_unary_param zero_param;
           zero_param.out.primary = (void*)gemm_param.c.primary;
           zero_kernel( &zero_param );
@@ -346,6 +365,20 @@ int gemm_benchmark(int argc, char** argv) {
       },
       [&]() {tileconfig_kernel(NULL);},
       [&]() {tilerelease_kernel(NULL);});
+    
+    if (split_K_factor > 1) {
+      reduce_output_loop(
+        [&](int* ind) {
+          int i_m = ind[0], i_n = ind[1];
+          libxsmm_meltw_binary_param add_param;
+          add_param.in0.primary  = (void*)((DType*)output_partial[0] + i_n * M * bn + i_m * bn * bm );
+          add_param.in1.primary  = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );       
+          add_param.out.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+          l_add_kernel(&add_param);
+        },
+        [&]() {},
+        [&]() {});  
+    }
   }
 
 
@@ -416,9 +449,10 @@ int gemm_benchmark(int argc, char** argv) {
       }
       gemm_loop(
         [&](int* ind) {
-          int i_k = ind[0], i_m, i_n;
+          int i_k = ind[0], i_m, i_n, i_k_split;
           if (use_sf_curve > 0) {
-            extract_indices_from_sf_curve(&i_m, &i_n, sf_curve_index_map, ind[1] /* This is the index in the SF curve*/, index_tsize);
+            extract_indices_from_sf_curve(&i_m, &i_n, sf_curve_index_map, ind[1]%(Mb*Nb) /* This is the index in the SF curve*/, index_tsize);
+            i_k_split = ind[1]/(Mb*Nb);  
           } else {
             i_m = ind[1];
             i_n = ind[2];
@@ -428,15 +462,19 @@ int gemm_benchmark(int argc, char** argv) {
           if (xform_A_upfront > 0) {
             gemm_param.a.primary = (void*)((DType*)scratch_A + i_m * K * bm + i_k * bk * bm );   
           } else {
-            gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm );
+            gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm + i_k_split * (K/split_K_factor) * bm );
           }
           if (xform_B_upfront > 0) {
             gemm_param.b.primary = (void*)((DType*)scratch_B + i_n * K * bn + i_k * bk * bn );      
           } else {
-            gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn );
+            gemm_param.b.primary = (void*)((DType*)ACT[i] + i_n * K * bn + i_k * bk * bn + i_k_split * (K/split_K_factor) * bn );
           }
-          gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
-          if ((i_k == 0) && (brcount != Kb)) {
+          if (i_k_split > 0) {
+            gemm_param.c.primary = (void*)((DType*)output_partial[i_k_split-1] + i_n * M * bn + i_m * bn * bm );    
+          } else {
+            gemm_param.c.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+          }
+          if ((i_k == 0) && (brcount != (Kb/split_K_factor))) {
             libxsmm_meltw_unary_param zero_param;
             zero_param.out.primary = (void*)gemm_param.c.primary;
             zero_kernel( &zero_param );
@@ -445,6 +483,20 @@ int gemm_benchmark(int argc, char** argv) {
         },
         [&]() {tileconfig_kernel(NULL);},
         [&]() {tilerelease_kernel(NULL);});
+      
+      if (split_K_factor > 1) {
+        reduce_output_loop(
+          [&](int* ind) {
+            int i_m = ind[0], i_n = ind[1];
+            libxsmm_meltw_binary_param add_param;
+            add_param.in0.primary  = (void*)((DType*)output_partial[0] + i_n * M * bn + i_m * bn * bm );
+            add_param.in1.primary  = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );       
+            add_param.out.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+            l_add_kernel(&add_param);
+          },
+          [&]() {},
+          [&]() {});  
+      }
     }
   }
   auto t_end = getTime();
@@ -479,6 +531,9 @@ int gemm_benchmark(int argc, char** argv) {
   if (scratch_B != NULL) {
     libxsmm_free(scratch_B);
   }
+  for (i = 1; i < split_K_factor; i++) {
+    libxsmm_free(output_partial[i-1]);
+  } 
   free(ACT);
   free(WGT);
   return 0;
