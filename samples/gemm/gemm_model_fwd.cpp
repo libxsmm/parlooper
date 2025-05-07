@@ -10,6 +10,8 @@
 #include "threaded_loops.h"
 #include "gemm_common_utils.h"
 
+//#define USE_EQN_REDUCE
+
 template<typename DType>
 int gemm_benchmark(int argc, char** argv) {
   // Setup default GEMM sizes
@@ -29,6 +31,12 @@ int gemm_benchmark(int argc, char** argv) {
   char gemm_config[256] = "VN";
   long upfront_xforms = 0, xform_A_upfront = 0, xform_B_upfront = 0;
   long split_K_factor = 1;
+  libxsmm_blasint my_eqn0;
+  libxsmm_meqn_arg_metadata arg_metadata;
+  libxsmm_meqn_op_metadata  op_metadata;
+  libxsmm_meqn_arg_shape          arg_shape_in, arg_shape_out;
+  libxsmm_matrix_arg_attributes   arg_singular_attr = libxsmm_create_matrix_arg_attributes( LIBXSMM_MATRIX_ARG_TYPE_SINGULAR, LIBXSMM_MATRIX_ARG_SET_TYPE_NONE, 0, 0);
+  libxsmm_meqn_function reduce_func;
 
   ifreq = 1.0 / getFreq();
   if (argc > 1) {
@@ -127,8 +135,12 @@ int gemm_benchmark(int argc, char** argv) {
 
   int n_out_copies = LIBXSMM_MAX(1, split_K_factor-1);
   DType *output_partial[n_out_copies];
+  DType *global_scratch = NULL;
   for (i = 1; i < split_K_factor; i++) {
-    output_partial[i-1] = (DType*)libxsmm_aligned_malloc( LIBXSMM_MAX(K,M)*N*sizeof(DType), 64);
+    if (i == 1) {
+      global_scratch = (DType*)libxsmm_aligned_malloc( LIBXSMM_MAX(K,M)*N*sizeof(DType)*(split_K_factor-1), 64);
+    }
+    output_partial[i-1] = (DType*)global_scratch + (i-1) * LIBXSMM_MAX(K,M)*N;
   } 
 
   libxsmm_rne_convert_fp32_bf16( naive_input,     (libxsmm_bfloat16*)naive_input_bf16,     N*LIBXSMM_MAX(K,M));
@@ -231,6 +243,22 @@ int gemm_benchmark(int argc, char** argv) {
   auto l_binary_shape = libxsmm_create_meltw_binary_shape(bm, bn, bm, bm, bm, dtype, dtype, dtype, LIBXSMM_DATATYPE_F32);
   auto l_add_kernel = libxsmm_dispatch_meltw_binary( LIBXSMM_MELTW_TYPE_BINARY_ADD, l_binary_shape, LIBXSMM_MELTW_FLAG_BINARY_NONE);
   auto reduce_output_loop = ThreadedLoop<2>({ LoopSpecs{0, Mb, 1, true}, LoopSpecs{0, Nb, 1, true}}, "AB");
+
+  auto l_reduce_shape = libxsmm_create_meltw_unary_shape(bm*bn, n_out_copies, LIBXSMM_MAX(K,M)*N, bm*bn, dtype, dtype, LIBXSMM_DATATYPE_F32);
+  auto l_reduce_kernel = libxsmm_dispatch_meltw_unary( LIBXSMM_MELTW_TYPE_UNARY_REDUCE_X_OP_ADD, l_reduce_shape, LIBXSMM_MELTW_FLAG_UNARY_REDUCE_COLS);
+
+  my_eqn0 = libxsmm_meqn_create();
+  op_metadata   = libxsmm_create_meqn_op_metadata(my_eqn0, -1);
+  libxsmm_meqn_push_back_binary_op(op_metadata, LIBXSMM_MELTW_TYPE_BINARY_ADD, LIBXSMM_DATATYPE_F32, LIBXSMM_MELTW_FLAG_BINARY_NONE);
+  libxsmm_meqn_push_back_unary_op(op_metadata, LIBXSMM_MELTW_TYPE_UNARY_REDUCE_X_OP_ADD, LIBXSMM_DATATYPE_F32, LIBXSMM_MELTW_FLAG_UNARY_REDUCE_COLS);
+  arg_shape_in  = libxsmm_create_meqn_arg_shape( bm*bn, n_out_copies, LIBXSMM_MAX(K,M)*N, dtype );
+  arg_metadata  = libxsmm_create_meqn_arg_metadata(my_eqn0, 0);
+  libxsmm_meqn_push_back_arg(arg_metadata, arg_shape_in, arg_singular_attr);
+  arg_shape_in  = libxsmm_create_meqn_arg_shape( bm*bn, 1, bm*bn, dtype );
+  arg_metadata  = libxsmm_create_meqn_arg_metadata(my_eqn0, 1);
+  libxsmm_meqn_push_back_arg(arg_metadata, arg_shape_in, arg_singular_attr);
+  arg_shape_out = libxsmm_create_meqn_arg_shape( bm*bn, 1, bm*bn, dtype );
+  reduce_func = libxsmm_dispatch_meqn( my_eqn0, arg_shape_out );
 
   // Compute reference if requested
   if (check_correctness) {
@@ -370,17 +398,39 @@ int gemm_benchmark(int argc, char** argv) {
       reduce_output_loop(
         [&](int* ind) {
           int i_m = ind[0], i_n = ind[1];
-          libxsmm_meltw_binary_param add_param;
-          add_param.in0.primary  = (void*)((DType*)output_partial[0] + i_n * M * bn + i_m * bn * bm );
-          add_param.in1.primary  = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );       
-          add_param.out.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
-          l_add_kernel(&add_param);
+          if (split_K_factor == 2) {
+            libxsmm_meltw_binary_param add_param;
+            add_param.in0.primary  = (void*)((DType*)output_partial[0] + i_n * M * bn + i_m * bn * bm );
+            add_param.in1.primary  = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );       
+            add_param.out.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+            l_add_kernel(&add_param);
+          } else {
+#ifdef USE_EQN_REDUCE
+            libxsmm_meqn_param eqn_param;
+            libxsmm_matrix_arg  arg_array[2];
+            arg_array[0].primary = (void*)((DType*)output_partial[0] + i_n * M * bn + i_m * bn * bm );
+            arg_array[1].primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+            eqn_param.inputs = arg_array;
+            eqn_param.output.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+            reduce_func(&eqn_param);
+#else
+            libxsmm_meltw_binary_param add_param;
+            libxsmm_meltw_unary_param reduce_param;
+            DType reduce_scratch[bm*bn];
+            reduce_param.in.primary = (void*)((DType*)output_partial[0] + i_n * M * bn + i_m * bn * bm );
+            reduce_param.out.primary  = (void*)reduce_scratch;
+            add_param.in0.primary  = (void*)reduce_scratch;
+            add_param.in1.primary  = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );       
+            add_param.out.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+            l_reduce_kernel(&reduce_param);
+            l_add_kernel(&add_param);
+#endif
+          }
         },
         [&]() {},
         [&]() {});  
     }
   }
-
 
   // Check correctness if requested
   if (n_layers == 1) {
@@ -488,11 +538,34 @@ int gemm_benchmark(int argc, char** argv) {
         reduce_output_loop(
           [&](int* ind) {
             int i_m = ind[0], i_n = ind[1];
-            libxsmm_meltw_binary_param add_param;
-            add_param.in0.primary  = (void*)((DType*)output_partial[0] + i_n * M * bn + i_m * bn * bm );
-            add_param.in1.primary  = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );       
-            add_param.out.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
-            l_add_kernel(&add_param);
+            if (split_K_factor == 2) {
+              libxsmm_meltw_binary_param add_param;
+              add_param.in0.primary  = (void*)((DType*)output_partial[0] + i_n * M * bn + i_m * bn * bm );
+              add_param.in1.primary  = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );       
+              add_param.out.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+              l_add_kernel(&add_param);
+            } else {
+#ifdef USE_EQN_REDUCE
+              libxsmm_meqn_param eqn_param;
+              libxsmm_matrix_arg  arg_array[2];
+              arg_array[0].primary = (void*)((DType*)output_partial[0] + i_n * M * bn + i_m * bn * bm );
+              arg_array[1].primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+              eqn_param.inputs = arg_array;
+              eqn_param.output.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+              reduce_func(&eqn_param);
+#else
+              libxsmm_meltw_binary_param add_param;
+              libxsmm_meltw_unary_param reduce_param;
+              DType reduce_scratch[bm*bn];
+              reduce_param.in.primary = (void*)((DType*)output_partial[0] + i_n * M * bn + i_m * bn * bm );
+              reduce_param.out.primary  = (void*)reduce_scratch;
+              add_param.in0.primary  = (void*)reduce_scratch;
+              add_param.in1.primary  = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );       
+              add_param.out.primary = (void*)((DType*)ACT[i+1] + i_n * M * bn + i_m * bn * bm );
+              l_reduce_kernel(&reduce_param);
+              l_add_kernel(&add_param);
+#endif
+            }
           },
           [&]() {},
           [&]() {});  
@@ -531,8 +604,8 @@ int gemm_benchmark(int argc, char** argv) {
   if (scratch_B != NULL) {
     libxsmm_free(scratch_B);
   }
-  for (i = 1; i < split_K_factor; i++) {
-    libxsmm_free(output_partial[i-1]);
+  if (split_K_factor > 1) {
+    libxsmm_free(global_scratch);
   } 
   free(ACT);
   free(WGT);
