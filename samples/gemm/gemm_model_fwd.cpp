@@ -125,12 +125,12 @@ int gemm_benchmark(int argc, char** argv) {
   check_null_ptr(naive_output_opt, "naive_output_opt array");
   float *naive_filter = (float*)libxsmm_aligned_malloc( M*K*sizeof(float), 64);
   check_null_ptr(naive_filter, "naive_filter array");
-  DType *naive_input_bf16  = (DType*)libxsmm_aligned_malloc( K*N*sizeof(DType), 64);
-  check_null_ptr(naive_input_bf16, "naive_input_bf16 array");
-  DType *naive_output_bf16 = (DType*)libxsmm_aligned_malloc( M*N*sizeof(DType), 64);
-  check_null_ptr(naive_output_bf16, "naive_output_bf16 array");
-  DType *naive_filter_bf16 = (DType*)libxsmm_aligned_malloc( M*K*sizeof(DType), 64);
-  check_null_ptr(naive_filter_bf16, "naive_filter_bf16 array");
+  DType *naive_input_lp  = (DType*)libxsmm_aligned_malloc( K*N*sizeof(DType), 64);
+  check_null_ptr(naive_input_lp, "naive_input_lp array");
+  DType *naive_output_lp = (DType*)libxsmm_aligned_malloc( M*N*sizeof(DType), 64);
+  check_null_ptr(naive_output_lp, "naive_output_lp array");
+  DType *naive_filter_lp = (DType*)libxsmm_aligned_malloc( M*K*sizeof(DType), 64);
+  check_null_ptr(naive_filter_lp, "naive_filter_lp array");
   
   // Init buffers
   init_buf( naive_input,     K*N, 0, 0 );
@@ -147,16 +147,16 @@ int gemm_benchmark(int argc, char** argv) {
     output_partial[i-1] = (DType*)global_scratch + (i-1) * M*N;
   }
 
-  libxsmm_rne_convert_fp32_bf16( naive_input,     (libxsmm_bfloat16*)naive_input_bf16,     N*K);
-  libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)naive_input_bf16, naive_input, N*K);
-  libxsmm_rne_convert_fp32_bf16( naive_output,    (libxsmm_bfloat16*)naive_output_bf16,    N*M);
-  libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)naive_output_bf16, naive_output, N*M);
-  libxsmm_rne_convert_fp32_bf16( naive_filter,    (libxsmm_bfloat16*)naive_filter_bf16,    M*K );
-  libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)naive_filter_bf16, naive_filter, M*K);
+  parlooper_rne_convert_fp32_lp<DType>( naive_input,     (void*)naive_input_lp,     N*K);
+  parlooper_convert_lp_f32<DType>( (void*)naive_input_lp, naive_input, N*K);
+  parlooper_rne_convert_fp32_lp<DType>( naive_output,    (void*)naive_output_lp,    N*M);
+  parlooper_convert_lp_f32<DType>( (void*)naive_output_lp, naive_output, N*M);
+  parlooper_rne_convert_fp32_lp<DType>( naive_filter,    (void*)naive_filter_lp,    M*K);
+  parlooper_convert_lp_f32<DType>( (void*)naive_filter_lp, naive_filter, M*K);
   for (i = 0; i < n_layers; i++) {
-    matrix_copy_KC_to_KCCK_bf16_local( (libxsmm_bfloat16*)naive_filter_bf16, (libxsmm_bfloat16*)WGT[i], K, M, bk, bm, flat_weight_layout, trans_a );
-    matrix_copy_NC_to_NCNC_bf16_local( (libxsmm_bfloat16*)naive_input_bf16, (libxsmm_bfloat16*)ACT[2*i] , N, K, bn, bk, trans_b );
-    matrix_copy_NC_to_NCNC_bf16_local( (libxsmm_bfloat16*)naive_output, (libxsmm_bfloat16*)ACT[2*i+1], N, M, bn, bm, 0 );
+    parlooper_matrix_copy_KC_to_KCCK<DType>( (void*)naive_filter_lp, (void*)WGT[i], K, M, bk, bm, flat_weight_layout, trans_a );
+    parlooper_matrix_copy_NC_to_NCNC<DType>( (void*)naive_input_lp, (void*)ACT[2*i] , N, K, bn, bk, trans_b );
+    parlooper_matrix_copy_NC_to_NCNC<DType>( (void*)naive_output_lp, (void*)ACT[2*i+1], N, M, bn, bm, 0 );
   }
   
   // Setup TPP kernels
@@ -191,14 +191,14 @@ int gemm_benchmark(int argc, char** argv) {
     }
   }
 
-  auto dtype = LIBXSMM_DATATYPE_BF16;
+  auto dtype = parlooper_get_lixbxsmm_dtype<DType>();
   auto a_xform_loop = ThreadedLoop<2>({ LoopSpecs{0, Mb, 1, true}, LoopSpecs{0, Kb, 1, true}}, "AB");
   auto b_xform_loop = ThreadedLoop<2>({ LoopSpecs{0, Nb, 1, true}, LoopSpecs{0, Kb, 1, true}}, "AB");
   libxsmm_meltwfunction_unary a_xform_kernel, b_xform_kernel;
   if (upfront_xforms > 0) {
     if (flat_weight_layout > 0 && trans_a == 0 && trans_b == 0) {
       auto xform_unary_shape = libxsmm_create_meltw_unary_shape(bm, bk, bm, bm, dtype, dtype, dtype);
-      a_xform_kernel = libxsmm_dispatch_meltw_unary( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI2, xform_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE ); 
+      a_xform_kernel = libxsmm_dispatch_meltw_unary( parlooper_get_vnni_xform<DType>(), xform_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE ); 
       xform_A_upfront = 1;
       strcpy(gemm_config, "NN");
     } else if (flat_weight_layout > 0 && trans_a > 0 && trans_b == 0) {
@@ -208,7 +208,7 @@ int gemm_benchmark(int argc, char** argv) {
       strcpy(gemm_config, "TN");   
     } else if (flat_weight_layout > 0 && trans_a == 0 && trans_b > 0) {
       auto xform_unary_shape = libxsmm_create_meltw_unary_shape(bm, bk, bm, bm, dtype, dtype, dtype);
-      a_xform_kernel = libxsmm_dispatch_meltw_unary( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI2, xform_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE ); 
+      a_xform_kernel = libxsmm_dispatch_meltw_unary( parlooper_get_vnni_xform<DType>(), xform_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE ); 
       xform_A_upfront = 1;
       xform_unary_shape = libxsmm_create_meltw_unary_shape(bn, bk, bn, bk, dtype, dtype, dtype);
       b_xform_kernel = libxsmm_dispatch_meltw_unary( LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_NORMT, xform_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE ); 
@@ -272,8 +272,8 @@ int gemm_benchmark(int argc, char** argv) {
     naive_param.K = M;
     naive_param.fuse_type = 0;
     naive_fullyconnected_fused_fp(&naive_param, naive_input, naive_output, naive_filter, NULL);
-    libxsmm_rne_convert_fp32_bf16( naive_output,     (libxsmm_bfloat16*)naive_output_bf16,     N*M );
-    libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)naive_output_bf16, naive_output, N*M);
+    parlooper_rne_convert_fp32_lp<DType>( naive_output,     (void*)naive_output_lp, (N*M) );
+    parlooper_convert_lp_f32<DType>( (void*)naive_output_lp, naive_output, N*M);
   } 
   
   // JIT requested nested loop specs
@@ -437,8 +437,8 @@ int gemm_benchmark(int argc, char** argv) {
     libxsmm_matdiff_info norms, diff;
     libxsmm_matdiff_clear(&norms);
     libxsmm_matdiff_clear(&diff);
-    matrix_copy_NCNC_to_NC_bf16( (libxsmm_bfloat16*)ACT[2*n_layers-1], (libxsmm_bfloat16*)naive_output_bf16, 1, N, M, bn, bm );
-    libxsmm_convert_bf16_f32( (libxsmm_bfloat16*)naive_output_bf16, naive_output_opt, N*M );
+    parlooper_matrix_copy_NCNC_to_NC<DType>( (void*)ACT[2*n_layers-1], (void*)naive_output_lp, N, M, bn, bm );
+    parlooper_convert_lp_f32<DType>( (void*)naive_output_lp, naive_output_opt, N*M );
     printf("##########################################\n");
     printf("#           Correctness                  #\n");
     printf("##########################################\n");
@@ -654,9 +654,9 @@ int gemm_benchmark(int argc, char** argv) {
   libxsmm_free(naive_output);
   libxsmm_free(naive_output_opt);
   libxsmm_free(naive_filter);
-  libxsmm_free(naive_input_bf16);
-  libxsmm_free(naive_output_bf16);
-  libxsmm_free(naive_filter_bf16);
+  libxsmm_free(naive_input_lp);
+  libxsmm_free(naive_output_lp);
+  libxsmm_free(naive_filter_lp);
   for (i = 0; i < n_layers; i++) {
     libxsmm_free(WGT[i]);
   }
@@ -681,6 +681,21 @@ int gemm_benchmark(int argc, char** argv) {
 }
 
 int main(int argc, char** argv) {
-  return gemm_benchmark<libxsmm_bfloat16>(argc, argv);  
+  int use_dtype = 1;
+  if (argc > 17) {
+    if (strcmp(argv[17],"BF16") == 0) {
+      use_dtype = 1;
+    }
+    if (strcmp(argv[17],"BF8") == 0) {
+      use_dtype = 2;
+    }
+  }
+  if (use_dtype == 1) {
+    return gemm_benchmark<libxsmm_bfloat16>(argc, argv);  
+  } else if (use_dtype == 2) {
+    return gemm_benchmark<libxsmm_bfloat8>(argc, argv);
+  } else {
+    return 0;
+  }
 }
 

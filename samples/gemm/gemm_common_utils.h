@@ -15,6 +15,152 @@ void check_null_ptr(void* ptr, const char* ptr_name) {
   } 
 }
 
+template<typename DType> libxsmm_meltw_unary_type parlooper_get_vnni_xform() {
+  return LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI2;
+}
+
+template<> libxsmm_meltw_unary_type parlooper_get_vnni_xform<libxsmm_bfloat16>() {
+  return LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI2;
+}
+
+template<> libxsmm_meltw_unary_type parlooper_get_vnni_xform<libxsmm_bfloat8>() {
+  return LIBXSMM_MELTW_TYPE_UNARY_TRANSFORM_NORM_TO_VNNI4;
+}
+
+template<typename DType> libxsmm_datatype parlooper_get_lixbxsmm_dtype() {
+  return LIBXSMM_DATATYPE_BF16;
+}
+
+template<> libxsmm_datatype parlooper_get_lixbxsmm_dtype<libxsmm_bfloat16>() {
+  return LIBXSMM_DATATYPE_BF16;
+}
+
+template<> libxsmm_datatype parlooper_get_lixbxsmm_dtype<libxsmm_bfloat8>() {
+  return LIBXSMM_DATATYPE_BF8;
+}
+
+template<typename DType> void parlooper_matrix_copy_NCNC_to_NC(void *in, void *out, long N, long M, long bn, long bm) {
+  matrix_copy_NCNC_to_NC_bf16( (libxsmm_bfloat16*)in, (libxsmm_bfloat16*)out, 1, N, M, bn, bm );
+  return;
+}
+
+template<> void parlooper_matrix_copy_NCNC_to_NC<libxsmm_bfloat16>(void *in, void *out, long N, long M, long bn, long bm) {
+  matrix_copy_NCNC_to_NC_bf16( (libxsmm_bfloat16*)in, (libxsmm_bfloat16*)out, 1, N, M, bn, bm );
+  return;
+}
+
+template<> void parlooper_matrix_copy_NCNC_to_NC<libxsmm_bfloat8>(void *in, void *out, long N, long M, long bn, long bm) {
+  matrix_copy_NCNC_to_NC_bf8( (libxsmm_bfloat8*)in, (libxsmm_bfloat8*)out, 1, N, M, bn, bm );
+  return;
+}
+
+template<typename DType> void parlooper_rne_convert_fp32_lp(float *in, void *out, long size) {
+  libxsmm_rne_convert_fp32_bf16(in, (libxsmm_bfloat16*)out, size);
+  return;
+}
+
+template<> void parlooper_rne_convert_fp32_lp<libxsmm_bfloat16>(float *in, void *out, long size) {
+  libxsmm_rne_convert_fp32_bf16(in, (libxsmm_bfloat16*)out, size);
+  return;
+}
+
+template<> void parlooper_rne_convert_fp32_lp<libxsmm_bfloat8>(float *in, void *out, long size) {
+  libxsmm_rne_convert_fp32_bf8(in, (libxsmm_bfloat8*)out, size);
+  return;
+}
+
+template<typename DType> void parlooper_convert_lp_f32(void *in, float *out, long size) {
+  libxsmm_convert_bf16_f32((libxsmm_bfloat16*)in, out, size);
+  return;
+}
+
+template<> void parlooper_convert_lp_f32<libxsmm_bfloat16>(void *in, float *out, long size) {
+  libxsmm_convert_bf16_f32((libxsmm_bfloat16*)in, out, size);
+  return;
+}
+
+template<> void parlooper_convert_lp_f32<libxsmm_bfloat8>(void *in, float *out, long size) {
+  libxsmm_convert_bf8_f32((libxsmm_bfloat8*)in, out, size);
+  return;
+}
+
+template<typename DType> void parlooper_matrix_copy_KC_to_KCCK(void *src, void *dst, int C, int K, int bc, int bk, int flat_layout, int trans_a )
+{
+  int kBlocks = K/bk;
+  int cBlocks = C/bc;
+  int vnni_block = libxsmm_cpuid_dot_pack_factor(parlooper_get_lixbxsmm_dtype<DType>());
+  if (flat_layout > 0) {
+    vnni_block = 1;
+  }
+  if (trans_a > 0) {
+    vnni_block = 1;
+    LIBXSMM_VLA_DECL(2, DType, real_src, src, C);
+    LIBXSMM_VLA_DECL(5, DType, real_dst, dst, cBlocks, bk/vnni_block, bc, vnni_block);
+    # pragma omp parallel for
+    for (int k1 = 0; k1 < kBlocks; k1++) {
+      for (int c1 = 0; c1 < cBlocks; c1++) {
+        for (int c2 = 0; c2 < bc; c2++) {
+          for (int k2 = 0; k2 < bk; k2++) {
+            vnni_block = 1;
+            LIBXSMM_VLA_ACCESS(5, real_dst, k1, c1, k2, c2/vnni_block, c2%vnni_block, cBlocks, bk, bc/vnni_block, vnni_block) =
+              LIBXSMM_VLA_ACCESS(2, real_src, k1*bk+k2, c1*bc+c2, C);      
+          }
+        }
+      }
+    }
+  } else {
+    LIBXSMM_VLA_DECL(2, DType, real_src, src, C);
+    LIBXSMM_VLA_DECL(5, DType, real_dst, dst, cBlocks, bc/vnni_block, bk, vnni_block);
+    # pragma omp parallel for
+    for (int k1 = 0; k1 < kBlocks; k1++) {
+      for (int c1 = 0; c1 < cBlocks; c1++) {
+        for (int c2 = 0; c2 < bc; c2++) {
+          for (int k2 = 0; k2 < bk; k2++) {
+            LIBXSMM_VLA_ACCESS(5, real_dst, k1, c1, c2/vnni_block, k2, c2%vnni_block, cBlocks, bc/vnni_block, bk, vnni_block) =
+              LIBXSMM_VLA_ACCESS(2, real_src, k1*bk+k2, c1*bc+c2, C);
+          }
+        }
+      }
+    }
+  }
+}
+
+template<typename DType> void parlooper_matrix_copy_NC_to_NCNC(void *src, void *dst, int N, int C, int bn, int bc, int trans_b)
+{
+  int nBlocks = N/bn;
+  int cBlocks = C/bc;
+
+  if (trans_b > 0) {
+    LIBXSMM_VLA_DECL(3, DType, real_src, src, N, C);
+    LIBXSMM_VLA_DECL(5, DType, real_dst, dst, nBlocks, cBlocks, bc, bn);
+    # pragma omp parallel for 
+    for (int n1 = 0; n1 < nBlocks; n1++) {
+      for (int c1 = 0; c1 < cBlocks; c1++) {
+        for (int n2 = 0; n2 < bn; n2++) {
+          for (int c2 = 0; c2 < bc; c2++) {
+            LIBXSMM_VLA_ACCESS(5, real_dst, 0, n1, c1, c2, n2, nBlocks, cBlocks, bc, bn) =
+              LIBXSMM_VLA_ACCESS(3, real_src, 0, n1*bn+n2, c1*bc+c2, N, C);
+          }
+        }
+      }
+    }
+  } else {
+    LIBXSMM_VLA_DECL(3, DType, real_src, src, N, C);
+    LIBXSMM_VLA_DECL(5, DType, real_dst, dst, nBlocks, cBlocks, bn, bc);
+    # pragma omp parallel for 
+    for (int n1 = 0; n1 < nBlocks; n1++) {
+      for (int c1 = 0; c1 < cBlocks; c1++) {
+        for (int n2 = 0; n2 < bn; n2++) {
+          for (int c2 = 0; c2 < bc; c2++) {
+            LIBXSMM_VLA_ACCESS(5, real_dst, 0, n1, c1, n2, c2, nBlocks, cBlocks, bn, bc) =
+              LIBXSMM_VLA_ACCESS(3, real_src, 0, n1*bn+n2, c1*bc+c2, N, C);
+          }
+        }
+      }
+    }
+  }
+}
+
 unsigned int fill_sf_curve_index_map(unsigned char **sf_curve_index_map, unsigned int Mb, unsigned int Nb) {
   long long i, n_tasks = Mb*Nb;
   int m_id, n_id;
