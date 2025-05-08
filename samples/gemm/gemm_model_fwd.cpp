@@ -365,12 +365,12 @@ int gemm_benchmark(int argc, char** argv) {
         libxsmm_gemm_param gemm_param;
         gemm_param.op.tertiary = (void*)&brcount;
         if (xform_A_upfront > 0) {
-          gemm_param.a.primary = (void*)((DType*)scratch_A + i_m * K * bm + i_k * bk * bm );   
+          gemm_param.a.primary = (void*)((DType*)scratch_A + i_m * K * bm + i_k * bk * bm + i_k_split * (K/split_K_factor) * bm );   
         } else {
           gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm + i_k_split * (K/split_K_factor) * bm );
         }
         if (xform_B_upfront > 0) {
-          gemm_param.b.primary = (void*)((DType*)scratch_B + i_n * K * bn + i_k * bk * bn );      
+          gemm_param.b.primary = (void*)((DType*)scratch_B + i_n * K * bn + i_k * bk * bn + i_k_split * (K/split_K_factor) * bn  );      
         } else {
           gemm_param.b.primary = (void*)((DType*)ACT[2*i] + i_n * K * bn + i_k * bk * bn + i_k_split * (K/split_K_factor) * bn );
         }
@@ -495,12 +495,12 @@ int gemm_benchmark(int argc, char** argv) {
           libxsmm_gemm_param gemm_param;
           gemm_param.op.tertiary = (void*)&brcount;
           if (xform_A_upfront > 0) {
-            gemm_param.a.primary = (void*)((DType*)scratch_A + i_m * K * bm + i_k * bk * bm );   
+            gemm_param.a.primary = (void*)((DType*)scratch_A + i_m * K * bm + i_k * bk * bm + i_k_split * (K/split_K_factor) * bm );   
           } else {
             gemm_param.a.primary = (void*)((DType*)WGT[i] + i_m * K * bm + i_k * bk * bm + i_k_split * (K/split_K_factor) * bm );
           }
           if (xform_B_upfront > 0) {
-            gemm_param.b.primary = (void*)((DType*)scratch_B + i_n * K * bn + i_k * bk * bn );      
+            gemm_param.b.primary = (void*)((DType*)scratch_B + i_n * K * bn + i_k * bk * bn + i_k_split * (K/split_K_factor) * bn  );      
           } else {
             gemm_param.b.primary = (void*)((DType*)ACT[2*i] + i_n * K * bn + i_k * bk * bn + i_k_split * (K/split_K_factor) * bn );
           }
