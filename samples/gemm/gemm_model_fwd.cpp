@@ -689,12 +689,17 @@ int main(int argc, char** argv) {
     if (strcmp(argv[17],"BF8") == 0) {
       use_dtype = 2;
     }
+    if (strcmp(argv[17],"FP32") == 0) {
+      use_dtype = 3;
+    }
   }
   if (use_dtype == 1) {
     return gemm_benchmark<libxsmm_bfloat16>(argc, argv);  
   } else if (use_dtype == 2) {
     return gemm_benchmark<libxsmm_bfloat8>(argc, argv);
-  } else {
+  } else if (use_dtype == 3) {
+    return gemm_benchmark<float>(argc, argv);
+  }  else {
     return 0;
   }
 }

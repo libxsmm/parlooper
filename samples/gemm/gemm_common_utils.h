@@ -31,6 +31,10 @@ template<typename DType> libxsmm_datatype parlooper_get_lixbxsmm_dtype() {
   return LIBXSMM_DATATYPE_BF16;
 }
 
+template<> libxsmm_datatype parlooper_get_lixbxsmm_dtype<float>() {
+  return LIBXSMM_DATATYPE_F32;
+}
+
 template<> libxsmm_datatype parlooper_get_lixbxsmm_dtype<libxsmm_bfloat16>() {
   return LIBXSMM_DATATYPE_BF16;
 }
@@ -41,6 +45,11 @@ template<> libxsmm_datatype parlooper_get_lixbxsmm_dtype<libxsmm_bfloat8>() {
 
 template<typename DType> void parlooper_matrix_copy_NCNC_to_NC(void *in, void *out, long N, long M, long bn, long bm) {
   matrix_copy_NCNC_to_NC_bf16( (libxsmm_bfloat16*)in, (libxsmm_bfloat16*)out, 1, N, M, bn, bm );
+  return;
+}
+
+template<> void parlooper_matrix_copy_NCNC_to_NC<float>(void *in, void *out, long N, long M, long bn, long bm) {
+  matrix_copy_NCNC_to_NC( (float*)in, (float*)out, 1, N, M, bn, bm );
   return;
 }
 
@@ -59,6 +68,11 @@ template<typename DType> void parlooper_rne_convert_fp32_lp(float *in, void *out
   return;
 }
 
+template<> void parlooper_rne_convert_fp32_lp<float>(float *in, void *out, long size) {
+  memcpy(out, in, size * sizeof(float));
+  return;
+}
+
 template<> void parlooper_rne_convert_fp32_lp<libxsmm_bfloat16>(float *in, void *out, long size) {
   libxsmm_rne_convert_fp32_bf16(in, (libxsmm_bfloat16*)out, size);
   return;
@@ -71,6 +85,11 @@ template<> void parlooper_rne_convert_fp32_lp<libxsmm_bfloat8>(float *in, void *
 
 template<typename DType> void parlooper_convert_lp_f32(void *in, float *out, long size) {
   libxsmm_convert_bf16_f32((libxsmm_bfloat16*)in, out, size);
+  return;
+}
+
+template<> void parlooper_convert_lp_f32<float>(void *in, float *out, long size) {
+  memcpy(out, in, size * sizeof(float));
   return;
 }
 
