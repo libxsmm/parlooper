@@ -10,8 +10,9 @@
 #include "threaded_loops.h"
 #include "gemm_common_utils.h"
 
+#define ALIGNMENT_SIZE 64
 //#define USE_EQN_REDUCE
-//#define BENCH_REDUCE
+#define BENCH_REDUCE
 
 template<typename DType>
 void run_gemm(long n_layers, long M, long N, long K,
@@ -219,30 +220,30 @@ int gemm_benchmark(int argc, char** argv) {
   DType **WGT = (DType**) malloc(n_layers    *sizeof(DType*));
   check_null_ptr(WGT, "WGT array");
   for (i = 0; i < n_layers; i++) {
-    WGT[i] = (DType*) libxsmm_aligned_malloc(M*K*sizeof(DType), 64);
+    WGT[i] = (DType*) libxsmm_aligned_malloc(M*K*sizeof(DType), ALIGNMENT_SIZE);
   }
   for (i = 0; i < 2*n_layers; i++) {
     if (i%2 == 0) {
-      ACT[i] = (DType*) libxsmm_aligned_malloc(K*N*sizeof(DType), 64);
+      ACT[i] = (DType*) libxsmm_aligned_malloc(K*N*sizeof(DType), ALIGNMENT_SIZE);
     } else {
-      ACT[i] = (DType*) libxsmm_aligned_malloc(M*N*sizeof(DType), 64);
+      ACT[i] = (DType*) libxsmm_aligned_malloc(M*N*sizeof(DType), ALIGNMENT_SIZE);
     }
     check_null_ptr(ACT[i], "ACT[i] array"); 
   }
 
-  float *naive_input  = (float*)libxsmm_aligned_malloc( K*N*sizeof(float), 64);
+  float *naive_input  = (float*)libxsmm_aligned_malloc( K*N*sizeof(float), ALIGNMENT_SIZE);
   check_null_ptr(naive_input, "naive_input array");
-  float *naive_output = (float*)libxsmm_aligned_malloc( M*N*sizeof(float), 64);
+  float *naive_output = (float*)libxsmm_aligned_malloc( M*N*sizeof(float), ALIGNMENT_SIZE);
   check_null_ptr(naive_output, "naive_output array");
-  float *naive_output_opt = (float*)libxsmm_aligned_malloc( M*N*sizeof(float), 64);
+  float *naive_output_opt = (float*)libxsmm_aligned_malloc( M*N*sizeof(float), ALIGNMENT_SIZE);
   check_null_ptr(naive_output_opt, "naive_output_opt array");
-  float *naive_filter = (float*)libxsmm_aligned_malloc( M*K*sizeof(float), 64);
+  float *naive_filter = (float*)libxsmm_aligned_malloc( M*K*sizeof(float), ALIGNMENT_SIZE);
   check_null_ptr(naive_filter, "naive_filter array");
-  DType *naive_input_lp  = (DType*)libxsmm_aligned_malloc( K*N*sizeof(DType), 64);
+  DType *naive_input_lp  = (DType*)libxsmm_aligned_malloc( K*N*sizeof(DType), ALIGNMENT_SIZE);
   check_null_ptr(naive_input_lp, "naive_input_lp array");
-  DType *naive_output_lp = (DType*)libxsmm_aligned_malloc( M*N*sizeof(DType), 64);
+  DType *naive_output_lp = (DType*)libxsmm_aligned_malloc( M*N*sizeof(DType), ALIGNMENT_SIZE);
   check_null_ptr(naive_output_lp, "naive_output_lp array");
-  DType *naive_filter_lp = (DType*)libxsmm_aligned_malloc( M*K*sizeof(DType), 64);
+  DType *naive_filter_lp = (DType*)libxsmm_aligned_malloc( M*K*sizeof(DType), ALIGNMENT_SIZE);
   check_null_ptr(naive_filter_lp, "naive_filter_lp array");
   
   // Init buffers
@@ -255,7 +256,7 @@ int gemm_benchmark(int argc, char** argv) {
   DType *global_scratch = NULL;
   for (i = 1; i < split_K_factor; i++) {
     if (i == 1) {
-      global_scratch = (DType*)libxsmm_aligned_malloc( M*N*sizeof(DType)*(split_K_factor-1), 64);
+      global_scratch = (DType*)libxsmm_aligned_malloc( M*N*sizeof(DType)*(split_K_factor-1), ALIGNMENT_SIZE);
     }
     output_partial[i-1] = (DType*)global_scratch + (i-1) * M*N;
   }
@@ -337,11 +338,11 @@ int gemm_benchmark(int argc, char** argv) {
   }
 
   if (xform_A_upfront > 0) {
-    scratch_A = (DType*)libxsmm_aligned_malloc( M*K*sizeof(DType), 64);
+    scratch_A = (DType*)libxsmm_aligned_malloc( M*K*sizeof(DType), ALIGNMENT_SIZE);
     check_null_ptr(scratch_A, "scratch A array");
   }
   if (xform_B_upfront > 0) {
-    scratch_B  = (DType*)libxsmm_aligned_malloc( K*N*sizeof(DType), 64);
+    scratch_B  = (DType*)libxsmm_aligned_malloc( K*N*sizeof(DType), ALIGNMENT_SIZE);
     check_null_ptr(scratch_B, "scratch B array");
   }
 
