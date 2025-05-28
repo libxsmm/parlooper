@@ -52,7 +52,7 @@ void run_gemm(long n_layers, long M, long N, long K,
     }
     gemm_loop(
       [&](int* ind) {
-        int i_k = ind[0], i_m, i_n, i_k_split;
+        int i_k = ind[0], i_m, i_n, i_k_split = 0;
         if (use_sf_curve > 0) {
           extract_indices_from_sf_curve(&i_m, &i_n, sf_curve_index_map, ind[1]%(Mb*Nb) /* This is the index in the SF curve*/, index_tsize);
           i_k_split = ind[1]/(Mb*Nb);  

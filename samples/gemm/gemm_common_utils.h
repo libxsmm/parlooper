@@ -113,8 +113,8 @@ template<typename DType> void parlooper_matrix_copy_KC_to_KCCK(void *src, void *
   }
   if (trans_a > 0) {
     vnni_block = 1;
-    LIBXSMM_VLA_DECL(2, DType, real_src, src, C);
-    LIBXSMM_VLA_DECL(5, DType, real_dst, dst, cBlocks, bk/vnni_block, bc, vnni_block);
+    LIBXSMM_VLA_DECL(2, DType, real_src, (DType*)src, C);
+    LIBXSMM_VLA_DECL(5, DType, real_dst, (DType*)dst, cBlocks, bk/vnni_block, bc, vnni_block);
     # pragma omp parallel for
     for (int k1 = 0; k1 < kBlocks; k1++) {
       for (int c1 = 0; c1 < cBlocks; c1++) {
@@ -128,8 +128,8 @@ template<typename DType> void parlooper_matrix_copy_KC_to_KCCK(void *src, void *
       }
     }
   } else {
-    LIBXSMM_VLA_DECL(2, DType, real_src, src, C);
-    LIBXSMM_VLA_DECL(5, DType, real_dst, dst, cBlocks, bc/vnni_block, bk, vnni_block);
+    LIBXSMM_VLA_DECL(2, DType, real_src, (DType*)src, C);
+    LIBXSMM_VLA_DECL(5, DType, real_dst, (DType*)dst, cBlocks, bc/vnni_block, bk, vnni_block);
     # pragma omp parallel for
     for (int k1 = 0; k1 < kBlocks; k1++) {
       for (int c1 = 0; c1 < cBlocks; c1++) {
@@ -150,8 +150,8 @@ template<typename DType> void parlooper_matrix_copy_NC_to_NCNC(void *src, void *
   int cBlocks = C/bc;
 
   if (trans_b > 0) {
-    LIBXSMM_VLA_DECL(3, DType, real_src, src, N, C);
-    LIBXSMM_VLA_DECL(5, DType, real_dst, dst, nBlocks, cBlocks, bc, bn);
+    LIBXSMM_VLA_DECL(3, DType, real_src, (DType*)src, N, C);
+    LIBXSMM_VLA_DECL(5, DType, real_dst, (DType*)dst, nBlocks, cBlocks, bc, bn);
     # pragma omp parallel for 
     for (int n1 = 0; n1 < nBlocks; n1++) {
       for (int c1 = 0; c1 < cBlocks; c1++) {
@@ -164,8 +164,8 @@ template<typename DType> void parlooper_matrix_copy_NC_to_NCNC(void *src, void *
       }
     }
   } else {
-    LIBXSMM_VLA_DECL(3, DType, real_src, src, N, C);
-    LIBXSMM_VLA_DECL(5, DType, real_dst, dst, nBlocks, cBlocks, bn, bc);
+    LIBXSMM_VLA_DECL(3, DType, real_src, (DType*)src, N, C);
+    LIBXSMM_VLA_DECL(5, DType, real_dst, (DType*)dst, nBlocks, cBlocks, bn, bc);
     # pragma omp parallel for 
     for (int n1 = 0; n1 < nBlocks; n1++) {
       for (int c1 = 0; c1 < cBlocks; c1++) {
