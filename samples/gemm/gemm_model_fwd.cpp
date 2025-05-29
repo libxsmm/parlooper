@@ -142,6 +142,7 @@ int gemm_benchmark(int argc, char** argv) {
   long trans_a = 0;
   long trans_b = 0;
   long use_sf_curve = 0;
+  long use_sf_curve_dynamic = 0;
   long unit_step = 1;
   char gemm_config[256] = "VN";
   long upfront_xforms = 0, xform_A_upfront = 0, xform_B_upfront = 0;
@@ -203,6 +204,11 @@ int gemm_benchmark(int argc, char** argv) {
 
   if (strcmp(argv[1], "SFC") == 0) {
     use_sf_curve = 1;
+  }
+
+  if (strcmp(argv[1], "SFC_DYN") == 0) {
+    use_sf_curve = 1;
+    use_sf_curve_dynamic = 1;
   }
   
   long Mb = M/bm, Nb = N/bn, Kb = K/bk;
@@ -431,7 +437,7 @@ int gemm_benchmark(int argc, char** argv) {
       LoopSpecs{0, Kb/split_K_factor, k_step, {}},             // Logical K loop
       LoopSpecs{0, Mb*Nb*split_K_factor, unit_step,{}},        // Logical MxN loop over the SF curve index space
       LoopSpecs{0, unit_step, unit_step, {}}},  // Degenerate loop, just to match types with gemm_loop of 3 nested loops
-      "aB");
+      (use_sf_curve_dynamic) ? "aB@schedule(dynamic,1)" : "aB");
 
   unsigned char *sf_curve_index_map = NULL;
   unsigned int index_tsize = 4;
