@@ -25,7 +25,10 @@ ifeq ($(PARLOOPER_COMPILER),icc)
   CXX := icpc
   CXXFLAGS := -fopenmp -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14 -O2 
 endif
-LDFLAGS = -ldl 
+ifeq ($(PARLOOPER_COMPILER),icx)
+  CXX := icpx
+  CXXFLAGS := -qopenmp -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14 -O2
+endif
 IFLAGS = -I$(PARLOOPER_ROOT)/include -I$(PARLOOPER_ROOT)/utils -I$(LIBXSMM_ROOT)/include -I$(LIBXSMM_DNN_ROOT)/include
 SRCDIRS = $(PARLOOPER_ROOT)/utils $(PARLOOPER_ROOT)/src .
 #SRCFILES := par_loop_generator.cpp jit_compile.cpp common_loops.cpp spgemm.cpp
@@ -40,7 +43,7 @@ $(BLDDIR)/%-cpp.o: %.cpp
 	$(CXX) $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(OUTDIR)/spgemm: $(BLDDIR)/common_loops-cpp.o  $(BLDDIR)/spgemm-cpp.o
-	$(CXX) $(BLDDIR)/common_loops-cpp.o  $(BLDDIR)/spgemm-cpp.o $(PARLOOPER_ROOT)/lib/libparlooper.a $(LIBXSMM_ROOT)/lib/libxsmm.a $(LIBXSMM_ROOT)/lib/libxsmmnoblas.a $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -o spgemm
+	$(CXX) $(BLDDIR)/common_loops-cpp.o  $(BLDDIR)/spgemm-cpp.o $(PARLOOPER_ROOT)/lib/libparlooper.a $(LIBXSMM_ROOT)/lib/libxsmm.a $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -o spgemm
 
 CLEANOBJ:
 	rm -f *.o $(BLD_DIR)/*.o

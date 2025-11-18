@@ -25,7 +25,10 @@ ifeq ($(PARLOOPER_COMPILER),icc)
   CXX := icpc
   CXXFLAGS := -fopenmp -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14 -O2 
 endif
-LDFLAGS = -ldl 
+ifeq ($(PARLOOPER_COMPILER),icx)
+  CXX := icpx
+  CXXFLAGS := -qopenmp -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14 -O2 
+endif
 IFLAGS = -I$(PARLOOPER_ROOT)/include -I$(PARLOOPER_ROOT)/utils -I$(LIBXSMM_ROOT)/include -I$(LIBXSMM_DNN_ROOT)/include
 SRCDIRS = $(PARLOOPER_ROOT)/utils $(PARLOOPER_ROOT)/src .
 #SRCFILES := par_loop_cost_estimator.cpp common_loops.cpp gemm_model_fwd.cpp
@@ -40,13 +43,13 @@ $(BLDDIR)/%-cpp.o: %.cpp
 	$(CXX) $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(OUTDIR)/gemm: $(BLDDIR)/par_loop_cost_estimator-cpp.o $(BLDDIR)/common_loops-cpp.o  $(BLDDIR)/gemm_model_fwd-cpp.o
-	$(CXX) $(BLDDIR)/par_loop_cost_estimator-cpp.o  $(BLDDIR)/common_loops-cpp.o  $(BLDDIR)/gemm_model_fwd-cpp.o $(PARLOOPER_ROOT)/lib/libparlooper.a $(LIBXSMM_ROOT)/lib/libxsmm.a $(LIBXSMM_ROOT)/lib/libxsmmnoblas.a $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -o gemm
+	$(CXX) $(BLDDIR)/par_loop_cost_estimator-cpp.o  $(BLDDIR)/common_loops-cpp.o  $(BLDDIR)/gemm_model_fwd-cpp.o $(PARLOOPER_ROOT)/lib/libparlooper.a $(LIBXSMM_ROOT)/lib/libxsmm.a $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -o gemm
 
 $(OUTDIR)/gemm_bwd: $(BLDDIR)/par_loop_cost_estimator-cpp.o $(BLDDIR)/common_loops-cpp.o  $(BLDDIR)/gemm_model_bwd-cpp.o
-	$(CXX) $(BLDDIR)/par_loop_cost_estimator-cpp.o  $(BLDDIR)/common_loops-cpp.o  $(BLDDIR)/gemm_model_bwd-cpp.o $(PARLOOPER_ROOT)/lib/libparlooper.a $(LIBXSMM_ROOT)/lib/libxsmm.a $(LIBXSMM_ROOT)/lib/libxsmmnoblas.a $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -o gemm_bwd
+	$(CXX) $(BLDDIR)/par_loop_cost_estimator-cpp.o  $(BLDDIR)/common_loops-cpp.o  $(BLDDIR)/gemm_model_bwd-cpp.o $(PARLOOPER_ROOT)/lib/libparlooper.a $(LIBXSMM_ROOT)/lib/libxsmm.a $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -o gemm_bwd
 
 $(OUTDIR)/gemm_upd: $(BLDDIR)/par_loop_cost_estimator-cpp.o $(BLDDIR)/common_loops-cpp.o  $(BLDDIR)/gemm_model_upd-cpp.o
-	$(CXX) $(BLDDIR)/par_loop_cost_estimator-cpp.o  $(BLDDIR)/common_loops-cpp.o  $(BLDDIR)/gemm_model_upd-cpp.o $(PARLOOPER_ROOT)/lib/libparlooper.a $(LIBXSMM_ROOT)/lib/libxsmm.a $(LIBXSMM_ROOT)/lib/libxsmmnoblas.a $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -o gemm_upd
+	$(CXX) $(BLDDIR)/par_loop_cost_estimator-cpp.o  $(BLDDIR)/common_loops-cpp.o  $(BLDDIR)/gemm_model_upd-cpp.o $(PARLOOPER_ROOT)/lib/libparlooper.a $(LIBXSMM_ROOT)/lib/libxsmm.a $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -o gemm_upd
 
 $(OUTDIR)/loop_permute_generator:
 	$(CXX) $(CXXFLAGS) $(PARLOOPER_ROOT)/utils/spec_loop_generator.cpp -o loop_permute_generator

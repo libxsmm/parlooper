@@ -513,12 +513,12 @@ int conv_benchmark(int argc, char** argv) {
 
           libxsmm_meltw_unary_param unary_param;
 
-          unary_param.out.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), scratch_input_libxsmm, i_n, i_c, 0, 0, 0, Cb, ifhp_physically_padded, ifwp_physically_padded, bc);
+          unary_param.out.primary = LIBXSMM_ACCESS_RW(5, sizeof(DType), scratch_input_libxsmm, i_n, i_c, 0, 0, 0, Cb, ifhp_physically_padded, ifwp_physically_padded, bc);
           zero_padded_hwbc_kernel( &unary_param );
 
           for (int _i_h = pad_h; _i_h < ifhp_physically_padded - pad_h; _i_h++) {
-            unary_param.in.primary  = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, _i_h - pad_h, 0, 0, Cb, ifhp, ifwp, bc);
-            unary_param.out.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), scratch_input_libxsmm, i_n, i_c, _i_h, pad_w, 0, Cb, ifhp_physically_padded, ifwp_physically_padded, bc);
+            unary_param.in.primary  = LIBXSMM_ACCESS_RW(5, sizeof(DType), input_libxsmm, i_n, i_c, _i_h - pad_h, 0, 0, Cb, ifhp, ifwp, bc);
+            unary_param.out.primary = LIBXSMM_ACCESS_RW(5, sizeof(DType), scratch_input_libxsmm, i_n, i_c, _i_h, pad_w, 0, Cb, ifhp_physically_padded, ifwp_physically_padded, bc);
             copy_wbc_kernel( &unary_param );
           }
         },
@@ -535,24 +535,24 @@ int conv_benchmark(int argc, char** argv) {
           gemm_param.op.tertiary = (void*)&brcount;
           gemm_param.a.secondary = (void*)A_offsets;
           gemm_param.b.secondary = (void*)B_offsets;
-          gemm_param.a.primary = LIBXSMM_ACCESS_RAW(6, sizeof(DType), filter_libxsmm, i_k, i_c, i_r, i_s, 0, 0, Cb, R, S, bc, bk);
+          gemm_param.a.primary = LIBXSMM_ACCESS_RW(6, sizeof(DType), filter_libxsmm, i_k, i_c, i_r, i_s, 0, 0, Cb, R, S, bc, bk);
           if (pack_input ==  0) {
             if (input_padding_copy)
-              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), scratch_input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, Cb, ifhp_physically_padded, ifwp_physically_padded, bc);
+              gemm_param.b.primary = LIBXSMM_ACCESS_RW(5, sizeof(DType), scratch_input_libxsmm, i_n, i_c, i_h * stride_h + i_r, i_w * stride_w + i_s, 0, Cb, ifhp_physically_padded, ifwp_physically_padded, bc);
             else
-              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in - pad_h + i_h * stride_h + i_r, pad_w_in - pad_w + i_w * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
+              gemm_param.b.primary = LIBXSMM_ACCESS_RW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in - pad_h + i_h * stride_h + i_r, pad_w_in - pad_w + i_w * stride_w + i_s, 0, Cb, ifhp, ifwp, bc);
           } else {
-            gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), packed_input_libxsmm, i_n, i_c, i_h, i_w, 0, Cb, ofh, ofw, bc);     
+            gemm_param.b.primary = LIBXSMM_ACCESS_RW(5, sizeof(DType), packed_input_libxsmm, i_n, i_c, i_h, i_w, 0, Cb, ofh, ofw, bc);     
           }
-          gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
+          gemm_param.c.primary = LIBXSMM_ACCESS_RW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
           
           if (pack_input > 0 && i_r == 0 && i_s == 0 && i_k == 0 && i_c == 0) {
             libxsmm_blasint _br, _h;
             for (_br = 0; _br < Cb; _br++) {
               for (_h = 0; _h < h_step; _h++) {
                 libxsmm_meltw_unary_param pack_param;
-                pack_param.in.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, _br, pad_h_in - pad_h + (i_h+_h) * stride_h, pad_w_in - pad_w + i_w * stride_w, 0, Cb, ifhp, ifwp, bc);
-                pack_param.out.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), packed_input_libxsmm, i_n, _br, i_h+_h, i_w, 0, Cb, ofh, ofw, bc);
+                pack_param.in.primary = LIBXSMM_ACCESS_RW(5, sizeof(DType), input_libxsmm, i_n, _br, pad_h_in - pad_h + (i_h+_h) * stride_h, pad_w_in - pad_w + i_w * stride_w, 0, Cb, ifhp, ifwp, bc);
+                pack_param.out.primary = LIBXSMM_ACCESS_RW(5, sizeof(DType), packed_input_libxsmm, i_n, _br, i_h+_h, i_w, 0, Cb, ofh, ofw, bc);
                 input_pack_kernel( &pack_param );
               }
             }
@@ -574,7 +574,7 @@ int conv_benchmark(int argc, char** argv) {
             gemm_param_ext.b.primary = gemm_param.b.primary;
             gemm_param_ext.c.primary = gemm_param.c.primary;
             if (with_bias)
-              gemm_param_ext.d.primary = (void*)LIBXSMM_ACCESS_RAW(2, sizeof(DType), bias_libxsmm, i_k, 0, bk);
+              gemm_param_ext.d.primary = (void*)LIBXSMM_ACCESS_RW(2, sizeof(DType), bias_libxsmm, i_k, 0, bk);
 
             brgemm_ext_kernel.gemm_ext( &gemm_param_ext );
           } else {
@@ -584,10 +584,10 @@ int conv_benchmark(int argc, char** argv) {
           unsigned long long brcount = Cb_step;
           libxsmm_gemm_param gemm_param;
           gemm_param.op.tertiary = (void*)&brcount;
-          gemm_param.a.primary = LIBXSMM_ACCESS_RAW(6, sizeof(DType), filter_libxsmm, i_k, i_c, i_r, i_s, 0, 0, Cb, R, S, bc, bk);
+          gemm_param.a.primary = LIBXSMM_ACCESS_RW(6, sizeof(DType), filter_libxsmm, i_k, i_c, i_r, i_s, 0, 0, Cb, R, S, bc, bk);
           if (i_c == 0 && i_r == 0 && i_s == 0) {
             libxsmm_meltw_unary_param zero_param;
-            zero_param.out.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
+            zero_param.out.primary = LIBXSMM_ACCESS_RW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
             zero_kernel( &zero_param );
           }
           if (R == 7 && S == 7) {
@@ -597,27 +597,27 @@ int conv_benchmark(int argc, char** argv) {
               /* Do no FLOPS  */
             } else if ( i_s < S/2 && i_w * stride_w + (i_s - S/2) < 0 && (i_w + 1) * stride_w + (i_s - S/2) >= 0  ) {
               // the case when left i_s is out of input image for the first pitch only
-              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2) , pad_w_in + (i_w + 1) * stride_w + (i_s - S/2) , 0, Cb, ifhp, ifwp, bc);
-              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w + 1, 0, Kb, ofhp, ofwp, bk);
+              gemm_param.b.primary = LIBXSMM_ACCESS_RW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2) , pad_w_in + (i_w + 1) * stride_w + (i_s - S/2) , 0, Cb, ifhp, ifwp, bc);
+              gemm_param.c.primary = LIBXSMM_ACCESS_RW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w + 1, 0, Kb, ofhp, ofwp, bk);
               brgemm_kernel_1less.gemm( &gemm_param );
             } else if ( i_s < S/2 && i_w * stride_w + (i_s - S/2) < 0 && (i_w + 1) * stride_w + (i_s - S/2) < 0 && (i_w + 2) * stride_w + (i_s - S/2) >= 0  ) {
               // the case when left i_s is out of input image for the first two pitches
-              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2) , pad_w_in + (i_w + 2) * stride_w + (i_s - S/2) , 0, Cb, ifhp, ifwp, bc);
-              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w + 2, 0, Kb, ofhp, ofwp, bk);
+              gemm_param.b.primary = LIBXSMM_ACCESS_RW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2) , pad_w_in + (i_w + 2) * stride_w + (i_s - S/2) , 0, Cb, ifhp, ifwp, bc);
+              gemm_param.c.primary = LIBXSMM_ACCESS_RW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w + 2, 0, Kb, ofhp, ofwp, bk);
               brgemm_kernel_2less.gemm( &gemm_param );
             } else if ( i_s > S/2 && (i_w + w_step - 1)*stride_w + (i_s - S/2) >= ifw && (i_w + w_step - 2)*stride_w + (i_s - S/2) < ifw ) {
               // the case when right i_s is out of input image for the last pitch only
-              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2) , pad_w_in + i_w * stride_w + (i_s - S/2) , 0, Cb, ifhp, ifwp, bc);
-              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
+              gemm_param.b.primary = LIBXSMM_ACCESS_RW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2) , pad_w_in + i_w * stride_w + (i_s - S/2) , 0, Cb, ifhp, ifwp, bc);
+              gemm_param.c.primary = LIBXSMM_ACCESS_RW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
               brgemm_kernel_1less.gemm( &gemm_param );
             } else if ( i_s > S/2 && (i_w + w_step - 1)*stride_w + (i_s - S/2) >= ifw && (i_w + w_step - 2)*stride_w + (i_s - S/2) >= ifw && (i_w + w_step - 3)*stride_w + (i_s - S/2) < ifw ) {
               // for the case when right i_s is out of input image for the last 2 pitches
-              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2) , pad_w_in + i_w * stride_w + (i_s - S/2) , 0, Cb, ifhp, ifwp, bc);
-              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
+              gemm_param.b.primary = LIBXSMM_ACCESS_RW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2) , pad_w_in + i_w * stride_w + (i_s - S/2) , 0, Cb, ifhp, ifwp, bc);
+              gemm_param.c.primary = LIBXSMM_ACCESS_RW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
               brgemm_kernel_2less.gemm( &gemm_param );
             } else {
-              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2) , pad_w_in + i_w * stride_w + (i_s - S/2) , 0, Cb, ifhp, ifwp, bc);
-              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
+              gemm_param.b.primary = LIBXSMM_ACCESS_RW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2) , pad_w_in + i_w * stride_w + (i_s - S/2) , 0, Cb, ifhp, ifwp, bc);
+              gemm_param.c.primary = LIBXSMM_ACCESS_RW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
               brgemm_kernel.gemm( &gemm_param );
             }
           } else if (R == 3 && S == 3) { /* works for 3x3 stride-1 and stride-2 convolutions */
@@ -626,19 +626,19 @@ int conv_benchmark(int argc, char** argv) {
             } else if (i_r == R-1 && (i_h + h_step - 1)*stride_h + i_r == ifh + 1 ) {
               /* Do no FLOPS  */
             } else if ( i_w == 0 && i_s == 0 ) {
-              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2), pad_w_in + (i_w + 1) * stride_w + (i_s - S/2), 0, Cb, ifhp, ifwp, bc);
-              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w + 1, 0, Kb, ofhp, ofwp, bk);
+              gemm_param.b.primary = LIBXSMM_ACCESS_RW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2), pad_w_in + (i_w + 1) * stride_w + (i_s - S/2), 0, Cb, ifhp, ifwp, bc);
+              gemm_param.c.primary = LIBXSMM_ACCESS_RW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w + 1, 0, Kb, ofhp, ofwp, bk);
               brgemm_kernel_1less.gemm( &gemm_param );
             //} else if ( i_w + w_step == ofw  && i_s == S-1) {
             } else if ( (i_w + w_step - 1)*stride_w + i_s == ifw + 1 && i_s == S-1) {
               //exit(-1);
-              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2), pad_w_in + i_w * stride_w + (i_s - S/2), 0, Cb, ifhp, ifwp, bc);
-              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
+              gemm_param.b.primary = LIBXSMM_ACCESS_RW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2), pad_w_in + i_w * stride_w + (i_s - S/2), 0, Cb, ifhp, ifwp, bc);
+              gemm_param.c.primary = LIBXSMM_ACCESS_RW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
               brgemm_kernel_1less.gemm( &gemm_param );
 
             } else {
-              gemm_param.b.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2), pad_w_in + i_w * stride_w + (i_s - S/2), 0, Cb, ifhp, ifwp, bc);
-              gemm_param.c.primary = LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
+              gemm_param.b.primary = LIBXSMM_ACCESS_RW(5, sizeof(DType), input_libxsmm, i_n, i_c, pad_h_in + i_h * stride_h + (i_r - R/2), pad_w_in + i_w * stride_w + (i_s - S/2), 0, Cb, ifhp, ifwp, bc);
+              gemm_param.c.primary = LIBXSMM_ACCESS_RW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
               brgemm_kernel.gemm( &gemm_param );
             }
           }
@@ -646,14 +646,14 @@ int conv_benchmark(int argc, char** argv) {
           if ((with_bias || with_relu) && i_r == R - r_step && i_s == S - s_step && i_c == Cb - c_step) {
             if (with_bias) {
               libxsmm_meltw_binary_param binary_param;
-              binary_param.in0.primary = (void*)LIBXSMM_ACCESS_RAW(2, sizeof(DType), bias_libxsmm, i_k, 0, bk);
-              binary_param.in1.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
+              binary_param.in0.primary = (void*)LIBXSMM_ACCESS_RW(2, sizeof(DType), bias_libxsmm, i_k, 0, bk);
+              binary_param.in1.primary = (void*)LIBXSMM_ACCESS_RW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
               binary_param.out.primary = binary_param.in1.primary;
               colbias_add_kernel( &binary_param );
             }
             if (with_relu) {
               libxsmm_meltw_unary_param unary_param;
-              unary_param.in.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
+              unary_param.in.primary = (void*)LIBXSMM_ACCESS_RW(5, sizeof(DType), output_libxsmm_off, i_n, i_k, i_h, i_w, 0, Kb, ofhp, ofwp, bk);
               unary_param.out.primary = unary_param.in.primary;
               relu_kernel( &unary_param );
             }
@@ -664,22 +664,22 @@ int conv_benchmark(int argc, char** argv) {
           libxsmm_meltw_unary_param zero_param;
           if (i_c == Cb - c_step && i_r == R - r_step && i_s == S - s_step) {
             if (i_h == 0) {
-              zero_param.out.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm, i_n, i_k, 0, 0, 0, Kb, ofhp, ofwp, bk);
+              zero_param.out.primary = (void*)LIBXSMM_ACCESS_RW(5, sizeof(DType), output_libxsmm, i_n, i_k, 0, 0, 0, Kb, ofhp, ofwp, bk);
               zero_hwpad_kernel( &zero_param );
             }
             if ( i_h == ofh - h_step) {
-              zero_param.out.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm, i_n, i_k, pad_h_out + ofh, 0, 0, Kb, ofhp, ofwp, bk);
+              zero_param.out.primary = (void*)LIBXSMM_ACCESS_RW(5, sizeof(DType), output_libxsmm, i_n, i_k, pad_h_out + ofh, 0, 0, Kb, ofhp, ofwp, bk);
               zero_hwpad_kernel( &zero_param );
             }
             if (i_w == 0) {
               for (int _h = 0; _h < h_step; _h++) {
-                zero_param.out.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm, i_n, i_k, pad_h_out + i_h + _h, 0, 0, Kb, ofhp, ofwp, bk);
+                zero_param.out.primary = (void*)LIBXSMM_ACCESS_RW(5, sizeof(DType), output_libxsmm, i_n, i_k, pad_h_out + i_h + _h, 0, 0, Kb, ofhp, ofwp, bk);
                 zero_wpad_kernel( &zero_param );
               }
             }
             if (i_w == ofw - w_step) {
               for (int _h = 0; _h < h_step; _h++) {
-                zero_param.out.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm, i_n, i_k, pad_h_out + i_h + _h, pad_w_out + ofw, 0, Kb, ofhp, ofwp, bk);
+                zero_param.out.primary = (void*)LIBXSMM_ACCESS_RW(5, sizeof(DType), output_libxsmm, i_n, i_k, pad_h_out + i_h + _h, pad_w_out + ofw, 0, Kb, ofhp, ofwp, bk);
                 zero_wpad_kernel( &zero_param );
               }
             }
@@ -698,22 +698,22 @@ int conv_benchmark(int argc, char** argv) {
             libxsmm_meltw_unary_param zero_param;
 
             if (i_h == 0) {
-              zero_param.out.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm, i_n, i_k, 0, 0, 0, Kb, ofhp, ofwp, bk);
+              zero_param.out.primary = (void*)LIBXSMM_ACCESS_RW(5, sizeof(DType), output_libxsmm, i_n, i_k, 0, 0, 0, Kb, ofhp, ofwp, bk);
               zero_hwpad_kernel( &zero_param );
             }
             if ( i_h == ofh - h_step) {
-              zero_param.out.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm, i_n, i_k, pad_h_out + ofh, 0, 0, Kb, ofhp, ofwp, bk);
+              zero_param.out.primary = (void*)LIBXSMM_ACCESS_RW(5, sizeof(DType), output_libxsmm, i_n, i_k, pad_h_out + ofh, 0, 0, Kb, ofhp, ofwp, bk);
               zero_hwpad_kernel( &zero_param );
             }
             if (i_w == 0) {
               for (int _h = 0; _h < h_step; _h++) {
-                zero_param.out.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm, i_n, i_k, pad_h_out + i_h + _h, 0, 0, Kb, ofhp, ofwp, bk);
+                zero_param.out.primary = (void*)LIBXSMM_ACCESS_RW(5, sizeof(DType), output_libxsmm, i_n, i_k, pad_h_out + i_h + _h, 0, 0, Kb, ofhp, ofwp, bk);
                 zero_wpad_kernel( &zero_param );
               }
             }
             if (i_w == ofw - w_step) {
               for (int _h = 0; _h < h_step; _h++) {
-                zero_param.out.primary = (void*)LIBXSMM_ACCESS_RAW(5, sizeof(DType), output_libxsmm, i_n, i_k, pad_h_out + i_h + _h, pad_w_out + ofw, 0, Kb, ofhp, ofwp, bk);
+                zero_param.out.primary = (void*)LIBXSMM_ACCESS_RW(5, sizeof(DType), output_libxsmm, i_n, i_k, pad_h_out + i_h + _h, pad_w_out + ofw, 0, Kb, ofhp, ofwp, bk);
                 zero_wpad_kernel( &zero_param );
               }
             }

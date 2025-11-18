@@ -82,10 +82,13 @@ int gemm_benchmark(int argc, char** argv) {
   DType *tr_output_prv = (DType*)libxsmm_aligned_malloc( n_threads*N*M*sizeof(DType), 2097152);
   DType *filter_prv = (DType*)libxsmm_aligned_malloc( LIBXSMM_MAX(1,n_partial_filters)*K*M*sizeof(DType), 2097152);
 
+
   long inp_trans_tracker_size = Kb + 64 - 64%Kb;
   char *inp_trans_tracker = (char*)libxsmm_aligned_malloc( n_threads*inp_trans_tracker_size*sizeof(char), 2097152);
   long  out_trans_tracker_size = Mb + 64 - 64%Mb;
   char *out_trans_tracker = (char*)libxsmm_aligned_malloc( n_threads*out_trans_tracker_size*sizeof(char), 2097152);
+
+  libxsmm_bfloat16 *tmp_array_bf16_scratch = (libxsmm_bfloat16*)libxsmm_aligned_malloc(  bm*bk*n_threads*sizeof(libxsmm_bfloat16), 2097152);
 
   libxsmm_matdiff_info norms, diff;
   libxsmm_matdiff_clear(&norms);
@@ -249,7 +252,7 @@ int gemm_benchmark(int argc, char** argv) {
           [&](int* ind) {
             int partial_filter_id = ind[0], i_m = ind[1], i_k = ind[2];
             libxsmm_meltw_unary_param zero_param;
-            zero_param.out.primary = (void*)LIBXSMM_ACCESS_RAW(4, sizeof(DType), (char*)filter_prv + partial_filter_id * sizeof(DType) * K * M, i_m, i_k, 0, 0, Kb, bk, bm);
+            zero_param.out.primary = (void*)LIBXSMM_ACCESS_RW(4, sizeof(DType), (char*)filter_prv + partial_filter_id * sizeof(DType) * K * M, i_m, i_k, 0, 0, Kb, bk, bm);
             zero_kernel( &zero_param );   
           },
           [&]() {},
@@ -263,12 +266,12 @@ int gemm_benchmark(int argc, char** argv) {
           int partial_filter_id = gemm_loop.get_tid_in_parallel_dim('c', ind);
           libxsmm_gemm_param gemm_param;
           gemm_param.op.tertiary = (void*)&brcount;
-          gemm_param.a.primary = LIBXSMM_ACCESS_RAW(4, sizeof(DType), output, i_n, i_m, 0, 0, Mb, bn, bm);
-          gemm_param.b.primary = LIBXSMM_ACCESS_RAW(4, sizeof(DType), input, i_n, i_k, 0, 0, Kb, bn, bk);
-          gemm_param.c.primary = LIBXSMM_ACCESS_RAW(4, sizeof(DType), filter, i_m, i_k, 0, 0, Kb, bk, bm);
+          gemm_param.a.primary = LIBXSMM_ACCESS_RW(4, sizeof(DType), output, i_n, i_m, 0, 0, Mb, bn, bm);
+          gemm_param.b.primary = LIBXSMM_ACCESS_RW(4, sizeof(DType), input, i_n, i_k, 0, 0, Kb, bn, bk);
+          gemm_param.c.primary = LIBXSMM_ACCESS_RW(4, sizeof(DType), filter, i_m, i_k, 0, 0, Kb, bk, bm);
 
           if (partial_filter_id >= 0) {
-            gemm_param.c.primary = LIBXSMM_ACCESS_RAW(4, sizeof(DType), (char*)filter_prv + partial_filter_id * sizeof(DType) * K * M, i_m, i_k, 0, 0, Kb, bk, bm); 
+            gemm_param.c.primary = LIBXSMM_ACCESS_RW(4, sizeof(DType), (char*)filter_prv + partial_filter_id * sizeof(DType) * K * M, i_m, i_k, 0, 0, Kb, bk, bm); 
           }
          
           if ((i_n == 0) && (brcount != Nb) && (partial_filter_id < 0)) {
@@ -322,7 +325,7 @@ int gemm_benchmark(int argc, char** argv) {
           [&](int* ind) {
             int partial_filter_id = ind[0], i_m = ind[1], i_k = ind[2];
             libxsmm_meltw_unary_param zero_param;
-            zero_param.out.primary = (void*)LIBXSMM_ACCESS_RAW(4, sizeof(DType), (char*)filter_prv + partial_filter_id * sizeof(DType) * K * M, i_m, i_k, 0, 0, Kb, bk, bm);
+            zero_param.out.primary = (void*)LIBXSMM_ACCESS_RW(4, sizeof(DType), (char*)filter_prv + partial_filter_id * sizeof(DType) * K * M, i_m, i_k, 0, 0, Kb, bk, bm);
             zero_kernel( &zero_param );   
           },
           [&]() {},
@@ -334,8 +337,8 @@ int gemm_benchmark(int argc, char** argv) {
           [&](int* ind) {
             int i_n = ind[0], i_k = ind[1];
             libxsmm_meltw_unary_param trans_param;
-            trans_param.in.primary  = LIBXSMM_ACCESS_RAW(4, sizeof(DType), input, i_n, i_k, 0, 0, Kb, bn, bk);
-            trans_param.out.primary = LIBXSMM_ACCESS_RAW(4, sizeof(DType), tr_input, i_k, i_n, 0, 0, Nb, bk, bn);
+            trans_param.in.primary  = LIBXSMM_ACCESS_RW(4, sizeof(DType), input, i_n, i_k, 0, 0, Kb, bn, bk);
+            trans_param.out.primary = LIBXSMM_ACCESS_RW(4, sizeof(DType), tr_input, i_k, i_n, 0, 0, Nb, bk, bn);
             inp_trans_kernel(&trans_param);
           },
           [&]() {},
@@ -345,8 +348,8 @@ int gemm_benchmark(int argc, char** argv) {
           [&](int* ind) {
             int i_n = ind[0], i_m = ind[1];
             libxsmm_meltw_unary_param trans_param;
-            trans_param.in.primary  = LIBXSMM_ACCESS_RAW(4, sizeof(DType), output, i_n, i_m, 0, 0, Mb, bn, bm);
-            trans_param.out.primary = LIBXSMM_ACCESS_RAW(4, sizeof(DType), tr_output, i_m, i_n, 0, 0, Nb, bn, bm);
+            trans_param.in.primary  = LIBXSMM_ACCESS_RW(4, sizeof(DType), output, i_n, i_m, 0, 0, Mb, bn, bm);
+            trans_param.out.primary = LIBXSMM_ACCESS_RW(4, sizeof(DType), tr_output, i_m, i_n, 0, 0, Nb, bn, bm);
             out_trans_kernel(&trans_param);
           },
           [&]() {},
@@ -360,12 +363,12 @@ int gemm_benchmark(int argc, char** argv) {
           int partial_filter_id = gemm_loop.get_tid_in_parallel_dim('c', ind);       
           libxsmm_gemm_param gemm_param;
           gemm_param.op.tertiary = (void*)&brcount;
-          gemm_param.a.primary = LIBXSMM_ACCESS_RAW(4, sizeof(DType), tr_output, i_m, i_n, 0, 0, Nb, bn, bm);
-          gemm_param.b.primary = LIBXSMM_ACCESS_RAW(4, sizeof(DType), tr_input, i_k, i_n, 0, 0, Nb, bk, bn);
-          gemm_param.c.primary = LIBXSMM_ACCESS_RAW(4, sizeof(DType), filter, i_m, i_k, 0, 0, Kb, bk, bm);
+          gemm_param.a.primary = LIBXSMM_ACCESS_RW(4, sizeof(DType), tr_output, i_m, i_n, 0, 0, Nb, bn, bm);
+          gemm_param.b.primary = LIBXSMM_ACCESS_RW(4, sizeof(DType), tr_input, i_k, i_n, 0, 0, Nb, bk, bn);
+          gemm_param.c.primary = LIBXSMM_ACCESS_RW(4, sizeof(DType), filter, i_m, i_k, 0, 0, Kb, bk, bm);
 
           if (partial_filter_id >= 0) {
-            gemm_param.c.primary = LIBXSMM_ACCESS_RAW(4, sizeof(DType), (char*)filter_prv + partial_filter_id * sizeof(DType) * K * M, i_m, i_k, 0, 0, Kb, bk, bm); 
+            gemm_param.c.primary = LIBXSMM_ACCESS_RW(4, sizeof(DType), (char*)filter_prv + partial_filter_id * sizeof(DType) * K * M, i_m, i_k, 0, 0, Kb, bk, bm); 
           }
                 
           if (private_trans > 0) {
@@ -377,24 +380,24 @@ int gemm_benchmark(int argc, char** argv) {
               out_trans_tracker[tid*out_trans_tracker_size+i_m] = 1;
               for (_i_n = 0; _i_n < Nb; _i_n++) {
                 libxsmm_meltw_unary_param trans_param;
-                trans_param.in.primary  = LIBXSMM_ACCESS_RAW(4, sizeof(DType), output, _i_n, i_m, 0, 0, Mb, bn, bm);
-                trans_param.out.primary = LIBXSMM_ACCESS_RAW(4, sizeof(DType), (char*)tr_output_prv + tid * sizeof(DType) * N * M, i_m, _i_n, 0, 0, Nb, bn, bm);
+                trans_param.in.primary  = LIBXSMM_ACCESS_RW(4, sizeof(DType), output, _i_n, i_m, 0, 0, Mb, bn, bm);
+                trans_param.out.primary = LIBXSMM_ACCESS_RW(4, sizeof(DType), (char*)tr_output_prv + tid * sizeof(DType) * N * M, i_m, _i_n, 0, 0, Nb, bn, bm);
                 out_trans_kernel(&trans_param);
               }
             }
-            gemm_param.a.primary = LIBXSMM_ACCESS_RAW(4, sizeof(DType), (char*)tr_output_prv + tid * sizeof(DType) * N * M, i_m, i_n, 0, 0, Nb, bn, bm);     
+            gemm_param.a.primary = LIBXSMM_ACCESS_RW(4, sizeof(DType), (char*)tr_output_prv + tid * sizeof(DType) * N * M, i_m, i_n, 0, 0, Nb, bn, bm);     
 
             if (is_inp_transposed == 0) {
               int _i_n = 0;
               inp_trans_tracker[tid*inp_trans_tracker_size+i_k] = 1;
               for (_i_n = 0; _i_n < Nb; _i_n++) {
                 libxsmm_meltw_unary_param trans_param;
-                trans_param.in.primary  = LIBXSMM_ACCESS_RAW(4, sizeof(DType), input, _i_n, i_k, 0, 0, Kb, bn, bk);
-                trans_param.out.primary = LIBXSMM_ACCESS_RAW(4, sizeof(DType), (char*)tr_input_prv + tid * sizeof(DType) * N * K, i_k, _i_n, 0, 0, Nb, bk, bn);
+                trans_param.in.primary  = LIBXSMM_ACCESS_RW(4, sizeof(DType), input, _i_n, i_k, 0, 0, Kb, bn, bk);
+                trans_param.out.primary = LIBXSMM_ACCESS_RW(4, sizeof(DType), (char*)tr_input_prv + tid * sizeof(DType) * N * K, i_k, _i_n, 0, 0, Nb, bk, bn);
                 inp_trans_kernel(&trans_param);
               }
             }
-            gemm_param.b.primary = LIBXSMM_ACCESS_RAW(4, sizeof(DType), (char*)tr_input_prv + tid * sizeof(DType) * N * K, i_k, i_n, 0, 0, Nb, bk, bn);     
+            gemm_param.b.primary = LIBXSMM_ACCESS_RW(4, sizeof(DType), (char*)tr_input_prv + tid * sizeof(DType) * N * K, i_k, i_n, 0, 0, Nb, bk, bn);     
           }
           
           if ((i_n == 0) && (brcount != Nb) && (partial_filter_id < 0)) {
@@ -406,7 +409,8 @@ int gemm_benchmark(int argc, char** argv) {
           brgemm_kernel( &gemm_param );
 
           if ((i_n + brcount >= Nb) && (brcount != Nb) && (partial_filter_id < 0)) {
-            libxsmm_bfloat16 tmp[bk*bm];
+            int tid_tmp_buf = omp_get_thread_num();
+            libxsmm_bfloat16 *tmp = (libxsmm_bfloat16*)&tmp_array_bf16_scratch[bm*bk*tid_tmp_buf];
             libxsmm_meltw_unary_param trans_param;
             trans_param.in.primary  = gemm_param.c.primary;
             trans_param.out.primary = tmp;
@@ -454,13 +458,14 @@ int gemm_benchmark(int argc, char** argv) {
         wt_vnni_loop(
           [&](int* ind) {
             int i_m = ind[0], i_k = ind[1];
-            libxsmm_bfloat16 tmp[bk*bm];
+            int tid_tmp_buf = omp_get_thread_num();
+            libxsmm_bfloat16 *tmp = (libxsmm_bfloat16 *)&tmp_array_bf16_scratch[bm * bk * tid_tmp_buf];
             libxsmm_meltw_unary_param trans_param;
-            trans_param.in.primary  = LIBXSMM_ACCESS_RAW(4, sizeof(DType), filter, i_m, i_k, 0, 0, Kb, bk, bm);
+            trans_param.in.primary  = LIBXSMM_ACCESS_RW(4, sizeof(DType), filter, i_m, i_k, 0, 0, Kb, bk, bm);
             trans_param.out.primary = tmp;
             wt_copy_kernel(&trans_param);
             trans_param.in.primary = tmp;
-            trans_param.out.primary = LIBXSMM_ACCESS_RAW(4, sizeof(DType), filter, i_m, i_k, 0, 0, Kb, bk, bm);
+            trans_param.out.primary = LIBXSMM_ACCESS_RW(4, sizeof(DType), filter, i_m, i_k, 0, 0, Kb, bk, bm);
             wt_vnni_kernel(&trans_param);
           },
           [&]() {},
@@ -472,7 +477,7 @@ int gemm_benchmark(int argc, char** argv) {
   }
   // Check correctness if requested
   printf("##########################################\n");
-  printf("#  GEMM-UPD %d x %d x %d  (M x N x K)     \n", M, N, K);
+  printf("#  GEMM-UPD %ld x %ld x %ld  (M x N x K)     \n", M, N, K);
   printf("##########################################\n");
   if (sizeof(DType) == 2) {
     if (private_trans > 0) {
@@ -505,7 +510,7 @@ int gemm_benchmark(int argc, char** argv) {
   // Print performance numbers
   double gflop = (2.0*(double)M*(double)N*(double)K) / (1000*1000*1000);
   printf("Time is %.5g ms (%.5g GFLOPS)\n", 1000.0*(t_end-t_start)/(1.0*n_iters), gflop/((t_end-t_start)/(1.0*n_iters)));
-  printf("MEASURE %.5g %s_%d_%d_%d_%d_%d_%d_bf%d_threads%d_private_act_trans%d_npartialFilters%d\n", gflop/((t_end-t_start)/(1.0*n_iters)), loop_specs_str, M, N, K, bm, bn, bk, nbf, omp_get_max_threads(), private_trans, n_partial_filters); 
+  printf("MEASURE %.5g %s_%ld_%ld_%ld_%ld_%ld_%ld_bf%ld_threads%d_private_act_trans%ld_npartialFilters%ld\n", gflop/((t_end-t_start)/(1.0*n_iters)), loop_specs_str, M, N, K, bm, bn, bk, nbf, omp_get_max_threads(), private_trans, n_partial_filters); 
   // Free buffers
   libxsmm_free(tr_input); 
   libxsmm_free(tr_input_prv);
@@ -526,7 +531,8 @@ int gemm_benchmark(int argc, char** argv) {
   libxsmm_free(naive_filter_bf16_opt);
   libxsmm_free(inp_trans_tracker);
   libxsmm_free(out_trans_tracker);
-  libxsmm_free(filter_prv); 
+  libxsmm_free(filter_prv);
+  libxsmm_free(tmp_array_bf16_scratch);
   return 0; 
 } 
 

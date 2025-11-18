@@ -15,6 +15,7 @@
 #include <iostream>
 using namespace std;
 
+#define MAX_LOOP_DESC_SIZE 512
 #define MAX_CODE_SIZE 1048576
 
 typedef struct {
@@ -413,8 +414,12 @@ void loop_generator( FILE *fp_out, const char *_loop_nest_desc_extended ) {
   char loop_nest_desc[256];
   char barrier_positions[256];
   int jit_loop_spec = 0;
-  char loop_nest_desc_extended[strlen(_loop_nest_desc_extended)+1];
-  
+  char loop_nest_desc_extended[MAX_LOOP_DESC_SIZE];
+  // Warn if input descriptor is too long
+  if (strlen(_loop_nest_desc_extended) >= MAX_LOOP_DESC_SIZE) {
+    fprintf(stderr, "Warning: loop descriptor string is too long and may be truncated.\n");
+  }
+
   /* Check if we have to jit the loop specs  */
   for (i=0; i < strlen(_loop_nest_desc_extended); i++) {
     if (_loop_nest_desc_extended[i] == '[') {
@@ -491,7 +496,7 @@ void loop_generator( FILE *fp_out, const char *_loop_nest_desc_extended ) {
 
     if (occurence_id == 0) {
       if (loop_params_map[loop_abs_index].jit_start > 0) {
-        sprintf(start_var_name, "%d", loop_params_map[loop_abs_index].start); 
+        sprintf(start_var_name, "%ld", loop_params_map[loop_abs_index].start); 
       } else {
         sprintf(start_var_name, "%s[%d].start", spec_array_name, loop_abs_index);
       }
@@ -501,13 +506,13 @@ void loop_generator( FILE *fp_out, const char *_loop_nest_desc_extended ) {
 
     if (occurence_id == 0) {
       if (loop_params_map[loop_abs_index].jit_end > 0) {
-        sprintf(end_var_name, "%d", loop_params_map[loop_abs_index].end); 
+        sprintf(end_var_name, "%ld", loop_params_map[loop_abs_index].end); 
       } else {
         sprintf(end_var_name, "%s[%d].end", spec_array_name, loop_abs_index);
       }
     } else {
       if (loop_params_map[loop_abs_index].jit_block_sizes > 0) {
-        sprintf(end_var_name, "%c%d + %d", tolower(loop_nest_desc[i]), occurence_id-1, loop_params_map[loop_abs_index].block_size[occurence_id-1]);
+        sprintf(end_var_name, "%c%d + %ld", tolower(loop_nest_desc[i]), occurence_id-1, loop_params_map[loop_abs_index].block_size[occurence_id-1]);
       } else {
         sprintf(end_var_name, "%c%d + %s[%d].block_size[%d]", tolower(loop_nest_desc[i]), occurence_id-1, spec_array_name, loop_abs_index, occurence_id-1);
       }
@@ -516,20 +521,20 @@ void loop_generator( FILE *fp_out, const char *_loop_nest_desc_extended ) {
     if (is_blocked) {
       if (occurence_id == loop_map[tolower(loop_nest_desc[i])]-1) {
         if (loop_params_map[loop_abs_index].jit_step > 0) {
-          sprintf(step_var_name, "%d", loop_params_map[loop_abs_index].step);
+          sprintf(step_var_name, "%ld", loop_params_map[loop_abs_index].step);
         } else {
           sprintf(step_var_name, "%s[%d].step", spec_array_name, loop_abs_index);
         }
       } else {
         if (loop_params_map[loop_abs_index].jit_block_sizes > 0) {
-          sprintf(step_var_name, "%d", loop_params_map[loop_abs_index].block_size[occurence_id]);
+          sprintf(step_var_name, "%ld", loop_params_map[loop_abs_index].block_size[occurence_id]);
         } else {
           sprintf(step_var_name, "%s[%d].block_size[%d]", spec_array_name, loop_abs_index, occurence_id);
         }
       }
     } else {
       if (loop_params_map[loop_abs_index].jit_step > 0) {
-        sprintf(step_var_name, "%d", loop_params_map[loop_abs_index].step);
+        sprintf(step_var_name, "%ld", loop_params_map[loop_abs_index].step);
       } else {
         sprintf(step_var_name, "%s[%d].step", spec_array_name, loop_abs_index);
       }

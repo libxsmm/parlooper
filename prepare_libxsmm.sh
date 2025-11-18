@@ -15,6 +15,9 @@ if [[ -z "${PARLOOPER_COMPILER}" ]]; then
 elif [[ "${PARLOOPER_COMPILER}" == "icc" ]]; then
   CC_USE=icc
   CXX_USE=icpc
+elif [[ "${PARLOOPER_COMPILER}" == "icx" ]]; then
+  CC_USE=icx
+  CXX_USE=icpx
 elif [[ "${PARLOOPER_COMPILER}" == "clang" ]]; then
   CC_USE=clang
   CXX_USE=clang++
@@ -25,7 +28,7 @@ else
   CC_USE=gcc
   CXX_USE=g++
 fi
-
+echo "Using compiler ${CC_USE} and ${CXX_USE} to build LIBXSMM and LIBXSMM_DNN"
 BRANCH=main
 BRANCHDNN=main
 if [ $# -eq 2 ]; then

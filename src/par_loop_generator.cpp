@@ -17,6 +17,7 @@
 /* for the definition of threaded_loop_par_type enum values */
 #include "threaded_loops.h"
 
+#define MAX_LOOP_DESC_SIZE 512
 #define MAX_CODE_SIZE 1048576
 //#define GENERATE_COMMON_LOOPS
 //#define STAND_ALONE
@@ -780,10 +781,15 @@ std::string loop_generator(const char* ____loop_nest_desc_extended) {
   int use_2d_par = 0;
   int use_3d_par = 0;
   int par_levels = 0;
-  char ___loop_nest_desc_extended[strlen(____loop_nest_desc_extended)+1];
-  char __loop_nest_desc_extended[strlen(___loop_nest_desc_extended)+1];
-  char _loop_nest_desc_extended[strlen(__loop_nest_desc_extended)+1];
-  char loop_nest_desc_extended[strlen(_loop_nest_desc_extended)+1];
+  char ___loop_nest_desc_extended[MAX_LOOP_DESC_SIZE];
+  char __loop_nest_desc_extended[MAX_LOOP_DESC_SIZE];
+  char _loop_nest_desc_extended[MAX_LOOP_DESC_SIZE];
+  char loop_nest_desc_extended[MAX_LOOP_DESC_SIZE];
+
+  /* Warn if the input string has length more than MAX_LOOP_DESC_SIZE */
+  if (strlen(____loop_nest_desc_extended) >= MAX_LOOP_DESC_SIZE) {
+    fprintf(stderr, "Warning: loop nest description string is too long and may be truncated.\n");
+  }
 
   strcpy(___loop_nest_desc_extended, ____loop_nest_desc_extended);
 
@@ -916,7 +922,7 @@ std::string loop_generator(const char* ____loop_nest_desc_extended) {
 
     if (occurence_id == 0) {
       if (loop_params_map[loop_abs_index].jit_start > 0) {
-        sprintf(start_var_name, "%d", loop_params_map[loop_abs_index].start);
+        sprintf(start_var_name, "%ld", loop_params_map[loop_abs_index].start);
       } else {
         sprintf(
             start_var_name, "%s[%d].start", spec_array_name, loop_abs_index);
@@ -928,7 +934,7 @@ std::string loop_generator(const char* ____loop_nest_desc_extended) {
 
     if (occurence_id == 0) {
       if (loop_params_map[loop_abs_index].jit_end > 0) {
-        sprintf(end_var_name, "%d", loop_params_map[loop_abs_index].end);
+        sprintf(end_var_name, "%ld", loop_params_map[loop_abs_index].end);
       } else {
         sprintf(end_var_name, "%s[%d].end", spec_array_name, loop_abs_index);
       }
@@ -936,7 +942,7 @@ std::string loop_generator(const char* ____loop_nest_desc_extended) {
       if (loop_params_map[loop_abs_index].jit_block_sizes > 0) {
         sprintf(
             end_var_name,
-            "%c%d + %d",
+            "%c%d + %ld",
             tolower(loop_nest_desc[i]),
             occurence_id - 1,
             loop_params_map[loop_abs_index].block_size[occurence_id - 1]);
@@ -955,7 +961,7 @@ std::string loop_generator(const char* ____loop_nest_desc_extended) {
     if (is_blocked) {
       if (occurence_id == loop_map[tolower(loop_nest_desc[i])] - 1) {
         if (loop_params_map[loop_abs_index].jit_step > 0) {
-          sprintf(step_var_name, "%d", loop_params_map[loop_abs_index].step);
+          sprintf(step_var_name, "%ld", loop_params_map[loop_abs_index].step);
         } else {
           sprintf(
               step_var_name, "%s[%d].step", spec_array_name, loop_abs_index);
@@ -964,7 +970,7 @@ std::string loop_generator(const char* ____loop_nest_desc_extended) {
         if (loop_params_map[loop_abs_index].jit_block_sizes > 0) {
           sprintf(
               step_var_name,
-              "%d",
+              "%ld",
               loop_params_map[loop_abs_index].block_size[occurence_id]);
         } else {
           sprintf(
@@ -977,7 +983,7 @@ std::string loop_generator(const char* ____loop_nest_desc_extended) {
       }
     } else {
       if (loop_params_map[loop_abs_index].jit_step > 0) {
-        sprintf(step_var_name, "%d", loop_params_map[loop_abs_index].step);
+        sprintf(step_var_name, "%ld", loop_params_map[loop_abs_index].step);
       } else {
         sprintf(step_var_name, "%s[%d].step", spec_array_name, loop_abs_index);
       }
