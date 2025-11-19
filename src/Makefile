@@ -23,7 +23,10 @@ ifeq ($(PARLOOPER_COMPILER),icc)
   CXX := icpc
   CXXFLAGS := -fopenmp -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14 -O2 
 endif
-LDFLAGS = -ldl 
+ifeq ($(PARLOOPER_COMPILER),icx)
+  CXX := icpx
+  CXXFLAGS := -qopenmp -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14 -O2 
+endif
 IFLAGS = -I../include -I../utils -I$(LIBXSMM_ROOT)/include -I$(LIBXSMM_DNN_ROOT)/include
 SRCDIRS = ../utils ../src .
 SRCFILES := par_loop_generator.cpp

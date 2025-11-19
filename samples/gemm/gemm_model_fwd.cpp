@@ -526,16 +526,16 @@ int gemm_benchmark(int argc, char** argv) {
   // Check correctness if requested
   if (n_layers == 1) {
     printf("##########################################\n");
-    printf("#  GEMM %d x %d x %d  (M x N x K)        \n", M, N, K);
+    printf("#  GEMM %ld x %ld x %ld  (M x N x K)        \n", M, N, K);
     printf("##########################################\n");
   } else {
     printf("##############################################################\n");
-    printf("    %d Layer MLP with sizes  %d x %d x %d  (M x N x K)  \n", n_layers, M, N, K);
+    printf("    %ld Layer MLP with sizes  %ld x %ld x %ld  (M x N x K)  \n", n_layers, M, N, K);
     printf("##############################################################\n");
   }
   printf("Precision  : %s\n", prec_string);
   printf("Activation : %s\n", fuse_string);
-  printf("Ring buffer: %d\n", use_ping_pong_bufs);
+  printf("Ring buffer: %ld\n", use_ping_pong_bufs);
   if (check_correctness) {
     if (int8_gemm > 0) {
       matrix_copy_NCNC_to_NC_bf8( (libxsmm_bfloat8*)ACT[n_layers], (libxsmm_bfloat8*)naive_output_opt_i8, 1, N, M, bn, bm );
@@ -700,13 +700,13 @@ int gemm_benchmark(int argc, char** argv) {
             int nc = ind[0], s1 = ind[1], nk = ind[2];
             char record[256];
             int my_thread_id = omp_get_thread_num();
-            sprintf(record, "WGT%d[%d][%d]", i, s1, nc);
+            sprintf(record, "WGT%ld[%d][%d]", i, s1, nc);
             std::string a_access(record);
             inp_trace[my_thread_id].push_back(a_access);
-            sprintf(record, "ACT%d[%d][%d]", i,  nk, nc);
+            sprintf(record, "ACT%ld[%d][%d]", i,  nk, nc);
             std::string b_access(record);
             inp_trace[my_thread_id].push_back(b_access);
-            sprintf(record, "ACT%d[%d][%d]", i+1,  nk, s1);
+            sprintf(record, "ACT%ld[%d][%d]", i+1,  nk, s1);
             std::string c_access(record);
             inp_trace[my_thread_id].push_back(c_access);
           },
@@ -728,9 +728,9 @@ int gemm_benchmark(int argc, char** argv) {
     printf("Model time gemm is %.5g ms (%.5g GFLOPS)\n", modeled_time, gflop/(modeled_time/1000.0));
     printf("Tracing takes %.5g ms and modeling takes %.5g ms\n", 1000.0*(t2-t_trace_start), 1000.0*(t3-t2));
     printf("Compilation time is %.5g s\n", t1-t0);
-    printf("MODELED %.5g %s_%d_%d_%d_%d_%d_%d_bf%d_threads%d\n", gflop/(modeled_time/1000.0), loop_specs_str, M, N, K, bm, bn, bk, kbf, omp_get_max_threads());
+    printf("MODELED %.5g %s_%ld_%ld_%ld_%ld_%ld_%ld_bf%ld_threads%d\n", gflop/(modeled_time/1000.0), loop_specs_str, M, N, K, bm, bn, bk, kbf, omp_get_max_threads());
   }
-  printf("MEASURE %.5g %s_%d_%d_%d_%d_%d_%d_bf%d_threads%d\n", gflop/((t_end-t_start)/(1.0*n_iters)), loop_specs_str, M, N, K, bm, bn, bk, kbf, omp_get_max_threads());
+  printf("MEASURE %.5g %s_%ld_%ld_%ld_%ld_%ld_%ld_bf%ld_threads%d\n", gflop/((t_end-t_start)/(1.0*n_iters)), loop_specs_str, M, N, K, bm, bn, bk, kbf, omp_get_max_threads());
 
   // Free buffers
   libxsmm_free(itm_f32_out);

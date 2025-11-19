@@ -30,6 +30,8 @@ void* jit_compile_and_load(
       compiler = std::string("clang++");  
     } else if (strcmp(env_compiler, "icc") == 0) {
       compiler = std::string("icpc");  
+    } else if (strcmp(env_compiler, "icx") == 0) {
+      compiler = std::string("icpx");  
     } else if (strcmp(env_compiler, "gcc") == 0) {
       compiler = std::string("g++");  
     }   
