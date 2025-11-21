@@ -44,7 +44,7 @@ int is_dense_grid_point(unsigned long long grid_point_id, int n_dense_grid_point
 template<typename DType, typename DTypeOut>
 int spgemm_benchmark(int argc, char** argv) {
   // Setup default SPGEMM sizes
-  int check_correctness = 1;
+  int check_correctness = 0;
   char loop_specs_str[256] = "aBC";  
   long M = 128, N = 256, K = 512;
   long bm = 32, N_target_blocks = 8;
@@ -92,6 +92,7 @@ int spgemm_benchmark(int argc, char** argv) {
     sparse_block_bn = atoi(argv[12]);
     use_trans_a = atoi(argv[13]);
     n_iters = atoi(argv[14]);
+    check_correctness = atoi(argv[15]);
     vnni_block_size = (use_bf16 > 0) ? libxsmm_cpuid_dot_pack_factor(LIBXSMM_DATATYPE_BF16) : ((use_i8 > 0) ? libxsmm_cpuid_dot_pack_factor(LIBXSMM_DATATYPE_I8) : 1);
     Mb = M/bm;
   }
@@ -372,17 +373,19 @@ int spgemm_benchmark(int argc, char** argv) {
   Nb = l_i;
   printf("Was targeting for %ld logical N blocks, ended up with %ld logical N blocks...\n", N_target_blocks, Nb);
 
-  /* dense routine */
-  if (use_i8 == 0) {
-    memset(&LIBXSMM_VLA_ACCESS(3, l_p_c_gold, 0, 0, 0, N, bm), 0, Mb * bm * N * sizeof(float) );
+  if (check_correctness > 0){
+    /* dense routine */
+    if (use_i8 == 0)
+    {
+      memset(&LIBXSMM_VLA_ACCESS(3, l_p_c_gold, 0, 0, 0, N, bm), 0, Mb * bm * N * sizeof(float));
 #if defined(_OPENMP)
 # pragma omp parallel for collapse(2)
 #endif  
-    for ( l_i = 0; l_i < Mb; l_i++) {
-      for ( l_j = 0; l_j < N; l_j++) {
-        for ( l_jj = 0; l_jj < K; l_jj++) {
+    for (int l_i = 0; l_i < Mb; l_i++) {
+      for (int l_j = 0; l_j < N; l_j++) {
+        for (int l_jj = 0; l_jj < K; l_jj++) {
           LIBXSMM_PRAGMA_SIMD
-          for (l_k = 0; l_k < bm; l_k++) {
+          for (int l_k = 0; l_k < bm; l_k++) {
             if (use_trans_a > 0) {
               LIBXSMM_VLA_ACCESS(3, l_p_c_gold_t, l_i, l_k, l_j, bm, N)
                 +=   LIBXSMM_VLA_ACCESS(3, l_p_a_t, l_i, l_k, l_jj, bm, K)
@@ -401,11 +404,11 @@ int spgemm_benchmark(int argc, char** argv) {
 #if defined(_OPENMP)
 # pragma omp parallel for collapse(2)
 #endif 
-    for ( l_i = 0; l_i < Mb; l_i++) {
-      for ( l_j = 0; l_j < N; l_j++) {
-        for ( l_jj = 0; l_jj < K; l_jj++) {
+    for (int l_i = 0; l_i < Mb; l_i++) {
+      for (int l_j = 0; l_j < N; l_j++) {
+        for (int l_jj = 0; l_jj < K; l_jj++) {
           LIBXSMM_PRAGMA_SIMD
-          for (l_k = 0; l_k < bm; l_k++) {
+          for (int l_k = 0; l_k < bm; l_k++) {
             if (use_trans_a > 0) {      
               LIBXSMM_VLA_ACCESS(3, l_p_c_gold_i32_t, l_i, l_k, l_j, bm, N)
                 +=   (int)LIBXSMM_VLA_ACCESS(3, l_p_a_i8_t, l_i, l_k, l_jj, bm, K)
@@ -419,6 +422,7 @@ int spgemm_benchmark(int argc, char** argv) {
         }
       }
     }
+  }
   }
 
   /* Create sparse routines */
@@ -534,6 +538,7 @@ int spgemm_benchmark(int argc, char** argv) {
   }
 
   /* compare */
+  if (check_correctness > 0) {
   if (use_i8 == 0) {
     libxsmm_matdiff(&norms_csc, LIBXSMM_DATATYPE_F32, Mb * N * bm, 1, l_c_gold, l_c_spmm_f32, 0, 0);
   } else {
@@ -547,6 +552,7 @@ int spgemm_benchmark(int argc, char** argv) {
   printf("Linf rel.error: %.24f\n", norms_csc.linf_rel);
   printf("Check-norm    : %.24f\n", libxsmm_matdiff_epsilon(&norms_csc));
   libxsmm_matdiff_reduce(&diff, &norms_csc);
+  }
 
   // Warmup iteration for i-caches
   for (i = 0; i < n_warmup_iters; i++) {
@@ -634,7 +640,7 @@ int spgemm_benchmark(int argc, char** argv) {
   free(kernels_zero);
 
   return 0;
-}
+  }
 
 int main(int argc, char** argv) {
   int use_prec = 0;
