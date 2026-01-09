@@ -123,8 +123,11 @@ def plot_grids(grids, dims, output_prefix='thread_assignment', show_numbers=True
     else:
         cmap = plt.colormaps.get_cmap('nipy_spectral').resampled(num_threads)
     
+    # If interactive mode is requested, use cuboid/3D visualization
+    if interactive:
+        plot_cuboid_grids(grids, dims, cmap, num_threads, output_prefix, interactive)
     # If cuboid mode and multiple K-layers, create 3D visualization
-    if num_k_layers > 1 and cuboid:
+    elif num_k_layers > 1 and cuboid:
         plot_cuboid_grids(grids, dims, cmap, num_threads, output_prefix, interactive)
     # If multiple K-layers and combined mode, create a single figure with subplots
     elif num_k_layers > 1 and combined:
@@ -618,7 +621,11 @@ def plot_combined_grids(grids, dims, cmap, num_threads, output_prefix, show_numb
                 f'Grid size: {m_size} × {n_size}, Threads: 0-{dims["max_thread"]}',
                 fontsize=14, weight='bold', y=0.98)
     
-    plt.tight_layout(rect=[0, 0, 0.93, 0.95])
+    # Use constrained_layout compatible approach or suppress the warning
+    import warnings
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message="This figure includes Axes that are not compatible with tight_layout")
+        plt.tight_layout(rect=[0, 0, 0.93, 0.95])
     
     # Save the combined figure
     output_filename = f'{output_prefix}_combined.png'
