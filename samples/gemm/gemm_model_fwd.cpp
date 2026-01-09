@@ -13,6 +13,15 @@
 #define ALIGNMENT_SIZE 64
 //#define USE_EQN_REDUCE
 #define BENCH_REDUCE
+#define PRINT_THREAD_WORK_ASSIGNMENT
+
+// Define struct to store work per thread
+typedef struct {
+  long thread_id;
+  long m_block;
+  long n_block;
+  long k_layer;
+} thread_work_t;
 
 template<typename DType>
 void run_gemm(long n_layers, long M, long N, long K,
@@ -21,7 +30,7 @@ void run_gemm(long n_layers, long M, long N, long K,
               ThreadedLoop<3> gemm_loop, libxsmm_gemmfunction brgemm_kernel, libxsmm_meltwfunction_unary zero_kernel, libxsmm_tilecfgfunction tileconfig_kernel, libxsmm_tilecfgfunction tilerelease_kernel, long use_sf_curve, unsigned char *sf_curve_index_map, unsigned int index_tsize,
               ThreadedLoop<2> reduce_output_loop, libxsmm_meltwfunction_binary l_add_kernel, libxsmm_meqn_function reduce_func, libxsmm_meltwfunction_unary l_reduce_kernel, long skip_reduce,
               long xform_A_upfront, ThreadedLoop<2> a_xform_loop, libxsmm_meltwfunction_unary a_xform_kernel,
-              long xform_B_upfront, ThreadedLoop<2> b_xform_loop, libxsmm_meltwfunction_unary b_xform_kernel) {
+              long xform_B_upfront, ThreadedLoop<2> b_xform_loop, libxsmm_meltwfunction_unary b_xform_kernel, long unblocked_bc) {
   long brcount = brcount_in;
   for (int i = 0; i < n_layers; i++) {
     if (upfront_xforms > 0) {
@@ -70,12 +79,24 @@ void run_gemm(long n_layers, long M, long N, long K,
         if (xform_B_upfront > 0) {
           gemm_param.b.primary = (void*)((DType*)scratch_B + i_n * K * bn + i_k * bk * bn + i_k_split * (K/split_K_factor) * bn  );      
         } else {
-          gemm_param.b.primary = (void*)((DType*)ACT[2*i] + i_n * K * bn + i_k * bk * bn + i_k_split * (K/split_K_factor) * bn );
+          if (unblocked_bc > 0) {
+            gemm_param.b.primary = (void*)((DType*)ACT[2*i] + i_n * K * bn + i_k * bk + i_k_split * (K/split_K_factor));      
+          } else { 
+            gemm_param.b.primary = (void*)((DType*)ACT[2*i] + i_n * K * bn + i_k * bk * bn + i_k_split * (K/split_K_factor) * bn );
+          }
         }
         if (i_k_split > 0) {
-          gemm_param.c.primary = (void*)((DType*)output_partial[i_k_split-1] + i_n * M * bn + i_m * bn * bm );    
+          if (unblocked_bc > 0) {
+            gemm_param.c.primary = (void *)((DType *)output_partial[i_k_split - 1] + i_n * M * bn + i_m * bm);
+          } else {
+            gemm_param.c.primary = (void*)((DType*)output_partial[i_k_split-1] + i_n * M * bn + i_m * bn * bm );    
+          }
         } else {
-          gemm_param.c.primary = (void*)((DType*)ACT[2*i+1] + i_n * M * bn + i_m * bn * bm );
+          if (unblocked_bc > 0) {
+            gemm_param.c.primary = (void *)((DType *)ACT[2 * i + 1] + i_n * M * bn + i_m * bm);
+          } else {
+            gemm_param.c.primary = (void*)((DType*)ACT[2*i+1] + i_n * M * bn + i_m * bn * bm );
+          }
         }
         if ((i_k == 0) && (brcount != (Kb/split_K_factor))) {
           libxsmm_meltw_unary_param zero_param;
@@ -93,9 +114,15 @@ void run_gemm(long n_layers, long M, long N, long K,
           int i_m = ind[0], i_n = ind[1];
           if (split_K_factor == 2) {
             libxsmm_meltw_binary_param add_param;
-            add_param.in0.primary  = (void*)((DType*)output_partial[0] + i_n * M * bn + i_m * bn * bm );
-            add_param.in1.primary  = (void*)((DType*)ACT[2*i+1] + i_n * M * bn + i_m * bn * bm );       
-            add_param.out.primary = (void*)((DType*)ACT[2*i+1] + i_n * M * bn + i_m * bn * bm );
+            if (unblocked_bc > 0) {
+              add_param.in0.primary = (void *)((DType *)output_partial[0] + i_n * M * bn + i_m * bm);
+              add_param.in1.primary = (void *)((DType *)ACT[2 * i + 1] + i_n * M * bn + i_m * bm);
+              add_param.out.primary = (void *)((DType *)ACT[2 * i + 1] + i_n * M * bn + i_m * bm);
+            } else {
+              add_param.in0.primary  = (void*)((DType*)output_partial[0] + i_n * M * bn + i_m * bn * bm );
+              add_param.in1.primary  = (void*)((DType*)ACT[2*i+1] + i_n * M * bn + i_m * bn * bm );       
+              add_param.out.primary = (void*)((DType*)ACT[2*i+1] + i_n * M * bn + i_m * bn * bm );
+            }
             l_add_kernel(&add_param);
           } else {
 #ifdef USE_EQN_REDUCE
@@ -109,14 +136,28 @@ void run_gemm(long n_layers, long M, long N, long K,
 #else
             libxsmm_meltw_binary_param add_param;
             libxsmm_meltw_unary_param reduce_param;
-            DType reduce_scratch[bm*bn];
-            reduce_param.in.primary = (void*)((DType*)output_partial[0] + i_n * M * bn + i_m * bn * bm );
-            reduce_param.out.primary  = (void*)reduce_scratch;
-            add_param.in0.primary  = (void*)reduce_scratch;
-            add_param.in1.primary  = (void*)((DType*)ACT[2*i+1] + i_n * M * bn + i_m * bn * bm );       
-            add_param.out.primary = (void*)((DType*)ACT[2*i+1] + i_n * M * bn + i_m * bn * bm );
-            l_reduce_kernel(&reduce_param);
-            l_add_kernel(&add_param);
+            if (unblocked_bc > 0) {
+              DType reduce_scratch[bm];
+              long l_in = 0;
+              for (l_in = 0; l_in < bn; l_in++) {
+                reduce_param.in.primary = (void*)((DType*)output_partial[0] + i_n * M * bn + i_m * bm + l_in * M );
+                reduce_param.out.primary  = (void*)reduce_scratch;
+                add_param.in0.primary  = (void*)reduce_scratch;
+                add_param.in1.primary  = (void *)((DType *)ACT[2 * i + 1] + i_n * M * bn + i_m * bm + l_in * M);
+                add_param.out.primary = (void *)((DType *)ACT[2 * i + 1] + i_n * M * bn + i_m * bm + l_in * M);
+                l_reduce_kernel(&reduce_param);
+                l_add_kernel(&add_param);
+              }
+            } else {
+              DType reduce_scratch[bm*bn];
+              reduce_param.in.primary = (void*)((DType*)output_partial[0] + i_n * M * bn + i_m * bn * bm );
+              reduce_param.out.primary  = (void*)reduce_scratch;
+              add_param.in0.primary  = (void*)reduce_scratch;
+              add_param.in1.primary  = (void*)((DType*)ACT[2*i+1] + i_n * M * bn + i_m * bn * bm );       
+              add_param.out.primary = (void*)((DType*)ACT[2*i+1] + i_n * M * bn + i_m * bn * bm );
+              l_reduce_kernel(&reduce_param);
+              l_add_kernel(&add_param);
+            }
 #endif
           }
         },
@@ -147,6 +188,8 @@ int gemm_benchmark(int argc, char** argv) {
   char gemm_config[256] = "VN";
   long upfront_xforms = 0, xform_A_upfront = 0, xform_B_upfront = 0;
   long split_K_factor = 1;
+  long unblocked_bc = 0;
+
   libxsmm_blasint my_eqn0;
   libxsmm_meqn_arg_metadata arg_metadata;
   libxsmm_meqn_op_metadata  op_metadata;
@@ -199,6 +242,10 @@ int gemm_benchmark(int argc, char** argv) {
     }
     if (argc > 16) {
       split_K_factor = atoi(argv[16]);
+    }
+    if (argc > 17)
+    {
+      unblocked_bc = atoi(argv[17]);
     }
   }
 
@@ -275,8 +322,13 @@ int gemm_benchmark(int argc, char** argv) {
   parlooper_convert_lp_f32<DType>( (void*)naive_filter_lp, naive_filter, M*K);
   for (i = 0; i < n_layers; i++) {
     parlooper_matrix_copy_KC_to_KCCK<DType>( (void*)naive_filter_lp, (void*)WGT[i], K, M, bk, bm, flat_weight_layout, trans_a );
-    parlooper_matrix_copy_NC_to_NCNC<DType>( (void*)naive_input_lp, (void*)ACT[2*i] , N, K, bn, bk, trans_b );
-    parlooper_matrix_copy_NC_to_NCNC<DType>( (void*)naive_output_lp, (void*)ACT[2*i+1], N, M, bn, bm, 0 );
+    if (unblocked_bc > 0) {
+      memcpy((void *)ACT[2 * i], (void *) naive_input_lp, N*K*sizeof(DType));
+      memcpy((void *)ACT[2 * i + 1], (void *)naive_output_lp, N*M*sizeof(DType));
+    } else {
+      parlooper_matrix_copy_NC_to_NCNC<DType>( (void*)naive_input_lp, (void*)ACT[2*i] , N, K, bn, bk, trans_b );
+      parlooper_matrix_copy_NC_to_NCNC<DType>( (void*)naive_output_lp, (void*)ACT[2*i+1], N, M, bn, bm, 0 );
+    }
   }
   
   // Setup TPP kernels
@@ -352,10 +404,10 @@ int gemm_benchmark(int argc, char** argv) {
     check_null_ptr(scratch_B, "scratch B array");
   }
 
-  auto l_shape = libxsmm_create_gemm_shape( bm, bn, bk, (trans_a > 0 && upfront_xforms == 0) ? bk : bm, (trans_b > 0 && upfront_xforms == 0) ? bn : bk, bm, dtype, dtype, dtype, LIBXSMM_DATATYPE_F32 );
+  auto l_shape = libxsmm_create_gemm_shape( bm, bn, bk, (trans_a > 0 && upfront_xforms == 0) ? bk : bm, (trans_b > 0 && upfront_xforms == 0) ? bn : ((unblocked_bc > 0) ? K : bk), (unblocked_bc > 0) ? M : bm, dtype, dtype, dtype, LIBXSMM_DATATYPE_F32 );
   auto l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
-  auto l_brconfig = libxsmm_create_gemm_batch_reduce_config( LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, bm*bk*sizeof(DType), bk*bn*sizeof(DType), brcount );
-  auto l_unary_shape = libxsmm_create_meltw_unary_shape(bm*bn, 1, bm*bn, bm*bn, dtype, dtype, dtype);
+  auto l_brconfig = libxsmm_create_gemm_batch_reduce_config(LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, bm * bk * sizeof(DType), (unblocked_bc > 0) ? bk * sizeof(DType) : bk * bn * sizeof(DType), brcount);
+  auto l_unary_shape = libxsmm_create_meltw_unary_shape((unblocked_bc > 0) ? bm : bm * bn, (unblocked_bc > 0) ? bn : 1, (unblocked_bc > 0) ? M : bm * bn, (unblocked_bc > 0) ? M : bm * bn, dtype, dtype, dtype);
 
   if (brcount == (Kb/split_K_factor)) l_flags |= LIBXSMM_GEMM_FLAG_BETA_0;
 
@@ -364,11 +416,11 @@ int gemm_benchmark(int argc, char** argv) {
   auto tilerelease_kernel = libxsmm_dispatch_tilecfg_gemm( l_shape, l_tr_flags );
   auto brgemm_kernel      = libxsmm_dispatch_brgemm( l_shape, l_flags, l_prefetch_flags, l_brconfig );
 
-  auto l_binary_shape = libxsmm_create_meltw_binary_shape(bm, bn, bm, bm, bm, dtype, dtype, dtype, LIBXSMM_DATATYPE_F32);
+  auto l_binary_shape = libxsmm_create_meltw_binary_shape(bm, (unblocked_bc == 0) ? bn : ((split_K_factor > 2) ? 1 : bn), (unblocked_bc > 0) ? M : bm, (unblocked_bc > 0) ? M : bm, (unblocked_bc > 0) ? M : bm, dtype, dtype, dtype, LIBXSMM_DATATYPE_F32);
   auto l_add_kernel = libxsmm_dispatch_meltw_binary( LIBXSMM_MELTW_TYPE_BINARY_ADD, l_binary_shape, LIBXSMM_MELTW_FLAG_BINARY_NONE);
   auto reduce_output_loop = ThreadedLoop<2>({ LoopSpecs{0, Mb, 1, true}, LoopSpecs{0, Nb, 1, true}}, "AB");
 
-  auto l_reduce_shape = libxsmm_create_meltw_unary_shape(bm*bn, n_out_copies, M*N, bm*bn, dtype, dtype, LIBXSMM_DATATYPE_F32);
+  auto l_reduce_shape = libxsmm_create_meltw_unary_shape((unblocked_bc > 0) ? bm : bm*bn, n_out_copies, M*N, (unblocked_bc > 0) ? bm : bm*bn, dtype, dtype, LIBXSMM_DATATYPE_F32);
   auto l_reduce_kernel = libxsmm_dispatch_meltw_unary( LIBXSMM_MELTW_TYPE_UNARY_REDUCE_X_OP_ADD, l_reduce_shape, LIBXSMM_MELTW_FLAG_UNARY_REDUCE_COLS);
 
   my_eqn0 = libxsmm_meqn_create();
@@ -452,7 +504,7 @@ int gemm_benchmark(int argc, char** argv) {
       gemm_loop, brgemm_kernel, zero_kernel, tileconfig_kernel, tilerelease_kernel, use_sf_curve, sf_curve_index_map, index_tsize,
       reduce_output_loop, l_add_kernel, reduce_func, l_reduce_kernel, 0,
       xform_A_upfront, a_xform_loop, a_xform_kernel,
-      xform_B_upfront, b_xform_loop, b_xform_kernel);
+      xform_B_upfront, b_xform_loop, b_xform_kernel, unblocked_bc);
 
   // Check correctness if requested
   printf("##############################################################\n");
@@ -463,7 +515,11 @@ int gemm_benchmark(int argc, char** argv) {
     libxsmm_matdiff_info norms, diff;
     libxsmm_matdiff_clear(&norms);
     libxsmm_matdiff_clear(&diff);
-    parlooper_matrix_copy_NCNC_to_NC<DType>( (void*)ACT[2*n_layers-1], (void*)naive_output_lp, N, M, bn, bm );
+    if (unblocked_bc > 0) {
+      memcpy((void *)naive_output_lp, (void *) ACT[2 * n_layers - 1], N * M * sizeof(DType));
+    } else {
+      parlooper_matrix_copy_NCNC_to_NC<DType>( (void*)ACT[2*n_layers-1], (void*)naive_output_lp, N, M, bn, bm );
+    }
     parlooper_convert_lp_f32<DType>( (void*)naive_output_lp, naive_output_opt, N*M );
     printf("##########################################\n");
     printf("#           Correctness                  #\n");
@@ -488,7 +544,7 @@ int gemm_benchmark(int argc, char** argv) {
         gemm_loop, brgemm_kernel, zero_kernel, tileconfig_kernel, tilerelease_kernel, use_sf_curve, sf_curve_index_map, index_tsize,
         reduce_output_loop, l_add_kernel, reduce_func, l_reduce_kernel, 0,
         xform_A_upfront, a_xform_loop, a_xform_kernel,
-        xform_B_upfront, b_xform_loop, b_xform_kernel);
+        xform_B_upfront, b_xform_loop, b_xform_kernel, unblocked_bc);
   }
   auto t_end = getTime();
 
@@ -502,7 +558,7 @@ int gemm_benchmark(int argc, char** argv) {
         gemm_loop, brgemm_kernel, zero_kernel, tileconfig_kernel, tilerelease_kernel, use_sf_curve, sf_curve_index_map, index_tsize,
         reduce_output_loop, l_add_kernel, reduce_func, l_reduce_kernel, 1,
         xform_A_upfront, a_xform_loop, a_xform_kernel,
-        xform_B_upfront, b_xform_loop, b_xform_kernel);
+        xform_B_upfront, b_xform_loop, b_xform_kernel, unblocked_bc);
   }
   auto t_end_noreduce = getTime();
 #endif
@@ -521,6 +577,57 @@ int gemm_benchmark(int argc, char** argv) {
   printf("Reduction diff is %.5g sec\n", ((t_end-t_start)-(t_end_noreduce-t_start_noreduce))/(1.0*n_iters));
   double reduction_vol = (((double)sizeof(DType)*(double)n_layers*(double)M*(double)N*(double)split_K_factor)/(1024.0*1024.0*1024.0));
   printf("Reductions run at %.5g GB/s\n", reduction_vol/(((t_end-t_start)-(t_end_noreduce-t_start_noreduce))/(1.0*n_iters)));
+#endif
+
+#ifdef PRINT_THREAD_WORK_ASSIGNMENT
+  // We run foo loop to capture work assignment thread_work_t
+  // Open a file to write the thread work assignment
+  FILE *f = fopen("thread_work_assignment.txt", "w");
+
+  thread_work_t *thread_work = (thread_work_t *)malloc(Mb * Nb * split_K_factor * sizeof(thread_work_t));
+  long index_to_store = 0;
+  gemm_loop(
+      [&](int *ind)
+      {
+        int tid = omp_get_thread_num();
+        int i_k = ind[0], i_m, i_n, i_k_split = 0;
+        if (use_sf_curve > 0)
+        {
+          extract_indices_from_sf_curve(&i_m, &i_n, sf_curve_index_map, ind[1] % (Mb * Nb) /* This is the index in the SF curve*/, index_tsize);
+          i_k_split = ind[1] / (Mb * Nb);
+        }
+        else
+        {
+          i_m = ind[1];
+          i_n = ind[2];
+        }
+        //printf("Thread %d: M-block %d, N-block %d, K-layer %d\n", tid, i_m, i_n, i_k_split);
+#pragma omp critical
+        {
+          if (i_k == 0) {
+            thread_work[index_to_store].thread_id = tid;
+            thread_work[index_to_store].m_block = i_m;
+            thread_work[index_to_store].n_block = i_n;
+            thread_work[index_to_store].k_layer = i_k_split;
+            index_to_store++;
+          }
+        } 
+      },
+      [&]() {},
+      [&]() {});
+
+  // Print the info stored in thread_work
+  for (long i = 0; i < index_to_store; i++)
+  {
+    fprintf(f, "Thread %d, M-block %d, N-block %d, K-layer %d\n",
+            thread_work[i].thread_id,
+            thread_work[i].m_block,
+            thread_work[i].n_block,
+            thread_work[i].k_layer);
+  }
+
+  fclose(f);
+  free(thread_work);
 #endif
 
   // Free buffers
