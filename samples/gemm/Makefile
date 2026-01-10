@@ -11,6 +11,7 @@ OUTDIR = .
 PARLOOPER_ROOT := $(if $(PARLOOPER_ROOT),$(PARLOOPER_ROOT),../../)
 LIBXSMM_ROOT := $(if $(LIBXSMM_ROOT),$(LIBXSMM_ROOT),../../libxsmm)
 LIBXSMM_DNN_ROOT := $(if $(LIBXSMM_DNN_ROOT),$(LIBXSMM_DNN_ROOT),../../libxsmm_dnn)
+ONEDNN_ROOT := $(if $(ONEDNN_ROOT),$(ONEDNN_ROOT),../../../../onednn_2026/oneDNN)
 CXX = g++
 CXXFLAGS = -fopenmp -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14 -O2 
 ifeq ($(PARLOOPER_COMPILER),gcc)
@@ -35,7 +36,7 @@ SRCDIRS = $(PARLOOPER_ROOT)/utils $(PARLOOPER_ROOT)/src .
 #SRCFILES := par_loop_cost_estimator.cpp common_loops.cpp gemm_model_fwd.cpp
 #OBJFILES := $(patsubst %,$(BLDDIR)/%,$(notdir $(SRCFILES:.cpp=-cpp.o)))
 #XFILES := $(OUTDIR)/gemm $(OUTDIR)/gemm_bwd $(OUTDIR)/gemm_upd $(OUTDIR)/loop_permute_generator
-XFILES := $(OUTDIR)/gemm
+XFILES := $(OUTDIR)/gemm $(OUTDIR)/onednn_gemm_bench
 vpath %.cpp $(SRCDIRS) 
 
 .PHONY: all
@@ -46,6 +47,9 @@ $(BLDDIR)/%-cpp.o: %.cpp
 
 $(OUTDIR)/gemm: $(BLDDIR)/par_loop_cost_estimator-cpp.o $(BLDDIR)/common_loops-cpp.o  $(BLDDIR)/gemm_model_fwd-cpp.o
 	$(CXX) $(BLDDIR)/par_loop_cost_estimator-cpp.o  $(BLDDIR)/common_loops-cpp.o  $(BLDDIR)/gemm_model_fwd-cpp.o $(PARLOOPER_ROOT)/lib/libparlooper.a $(LIBXSMM_ROOT)/lib/libxsmm.a $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -o gemm
+
+$(OUTDIR)/onednn_gemm_bench: onednn_gemm_bench.cpp
+	$(CXX) $(CXXFLAGS) $(IFLAGS) -I$(ONEDNN_ROOT)/include -I$(ONEDNN_ROOT)/build/include -I$(ONEDNN_ROOT)/examples onednn_gemm_bench.cpp -L$(ONEDNN_ROOT)/build/src -ldnnl -Wl,-rpath,$(ONEDNN_ROOT)/build/src $(LIBXSMM_ROOT)/lib/libxsmm.a -o onednn_gemm_bench
 
 $(OUTDIR)/gemm_bwd: $(BLDDIR)/par_loop_cost_estimator-cpp.o $(BLDDIR)/common_loops-cpp.o  $(BLDDIR)/gemm_model_bwd-cpp.o
 	$(CXX) $(BLDDIR)/par_loop_cost_estimator-cpp.o  $(BLDDIR)/common_loops-cpp.o  $(BLDDIR)/gemm_model_bwd-cpp.o $(PARLOOPER_ROOT)/lib/libparlooper.a $(LIBXSMM_ROOT)/lib/libxsmm.a $(CXXFLAGS) $(IFLAGS) $(LFLAGS) $(LDFLAGS) -o gemm_bwd

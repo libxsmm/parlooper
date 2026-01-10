@@ -51,7 +51,11 @@ void run_gemm(long n_layers, long M, long N, long K,
           [&](int* ind) {
             int i_n = ind[0], i_k = ind[1];
             libxsmm_meltw_unary_param xform_param;
-            xform_param.in.primary  = (void*)((DType*)ACT[2*i] + i_n * K * bn + i_k * bk * bn );
+            if (unblocked_bc == 2) {
+              xform_param.in.primary = (void *)((DType *)ACT[2*i] + i_n * K * bn + i_k * bk);
+            } else {
+              xform_param.in.primary  = (void*)((DType*)ACT[2*i] + i_n * K * bn + i_k * bk * bn );
+            }
             xform_param.out.primary = (void*)((DType*)scratch_B + i_n * K * bn + i_k * bk * bn);
             b_xform_kernel(&xform_param);
           },
@@ -395,6 +399,13 @@ int gemm_benchmark(int argc, char** argv) {
     }
   }
 
+  if (unblocked_bc ==2) {
+    upfront_xforms = 1;
+    xform_B_upfront = 1;
+    auto xform_unary_shape = libxsmm_create_meltw_unary_shape(bk, bn, K, bk, dtype, dtype, dtype);
+    b_xform_kernel = libxsmm_dispatch_meltw_unary( LIBXSMM_MELTW_TYPE_UNARY_IDENTITY, xform_unary_shape, LIBXSMM_MELTW_FLAG_UNARY_NONE );
+  }
+
   if (xform_A_upfront > 0) {
     scratch_A = (DType*)libxsmm_aligned_malloc( M*K*sizeof(DType), ALIGNMENT_SIZE);
     check_null_ptr(scratch_A, "scratch A array");
@@ -404,9 +415,9 @@ int gemm_benchmark(int argc, char** argv) {
     check_null_ptr(scratch_B, "scratch B array");
   }
 
-  auto l_shape = libxsmm_create_gemm_shape( bm, bn, bk, (trans_a > 0 && upfront_xforms == 0) ? bk : bm, (trans_b > 0 && upfront_xforms == 0) ? bn : ((unblocked_bc > 0) ? K : bk), (unblocked_bc > 0) ? M : bm, dtype, dtype, dtype, LIBXSMM_DATATYPE_F32 );
+  auto l_shape = libxsmm_create_gemm_shape( bm, bn, bk, (trans_a > 0 && upfront_xforms == 0) ? bk : bm, (trans_b > 0 && upfront_xforms == 0) ? bn : ((unblocked_bc == 1) ? K : bk), (unblocked_bc > 0) ? M : bm, dtype, dtype, dtype, LIBXSMM_DATATYPE_F32 );
   auto l_prefetch_flags = LIBXSMM_GEMM_PREFETCH_NONE;
-  auto l_brconfig = libxsmm_create_gemm_batch_reduce_config(LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, bm * bk * sizeof(DType), (unblocked_bc > 0) ? bk * sizeof(DType) : bk * bn * sizeof(DType), brcount);
+  auto l_brconfig = libxsmm_create_gemm_batch_reduce_config(LIBXSMM_GEMM_BATCH_REDUCE_STRIDE, bm * bk * sizeof(DType), (unblocked_bc == 1) ? bk * sizeof(DType) : bk * bn * sizeof(DType), brcount);
   auto l_unary_shape = libxsmm_create_meltw_unary_shape((unblocked_bc > 0) ? bm : bm * bn, (unblocked_bc > 0) ? bn : 1, (unblocked_bc > 0) ? M : bm * bn, (unblocked_bc > 0) ? M : bm * bn, dtype, dtype, dtype);
 
   if (brcount == (Kb/split_K_factor)) l_flags |= LIBXSMM_GEMM_FLAG_BETA_0;
