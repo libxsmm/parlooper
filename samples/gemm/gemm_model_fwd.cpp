@@ -10,10 +10,26 @@
 #include "threaded_loops.h"
 #include "gemm_common_utils.h"
 
+#include <sys/ioctl.h>
+#include <linux/perf_event.h>
+#include <asm/unistd.h>
+#include <errno.h>
+#include <string.h>
+
 #define ALIGNMENT_SIZE 64
 //#define USE_EQN_REDUCE
-#define BENCH_REDUCE
+//#define BENCH_REDUCE
 #define PRINT_THREAD_WORK_ASSIGNMENT
+
+//#define USE_LLC_STAT
+//#define USE_DRAM_STAT
+
+// Helper function to make the perf_event_open system call
+static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
+                            int cpu, int group_fd, unsigned long flags)
+{
+  return syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);
+}
 
 // Define struct to store work per thread
 typedef struct {
@@ -217,6 +233,16 @@ int gemm_benchmark(int argc, char** argv) {
     }
     if (argc > 9) {
       n_layers = atoi(argv[9]);
+      if (n_layers == -1) {
+        double size_total = (double)sizeof(DType)*(double)1.0*((double)M*(double)K +(double)M*(double)N +(double)K*(double)N)/(1024.0*1024.0*1024.0);
+        double low_limit_in_gb = 5.0;
+        n_layers = 1;
+        while (size_total < low_limit_in_gb) {
+          n_layers++;
+          size_total = (double)sizeof(DType)*(double)n_layers*((double)M*(double)K +(double)M*(double)N +(double)K*(double)N)/(1024.0*1024.0*1024.0);
+        }
+        printf("Autocalculated %d layers with total size %.2g\n", n_layers, size_total);
+      }
     }
     if (argc > 10) {
       n_iters = atoi(argv[10]);
@@ -546,6 +572,72 @@ int gemm_benchmark(int argc, char** argv) {
     libxsmm_matdiff_reduce(&diff, &norms);
   }
 
+#ifdef USE_L2_PERF
+  int num_cores = omp_get_max_threads();
+  printf("Using %d cores for measurement\n", num_cores);
+  int *fds_l2 =(int*) malloc(sizeof(int) * num_cores);
+  int *fds_l2_ref =(int*) malloc(sizeof(int) * num_cores);
+  
+  if (!fds_l2 || !fds_l2_ref) {
+    fprintf(stderr, "Failed to allocate memory for performance counter fds\n");
+    exit(EXIT_FAILURE);
+  }
+  struct perf_event_attr pe_l2, pe_l2_ref;
+
+  // Setup L2 Miss counter
+  memset(&pe_l2, 0, sizeof(struct perf_event_attr));
+  pe_l2.type = PERF_TYPE_RAW;
+  pe_l2.size = sizeof(struct perf_event_attr);
+  pe_l2.config = (0x3f << 8) | 0x24; 
+  pe_l2.disabled = 1;
+  pe_l2.exclude_kernel = 1;
+  pe_l2.inherit = 1;
+
+  // Setup L2 References counter (all L2 accesses)
+  memset(&pe_l2_ref, 0, sizeof(struct perf_event_attr));
+  pe_l2_ref.type = PERF_TYPE_RAW;
+  pe_l2_ref.size = sizeof(struct perf_event_attr);
+  pe_l2_ref.config = (0xff << 8) | 0x24; 
+  pe_l2_ref.disabled = 1;
+  pe_l2_ref.exclude_kernel = 1;
+  pe_l2_ref.inherit = 1;
+
+  // 1. Open one event per core for the current process
+  // Using -1 for CPU to measure all CPUs, pid 0 for current process
+  for (int i = 0; i < num_cores; i++)
+  {
+    fds_l2[i] = perf_event_open(&pe_l2, 0, -1, -1, 0);
+    if (fds_l2[i] < 0)
+    {
+      fprintf(stderr, "Warning: perf_event_open failed for L2 on core %d: %s\n", i, strerror(errno));
+      fprintf(stderr, "Continuing without L2 counter on this core...\n");
+      fds_l2[i] = -1;  // Mark as invalid
+    }
+    
+    fds_l2_ref[i] = perf_event_open(&pe_l2_ref, 0, -1, -1, 0);
+    if (fds_l2_ref[i] < 0)
+    {
+      fprintf(stderr, "Warning: perf_event_open failed for L2 references on core %d: %s\n", i, strerror(errno));
+      fprintf(stderr, "Continuing without L2 reference counter on this core...\n");
+      fds_l2_ref[i] = -1;  // Mark as invalid
+    }
+  }
+
+  // 2. Start all counters
+  for (int i = 0; i < num_cores; i++)
+  {
+    if (fds_l2[i] >= 0) {
+      ioctl(fds_l2[i], PERF_EVENT_IOC_RESET, 0);
+      ioctl(fds_l2[i], PERF_EVENT_IOC_ENABLE, 0);
+    }
+    
+    if (fds_l2_ref[i] >= 0) {
+      ioctl(fds_l2_ref[i], PERF_EVENT_IOC_RESET, 0);
+      ioctl(fds_l2_ref[i], PERF_EVENT_IOC_ENABLE, 0);
+    }
+  }
+  #endif
+
   // benchmark the GEMM
   auto t_start = getTime();
   for (long it = 0; it < n_iters; it++) {
@@ -559,7 +651,99 @@ int gemm_benchmark(int argc, char** argv) {
   }
   auto t_end = getTime();
 
+#ifdef USE_L2_PERF
+  // 3. Stop and sum results
+  long long aggregate_l2_misses = 0;
+  long long aggregate_l2_references = 0;
+  
+  for (int i = 0; i < num_cores; i++)
+  {
+    long long count = 0;
+    
+    // Read L2 misses
+    if (fds_l2[i] >= 0) {
+      ioctl(fds_l2[i], PERF_EVENT_IOC_DISABLE, 0);
+      read(fds_l2[i], &count, sizeof(long long));
+      aggregate_l2_misses += count;
+      close(fds_l2[i]);
+    }
+    
+    // Read L2 references
+    count = 0;
+    if (fds_l2_ref[i] >= 0) {
+      ioctl(fds_l2_ref[i], PERF_EVENT_IOC_DISABLE, 0);
+      read(fds_l2_ref[i], &count, sizeof(long long));
+      aggregate_l2_references += count;
+      close(fds_l2_ref[i]);
+    }
+  }
+
+  // Calculate L2 hits
+  long long aggregate_l2_hits = aggregate_l2_references - aggregate_l2_misses;
+  double l2_hit_rate = (aggregate_l2_references > 0) ? 
+                       (100.0 * aggregate_l2_hits / aggregate_l2_references) : 0.0;
+  double l2_miss_rate = (aggregate_l2_references > 0) ? 
+                        (100.0 * aggregate_l2_misses / aggregate_l2_references) : 0.0;
+
+  printf("\n##############################################################\n");
+  printf("#           Performance Counter Results                     #\n");
+  printf("##############################################################\n");
+  printf("L2 Statistics:\n");
+  printf("  L2 References (total): %lld (%.2f Million)\n", 
+         aggregate_l2_references, aggregate_l2_references/1000000.0);
+  printf("  L2 Hits (total):       %lld (%.2f Million)\n", 
+         aggregate_l2_hits, aggregate_l2_hits/1000000.0);
+  printf("  L2 Misses (total):     %lld (%.2f Million)\n", 
+         aggregate_l2_misses, aggregate_l2_misses/1000000.0);
+  printf("  L2 Hit Rate:           %.2f%%\n", l2_hit_rate);
+  printf("  L2 Miss Rate:          %.2f%%\n", l2_miss_rate);
+  printf("##############################################################\n\n");
+  
+  free(fds_l2);
+  free(fds_l2_ref);
+#endif
+
 #ifdef BENCH_REDUCE
+#ifdef USE_L2_PERF
+  // Reallocate counters for second benchmark (without reductions)
+  fds_l2 = (int*) malloc(sizeof(int) * num_cores);
+  fds_l2_ref = (int*) malloc(sizeof(int) * num_cores);
+  
+  if (!fds_l2 || !fds_l2_ref) {
+    fprintf(stderr, "Failed to allocate memory for performance counter fds (BENCH_REDUCE)\n");
+    exit(EXIT_FAILURE);
+  }
+
+  // Open counters again
+  for (int i = 0; i < num_cores; i++)
+  {
+    fds_l2[i] = perf_event_open(&pe_l2, 0, -1, -1, 0);
+    if (fds_l2[i] < 0) {
+      fprintf(stderr, "Warning: perf_event_open failed for L2 on core %d (BENCH_REDUCE): %s\n", i, strerror(errno));
+      fds_l2[i] = -1;
+    }
+    
+    fds_l2_ref[i] = perf_event_open(&pe_l2_ref, 0, -1, -1, 0);
+    if (fds_l2_ref[i] < 0) {
+      fprintf(stderr, "Warning: perf_event_open failed for L2 references on core %d (BENCH_REDUCE): %s\n", i, strerror(errno));
+      fds_l2_ref[i] = -1;
+    }
+  }
+
+  // Start counters
+  for (int i = 0; i < num_cores; i++)
+  {
+    if (fds_l2[i] >= 0) {
+      ioctl(fds_l2[i], PERF_EVENT_IOC_RESET, 0);
+      ioctl(fds_l2[i], PERF_EVENT_IOC_ENABLE, 0);
+    }
+    if (fds_l2_ref[i] >= 0) {
+      ioctl(fds_l2_ref[i], PERF_EVENT_IOC_RESET, 0);
+      ioctl(fds_l2_ref[i], PERF_EVENT_IOC_ENABLE, 0);
+    }
+  }
+#endif
+
  // benchmark the GEMM without REDUCTIONS
   auto t_start_noreduce = getTime();
   for (long it = 0; it < n_iters; it++) {
@@ -572,6 +756,58 @@ int gemm_benchmark(int argc, char** argv) {
         xform_B_upfront, b_xform_loop, b_xform_kernel, unblocked_bc);
   }
   auto t_end_noreduce = getTime();
+
+#ifdef USE_L2_PERF
+  // Stop and sum results for no-reduce benchmark
+  long long aggregate_l2_misses_noreduce = 0;
+  long long aggregate_l2_references_noreduce = 0;
+  
+  for (int i = 0; i < num_cores; i++)
+  {
+    long long count = 0;
+    
+    // Read L2 misses
+    if (fds_l2[i] >= 0) {
+      ioctl(fds_l2[i], PERF_EVENT_IOC_DISABLE, 0);
+      read(fds_l2[i], &count, sizeof(long long));
+      aggregate_l2_misses_noreduce += count;
+      close(fds_l2[i]);
+    }
+    
+    // Read L2 references
+    count = 0;
+    if (fds_l2_ref[i] >= 0) {
+      ioctl(fds_l2_ref[i], PERF_EVENT_IOC_DISABLE, 0);
+      read(fds_l2_ref[i], &count, sizeof(long long));
+      aggregate_l2_references_noreduce += count;
+      close(fds_l2_ref[i]);
+    }
+  }
+
+  // Calculate L2 hits for no-reduce benchmark
+  long long aggregate_l2_hits_noreduce = aggregate_l2_references_noreduce - aggregate_l2_misses_noreduce;
+  double l2_hit_rate_noreduce = (aggregate_l2_references_noreduce > 0) ? 
+                                (100.0 * aggregate_l2_hits_noreduce / aggregate_l2_references_noreduce) : 0.0;
+  double l2_miss_rate_noreduce = (aggregate_l2_references_noreduce > 0) ? 
+                                 (100.0 * aggregate_l2_misses_noreduce / aggregate_l2_references_noreduce) : 0.0;
+
+  printf("\n##############################################################\n");
+  printf("#   Performance Counter Results (Without Reductions)        #\n");
+  printf("##############################################################\n");
+  printf("L2 Statistics:\n");
+  printf("  L2 References (total): %lld (%.2f Million)\n", 
+         aggregate_l2_references_noreduce, aggregate_l2_references_noreduce/1000000.0);
+  printf("  L2 Hits (total):       %lld (%.2f Million)\n", 
+         aggregate_l2_hits_noreduce, aggregate_l2_hits_noreduce/1000000.0);
+  printf("  L2 Misses (total):     %lld (%.2f Million)\n", 
+         aggregate_l2_misses_noreduce, aggregate_l2_misses_noreduce/1000000.0);
+  printf("  L2 Hit Rate:           %.2f%%\n", l2_hit_rate_noreduce);
+  printf("  L2 Miss Rate:          %.2f%%\n", l2_miss_rate_noreduce);
+  printf("##############################################################\n\n");
+  
+  free(fds_l2);
+  free(fds_l2_ref);
+#endif
 #endif
  
   // Print performance/model numbers
@@ -580,9 +816,9 @@ int gemm_benchmark(int argc, char** argv) {
   printf("Effective model sizes: %.5g GB\n", ((double)sizeof(DType)*(double)n_layers*(double)M*(double)K)/(1024.0*1024.0*1024.0));
   printf("Effective total GEMM sizes: %.5g GB\n", ((double)sizeof(DType)*(double)n_layers*((double)M*(double)K + (double)M*(double)N + (double)K*(double)N ))/(1024.0*1024.0*1024.0));
   printf("Effective A BW is %.5g GB/s\n", (((double)sizeof(DType)*(double)n_layers*(double)M*(double)K) / (1024.0*1024.0*1024.0))/((t_end-t_start)/(1.0*n_iters)));
-  printf("MEASURE %.5g %s_%ld_%ld_%ld_%ld_%ld_%ld_bf%ld_threads%d_config_%s\n", gflop/((t_end-t_start)/(1.0*n_iters)), loop_specs_str, M, N, K, bm, bn, bk, kbf, omp_get_max_threads(),gemm_config);
+  printf("MEASURE %.5g %s_%ld_%ld_%ld_%ld_%ld_%ld_bf%ld_threads%d_config_%s_replication_%d_actpack_%d\n", gflop/((t_end-t_start)/(1.0*n_iters)), loop_specs_str, M, N, K, bm, bn, bk, kbf, omp_get_max_threads(),gemm_config, split_K_factor, unblocked_bc);
 #ifdef BENCH_REDUCE
-  printf("MEASURE2 %.5g %s_%ld_%ld_%ld_%ld_%ld_%ld_bf%ld_threads%d_config_%s\n", gflop/((t_end_noreduce-t_start_noreduce)/(1.0*n_iters)), loop_specs_str, M, N, K, bm, bn, bk, kbf, omp_get_max_threads(),gemm_config);
+  printf("MEASURE2 %.5g %s_%ld_%ld_%ld_%ld_%ld_%ld_bf%ld_threads%d_config_%s_replication_%d_actpack_%d\n", gflop/((t_end_noreduce-t_start_noreduce)/(1.0*n_iters)), loop_specs_str, M, N, K, bm, bn, bk, kbf, omp_get_max_threads(),gemm_config, split_K_factor, unblocked_bc);
   printf("Time is %.5g ms (%.5g GFLOPS)\n", 1000.0*(t_end-t_start)/(1.0*n_iters), gflop/((t_end-t_start)/(1.0*n_iters)));
   printf("Time2 is %.5g ms (%.5g GFLOPS)\n", 1000.0*(t_end_noreduce-t_start_noreduce)/(1.0*n_iters), gflop/((t_end_noreduce-t_start_noreduce)/(1.0*n_iters)));
   printf("Reduction diff is %.5g sec\n", ((t_end-t_start)-(t_end_noreduce-t_start_noreduce))/(1.0*n_iters));

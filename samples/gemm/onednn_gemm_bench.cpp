@@ -14,11 +14,22 @@
 #include <cmath>
 #include <algorithm>
 
+#include <sys/ioctl.h>
+#include <linux/perf_event.h>
+#include <asm/unistd.h>
+
 #include "example_utils.hpp"
 #include "oneapi/dnnl/dnnl.hpp"
 #include "libxsmm.h"
 
 using namespace dnnl;
+
+// Helper function to make the perf_event_open system call
+static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
+                            int cpu, int group_fd, unsigned long flags)
+{
+    return syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);
+}
 
 // Timing utilities
 double getFreq() {
@@ -62,6 +73,18 @@ int main(int argc, char** argv) {
     }
     if (argc > 4) {
         n_sets = atol(argv[4]);
+        if (n_sets == -1)
+        {
+            double size_total = (double)2.0 * (double)1.0 * ((double)M * (double)K + (double)M * (double)N + (double)K * (double)N) / (1024.0 * 1024.0 * 1024.0);
+            double low_limit_in_gb = 5.0;
+            n_sets = 1;
+            while (size_total < low_limit_in_gb)
+            {
+                n_sets++;
+                size_total = (double)2.0 * (double)n_sets * ((double)M * (double)K + (double)M * (double)N + (double)K * (double)N) / (1024.0 * 1024.0 * 1024.0);
+            }
+            printf("Autocalculated %d layers with total size %.2g\n", n_sets, size_total);
+        }
     }
     if (argc > 5) {
         n_iters = atol(argv[5]);
@@ -372,6 +395,42 @@ int main(int argc, char** argv) {
         // NOTE: This benchmarks similar to benchdnn's measure_perf_individual:
         // - Wait after each iteration to measure individual execution time
         // - This matches benchdnn's methodology for CPU
+#if 0
+        int num_cores = 64;
+        printf("Using %d cores for measurement\n", num_cores);
+        int *fds = (int *)malloc(sizeof(int) * num_cores);
+        struct perf_event_attr pe;
+
+        memset(&pe, 0, sizeof(struct perf_event_attr));
+        pe.type = PERF_TYPE_HW_CACHE;
+        pe.size = sizeof(struct perf_event_attr);
+        // Use RAW type for precise L2 Miss tracking (Example for Intel 0x3F24)
+        pe.type = PERF_TYPE_RAW;
+        pe.config = 0x3F24; // L2_RQSTS.MISS (All L2 Misses)
+
+        pe.disabled = 1;
+        pe.exclude_kernel = 1;
+        pe.inherit = 1; // Ensure child threads are also counted
+
+        // 1. Open one event per core for the current process
+        for (int i = 0; i < num_cores; i++)
+        {
+            fds[i] = perf_event_open(&pe, 0, i, -1, 0);
+            if (fds[i] < 0)
+            {
+                perror("perf_event_open failed");
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        // 2. Start all counters
+        for (int i = 0; i < num_cores; i++)
+        {
+            ioctl(fds[i], PERF_EVENT_IOC_RESET, 0);
+            ioctl(fds[i], PERF_EVENT_IOC_ENABLE, 0);
+        }
+        #endif
+
         long total_iters = n_iters * n_sets;
         uint64_t start_tsc = rdtsc();
         auto start_time = std::chrono::high_resolution_clock::now();
@@ -393,7 +452,23 @@ int main(int argc, char** argv) {
         
         auto end_time = std::chrono::high_resolution_clock::now();
         uint64_t end_tsc = rdtsc();
-        
+
+        #if 0
+        // 3. Stop and sum results
+        long long aggregate_l2_misses = 0;
+        for (int i = 0; i < num_cores; i++)
+        {
+            long long count = 0;
+            ioctl(fds[i], PERF_EVENT_IOC_DISABLE, 0);
+            read(fds[i], &count, sizeof(long long));
+            aggregate_l2_misses += count;
+            close(fds[i]);
+        }
+
+        printf("Total L2 Misses across %d cores: %lld (Million)\n", num_cores, aggregate_l2_misses / 1000000);
+        free(fds);
+        #endif
+
         // Compute statistics
         std::chrono::duration<double> duration = end_time - start_time;
         double total_time = duration.count();
