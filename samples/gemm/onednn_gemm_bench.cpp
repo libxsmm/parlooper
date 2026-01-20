@@ -415,7 +415,7 @@ int main(int argc, char** argv) {
         // 1. Open one event per core for the current process
         for (int i = 0; i < num_cores; i++)
         {
-            fds[i] = perf_event_open(&pe, 0, i, -1, 0);
+            fds[i] = perf_event_open(&pe, -1, i, -1, 0);
             if (fds[i] < 0)
             {
                 perror("perf_event_open failed");

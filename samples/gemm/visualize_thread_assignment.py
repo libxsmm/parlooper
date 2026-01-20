@@ -21,6 +21,77 @@ from mpl_toolkits.mplot3d import Axes3D
 import argparse
 
 
+def create_colorbar_legend(num_threads, cmap, output_prefix='processor_id_legend'):
+    """
+    Create a horizontal color bar showing Core ID to color mapping.
+    
+    Args:
+        num_threads: Number of threads (processors)
+        cmap: The colormap to use
+        output_prefix: Prefix for the output filename
+    """
+    fig, ax = plt.subplots(figsize=(12, 1.5))
+    
+    # Create an array of thread IDs with spread-out color mapping
+    thread_ids = np.arange(num_threads)
+    color_indices = spread_thread_colors(thread_ids, num_threads)
+    
+    # Reshape to a horizontal bar
+    thread_ids_2d = color_indices.reshape(1, -1)
+    
+    # Plot the color bar (showing actual thread IDs, not normalized values)
+    im = ax.imshow(thread_ids_2d, cmap=cmap, aspect='auto', interpolation='nearest', vmin=0, vmax=1)
+    
+    # Add processor ID labels
+    ax.set_yticks([])
+    ax.yaxis.set_visible(False)  # Hide y-axis completely
+    ax.set_xticks(np.arange(num_threads))
+    ax.set_xticklabels([f'{i}' for i in range(num_threads)], fontsize=8)
+    ax.set_xlabel('Processor ID', fontsize=12, weight='bold')
+    ax.set_title('Processor ID Color Code', fontsize=14, weight='bold', pad=10)
+    
+    # Add grid lines
+    ax.set_xticks(np.arange(-.5, num_threads, 1), minor=True)
+    ax.grid(which="minor", color="black", linestyle='-', linewidth=1.5)
+    ax.tick_params(which='minor', size=0)
+    
+    plt.tight_layout()
+    
+    # Save the figure
+    output_filename_png = f'{output_prefix}_processor_legend.png'
+    output_filename_pdf = f'{output_prefix}_processor_legend.pdf'
+    plt.savefig(output_filename_png, dpi=150, bbox_inches='tight')
+    plt.savefig(output_filename_pdf, bbox_inches='tight')
+    print(f'Saved processor ID color legend: {output_filename_png} and {output_filename_pdf}')
+    
+    plt.close()
+
+
+def spread_thread_colors(thread_ids, num_threads):
+    """
+    Map thread IDs to colormap positions in a non-contiguous way.
+    This ensures neighboring thread IDs get distinctly different colors.
+    
+    Args:
+        thread_ids: Array of thread IDs
+        num_threads: Total number of threads
+    
+    Returns:
+        Array of normalized color indices (0.0 to 1.0)
+    """
+    # Use a large prime multiplier to spread threads across the colormap
+    # This creates a pseudo-random but deterministic distribution
+    multiplier = 37  # Prime number for good distribution
+    
+    # Map each thread to a position in [0, num_threads-1] using modulo
+    spread_positions = (thread_ids * multiplier) % num_threads
+    
+    # Normalize to [0, 1] for colormap
+    normalized = spread_positions.astype(float) / (num_threads - 1) if num_threads > 1 else np.zeros_like(thread_ids, dtype=float)
+    
+    return normalized
+
+
 def parse_file(filename):
     """
     Parse the input file and extract thread assignments.
@@ -123,6 +194,9 @@ def plot_grids(grids, dims, output_prefix='thread_assignment', show_numbers=True
     else:
         cmap = plt.colormaps.get_cmap('nipy_spectral').resampled(num_threads)
     
+    # Create the Core ID color legend
+    create_colorbar_legend(num_threads, cmap, output_prefix)
+    
     # If interactive mode is requested, use cuboid/3D visualization
     if interactive:
         plot_cuboid_grids(grids, dims, cmap, num_threads, output_prefix, interactive)
@@ -165,12 +239,31 @@ def plot_cuboid_grids(grids, dims, cmap, num_threads, output_prefix, interactive
             X, Y = np.meshgrid(np.arange(n_size), np.arange(m_size))
             Z = np.full_like(X, k_layer * k_spacing, dtype=float)
             
-            # Normalize thread IDs for coloring
-            grid_normalized = grid.astype(float) / (num_threads - 1)
+            # Normalize thread IDs for coloring with spread-out distribution
+            grid_normalized = spread_thread_colors(grid.flatten(), num_threads).reshape(grid.shape)
             grid_normalized = np.ma.masked_where(grid == -1, grid_normalized)
             
-            # Get colors from colormap
+            # Get colors from colormap and apply shade for different K-layers
             colors = cmap(grid_normalized)
+            
+            # Apply different shading for each K-layer if multiple layers
+            # Top K-layer (highest index): full brightness (vivid colors across spectrum)
+            # Lower K-layers: progressively darker shades of the same colors
+            if num_k_layers > 1:
+                import colorsys
+                # Top layer brightest: k_layer = num_k_layers-1 -> 1.0, k_layer = 0 -> 0.65
+                shade_factor = 0.65 + 0.35 * (k_layer / (num_k_layers - 1))
+                # Adjust brightness of colors
+                colors_adjusted = colors.copy()
+                for i in range(colors.shape[0]):
+                    for j in range(colors.shape[1]):
+                        if not grid_normalized.mask[i, j]:
+                            r, g, b, a = colors[i, j]
+                            h, s, v = colorsys.rgb_to_hsv(r, g, b)
+                            v = v * shade_factor
+                            r, g, b = colorsys.hsv_to_rgb(h, s, v)
+                            colors_adjusted[i, j] = [r, g, b, a]
+                colors = colors_adjusted
             
             # Plot the surface
             surf = ax.plot_surface(X, Y, Z, facecolors=colors, 
@@ -183,7 +276,11 @@ def plot_cuboid_grids(grids, dims, cmap, num_threads, output_prefix, interactive
         # Set labels and title
         ax.set_xlabel('N-block', fontsize=12, labelpad=10)
         ax.set_ylabel('M-block', fontsize=12, labelpad=10)
-        ax.set_zlabel('K-layer', fontsize=12, labelpad=10)
+        # Only set z-axis label if multiple K-layers
+        if num_k_layers > 1:
+            ax.set_zlabel('K-layer', fontsize=12, labelpad=10)
+        else:
+            ax.set_zlabel('', fontsize=12, labelpad=10)
         ax.set_title(f'3D Thread Assignment Cuboid\n'
                     f'Grid size: {m_size} × {n_size} × {num_k_layers}, '
                     f'Threads: 0-{dims["max_thread"]}',
@@ -196,6 +293,9 @@ def plot_cuboid_grids(grids, dims, cmap, num_threads, output_prefix, interactive
         ax.set_xlim(0, n_size - 1)
         ax.set_ylim(0, m_size - 1)
         ax.set_zlim(0, (num_k_layers - 1) * k_spacing)
+        
+        # Remove z-axis tick labels
+        ax.set_zticks([])
         
         # Set aspect ratio to honor M and N dimensions
         ax.set_box_aspect([n_size, m_size, (num_k_layers - 1) * k_spacing if num_k_layers > 1 else 1])
@@ -213,9 +313,11 @@ def plot_cuboid_grids(grids, dims, cmap, num_threads, output_prefix, interactive
         plt.tight_layout()
         
         # Save the figure
-        output_filename = f'{output_prefix}_cuboid_view{view_idx+1}.png'
-        plt.savefig(output_filename, dpi=150, bbox_inches='tight')
-        print(f'Saved 3D cuboid view {view_idx+1}: {output_filename}')
+        output_filename_png = f'{output_prefix}_cuboid_view{view_idx+1}.png'
+        output_filename_pdf = f'{output_prefix}_cuboid_view{view_idx+1}.pdf'
+        plt.savefig(output_filename_png, dpi=150, bbox_inches='tight')
+        plt.savefig(output_filename_pdf, bbox_inches='tight')
+        print(f'Saved 3D cuboid view {view_idx+1}: {output_filename_png} and {output_filename_pdf}')
         
         plt.close()
     
@@ -230,12 +332,45 @@ def plot_interactive_cuboid_plotly(grids, dims, cmap, num_threads, k_spacing):
     """Create an interactive 3D cuboid using plotly (works in browsers)."""
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
+    import colorsys
     
     num_k_layers = len(grids)
     m_size, n_size = grids[0].shape
     
-    # Create figure
-    fig = go.Figure()
+    # Create figure with color legend at top
+    # Add color legend bar for Core IDs
+    fig = make_subplots(
+        rows=2, cols=1,
+        row_heights=[0.05, 0.95],
+        specs=[[{"type": "xy"}], [{"type": "scene"}]],
+        vertical_spacing=0.02,
+        subplot_titles=('Core ID Color Code', '')
+    )
+    
+    # Add Core ID color legend bar at the top
+    processor_colors = []
+    for proc_id in range(num_threads):
+        color_normalized = spread_thread_colors(np.array([proc_id]), num_threads)[0]
+        rgba = cmap(color_normalized)
+        processor_colors.append(f'rgb({int(rgba[0]*255)},{int(rgba[1]*255)},{int(rgba[2]*255)})')
+    
+    # Create heatmap for Core IDs
+    fig.add_trace(
+        go.Heatmap(
+            z=[[i for i in range(num_threads)]],
+            colorscale=[[i/(num_threads-1), processor_colors[i]] for i in range(num_threads)],
+            showscale=False,
+            hovertemplate='Core ID: %{x}<extra></extra>',
+            x=list(range(num_threads)),
+            y=[0],
+            coloraxis=None
+        ),
+        row=1, col=1
+    )
+    
+    # Configure the legend subplot
+    fig.update_xaxes(title_text="Core ID", row=1, col=1, tickmode='linear', tick0=0, dtick=max(1, num_threads//20))
+    fig.update_yaxes(showticklabels=False, row=1, col=1)
     
     # Collect all vertices, faces, colors, and hover data
     all_vertices_x = []
@@ -254,6 +389,16 @@ def plot_interactive_cuboid_plotly(grids, dims, cmap, num_threads, k_spacing):
         grid = grids[k_layer]
         z_level = k_layer * k_spacing
         
+        # Calculate shade factor for this K-layer
+        # Top K-layer (highest index): full brightness (vivid spectrum colors: red, green, blue, etc.)
+        # Lower K-layers: progressively darker shades of the same colors
+        if num_k_layers > 1:
+            # Top layer brightest: k_layer = num_k_layers-1 -> 1.0, k_layer = 0 -> 0.65
+            # Range: 0.65 (K-layer 0, darker) to 1.0 (top K-layer, full color)
+            shade_factor = 0.65 + 0.35 * (k_layer / (num_k_layers - 1))
+        else:
+            shade_factor = 1.0
+        
         # For each cell in the grid, create a rectangle (two triangles)
         for m_idx in range(m_size):
             for n_idx in range(n_size):
@@ -261,9 +406,20 @@ def plot_interactive_cuboid_plotly(grids, dims, cmap, num_threads, k_spacing):
                 if thread_id == -1:
                     continue  # Skip unassigned cells
                 
-                # Get color for this thread
-                rgba = cmap(thread_id / (num_threads - 1))
-                color_str = f'rgb({int(rgba[0]*255)},{int(rgba[1]*255)},{int(rgba[2]*255)})'
+                # Get color for this thread using spread-out color mapping
+                color_normalized = spread_thread_colors(np.array([thread_id]), num_threads)[0]
+                rgba = cmap(color_normalized)
+                
+                # Apply shade factor for different K-layers
+                if num_k_layers > 1:
+                    # Convert to HSV, adjust value (brightness), convert back
+                    r, g, b = rgba[0], rgba[1], rgba[2]
+                    h, s, v = colorsys.rgb_to_hsv(r, g, b)
+                    v = v * shade_factor
+                    r, g, b = colorsys.hsv_to_rgb(h, s, v)
+                    color_str = f'rgb({int(r*255)},{int(g*255)},{int(b*255)})'
+                else:
+                    color_str = f'rgb({int(rgba[0]*255)},{int(rgba[1]*255)},{int(rgba[2]*255)})'
                 
                 # Create hover text
                 hover_text = f'<b>N-block:</b> {n_idx}<br><b>M-block:</b> {m_idx}<br><b>K-layer:</b> {k_layer}<br><b>Thread ID:</b> {thread_id}'
@@ -296,7 +452,7 @@ def plot_interactive_cuboid_plotly(grids, dims, cmap, num_threads, k_spacing):
                 
                 vertex_offset += 4
     
-    # Create single Mesh3d for all cells
+    # Create single Mesh3d for all cells (add to row 2, col 1 - the 3D scene)
     fig.add_trace(go.Mesh3d(
         x=all_vertices_x,
         y=all_vertices_y,
@@ -310,9 +466,9 @@ def plot_interactive_cuboid_plotly(grids, dims, cmap, num_threads, k_spacing):
         showlegend=False,
         lighting=dict(ambient=0.8, diffuse=0.8, specular=0.1),
         flatshading=True
-    ))
+    ), row=2, col=1)
     
-    # Add wireframe grid lines for each layer
+    # Add wireframe grid lines for each layer (to the 3D scene)
     for k_layer in range(num_k_layers):
         z_level = k_layer * k_spacing
         
@@ -326,7 +482,7 @@ def plot_interactive_cuboid_plotly(grids, dims, cmap, num_threads, k_spacing):
                 line=dict(color='black', width=2),
                 showlegend=False,
                 hoverinfo='skip'
-            ))
+            ), row=2, col=1)
         
         # Grid lines along M direction
         for n_idx in range(n_size + 1):
@@ -338,21 +494,25 @@ def plot_interactive_cuboid_plotly(grids, dims, cmap, num_threads, k_spacing):
                 line=dict(color='black', width=2),
                 showlegend=False,
                 hoverinfo='skip'
-            ))
+            ), row=2, col=1)
     
     # Update layout
+    # Determine z-axis title based on number of K-layers
+    z_axis_title = '' if num_k_layers == 1 else 'K-layer'
+    
     fig.update_layout(
         title=dict(
             text=f'Interactive 3D Thread Assignment Cuboid<br>' +
                  f'Grid size: {m_size} × {n_size} × {num_k_layers}, Threads: 0-{dims["max_thread"]}<br>' +
                  f'<sub>Click and drag to rotate | Scroll to zoom | Double-click to reset</sub>',
             x=0.5,
-            xanchor='center'
+            xanchor='center',
+            font=dict(size=20)
         ),
         scene=dict(
-            xaxis=dict(title='N-block', range=[0, n_size - 1]),
-            yaxis=dict(title='M-block', range=[0, m_size - 1]),
-            zaxis=dict(title='K-layer', range=[0, (num_k_layers - 1) * k_spacing]),
+            xaxis=dict(title=dict(text='N-block', font=dict(size=16)), range=[0, n_size - 1], tickfont=dict(size=14)),
+            yaxis=dict(title=dict(text='M-block', font=dict(size=16)), range=[0, m_size - 1], tickfont=dict(size=14)),
+            zaxis=dict(title=dict(text=z_axis_title, font=dict(size=16)), range=[0, (num_k_layers - 1) * k_spacing], showticklabels=False),
             aspectmode='manual',
             aspectratio=dict(
                 x=n_size / max(m_size, n_size, (num_k_layers - 1) * k_spacing if num_k_layers > 1 else 1),
@@ -364,8 +524,9 @@ def plot_interactive_cuboid_plotly(grids, dims, cmap, num_threads, k_spacing):
             )
         ),
         width=1200,
-        height=900,
-        showlegend=False
+        height=1000,
+        showlegend=False,
+        font=dict(size=14)
     )
     
     # Save to HTML file
@@ -402,12 +563,31 @@ def plot_interactive_cuboid(grids, dims, cmap, num_threads, k_spacing):
         X, Y = np.meshgrid(np.arange(n_size), np.arange(m_size))
         Z = np.full_like(X, k_layer * k_spacing, dtype=float)
         
-        # Normalize thread IDs for coloring
-        grid_normalized = grid.astype(float) / (num_threads - 1)
+        # Normalize thread IDs for coloring with spread-out distribution
+        grid_normalized = spread_thread_colors(grid.flatten(), num_threads).reshape(grid.shape)
         grid_normalized = np.ma.masked_where(grid == -1, grid_normalized)
         
-        # Get colors from colormap
+        # Get colors from colormap and apply shade for different K-layers
         colors = cmap(grid_normalized)
+        
+        # Apply different shading for each K-layer if multiple layers
+        # Top K-layer (highest index): full brightness (vivid colors across spectrum)
+        # Lower K-layers: progressively darker shades of the same colors
+        if num_k_layers > 1:
+            import colorsys
+            # Top layer brightest: k_layer = num_k_layers-1 -> 1.0, k_layer = 0 -> 0.65
+            shade_factor = 0.65 + 0.35 * (k_layer / (num_k_layers - 1))
+            # Adjust brightness of colors
+            colors_adjusted = colors.copy()
+            for i in range(colors.shape[0]):
+                for j in range(colors.shape[1]):
+                    if not grid_normalized.mask[i, j]:
+                        r, g, b, a = colors[i, j]
+                        h, s, v = colorsys.rgb_to_hsv(r, g, b)
+                        v = v * shade_factor
+                        r, g, b = colorsys.hsv_to_rgb(h, s, v)
+                        colors_adjusted[i, j] = [r, g, b, a]
+            colors = colors_adjusted
         
         # Plot the surface
         surf = ax.plot_surface(X, Y, Z, facecolors=colors, 
@@ -420,7 +600,11 @@ def plot_interactive_cuboid(grids, dims, cmap, num_threads, k_spacing):
     # Set labels and title
     ax.set_xlabel('N-block', fontsize=12, labelpad=10)
     ax.set_ylabel('M-block', fontsize=12, labelpad=10)
-    ax.set_zlabel('K-layer', fontsize=12, labelpad=10)
+    # Only set z-axis label if multiple K-layers
+    if num_k_layers > 1:
+        ax.set_zlabel('K-layer', fontsize=12, labelpad=10)
+    else:
+        ax.set_zlabel('', fontsize=12, labelpad=10)
     ax.set_title(f'Interactive 3D Thread Assignment Cuboid\n'
                 f'Grid size: {m_size} × {n_size} × {num_k_layers}, '
                 f'Threads: 0-{dims["max_thread"]}\n'
@@ -434,6 +618,9 @@ def plot_interactive_cuboid(grids, dims, cmap, num_threads, k_spacing):
     ax.set_xlim(0, n_size - 1)
     ax.set_ylim(0, m_size - 1)
     ax.set_zlim(0, (num_k_layers - 1) * k_spacing)
+    
+    # Remove z-axis tick labels
+    ax.set_zticks([])
     
     # Set aspect ratio to honor M and N dimensions
     ax.set_box_aspect([n_size, m_size, (num_k_layers - 1) * k_spacing if num_k_layers > 1 else 1])
@@ -473,7 +660,8 @@ def plot_interactive_cuboid(grids, dims, cmap, num_threads, k_spacing):
         print(f'Error displaying interactive plot: {e}')
         print('Falling back to saving a static image...')
         plt.savefig('interactive_cuboid_fallback.png', dpi=150, bbox_inches='tight')
-        print('Saved: interactive_cuboid_fallback.png')
+        plt.savefig('interactive_cuboid_fallback.pdf', bbox_inches='tight')
+        print('Saved: interactive_cuboid_fallback.png and interactive_cuboid_fallback.pdf')
         plt.close()
 
 
@@ -500,9 +688,29 @@ def create_rotating_cuboid(grids, dims, cmap, num_threads, output_prefix):
             X, Y = np.meshgrid(np.arange(n_size), np.arange(m_size))
             Z = np.full_like(X, k_layer * k_spacing, dtype=float)
             
-            grid_normalized = grid.astype(float) / (num_threads - 1)
+            # Normalize thread IDs for coloring with spread-out distribution
+            grid_normalized = spread_thread_colors(grid.flatten(), num_threads).reshape(grid.shape)
             grid_normalized = np.ma.masked_where(grid == -1, grid_normalized)
             colors = cmap(grid_normalized)
+            
+            # Apply different shading for each K-layer if multiple layers
+            # Top K-layer (highest index): full brightness (vivid colors across spectrum)
+            # Lower K-layers: progressively darker shades of the same colors
+            if num_k_layers > 1:
+                import colorsys
+                # Top layer brightest: k_layer = num_k_layers-1 -> 1.0, k_layer = 0 -> 0.65
+                shade_factor = 0.65 + 0.35 * (k_layer / (num_k_layers - 1))
+                # Adjust brightness of colors
+                colors_adjusted = colors.copy()
+                for i in range(colors.shape[0]):
+                    for j in range(colors.shape[1]):
+                        if not grid_normalized.mask[i, j]:
+                            r, g, b, a = colors[i, j]
+                            h, s, v = colorsys.rgb_to_hsv(r, g, b)
+                            v = v * shade_factor
+                            r, g, b = colorsys.hsv_to_rgb(h, s, v)
+                            colors_adjusted[i, j] = [r, g, b, a]
+                colors = colors_adjusted
             
             surf = ax.plot_surface(X, Y, Z, facecolors=colors, 
                                   shade=False, alpha=0.9,
@@ -511,7 +719,11 @@ def create_rotating_cuboid(grids, dims, cmap, num_threads, output_prefix):
         
         ax.set_xlabel('N-block', fontsize=12, labelpad=10)
         ax.set_ylabel('M-block', fontsize=12, labelpad=10)
-        ax.set_zlabel('K-layer', fontsize=12, labelpad=10)
+        # Only set z-axis label if multiple K-layers
+        if num_k_layers > 1:
+            ax.set_zlabel('K-layer', fontsize=12, labelpad=10)
+        else:
+            ax.set_zlabel('', fontsize=12, labelpad=10)
         ax.set_title(f'3D Thread Assignment Cuboid (Rotating)\n'
                     f'Grid: {m_size}×{n_size}×{num_k_layers}, Threads: 0-{dims["max_thread"]}',
                     fontsize=14, weight='bold', pad=20)
@@ -523,6 +735,9 @@ def create_rotating_cuboid(grids, dims, cmap, num_threads, output_prefix):
         ax.set_xlim(0, n_size - 1)
         ax.set_ylim(0, m_size - 1)
         ax.set_zlim(0, (num_k_layers - 1) * k_spacing)
+        
+        # Remove z-axis tick labels
+        ax.set_zticks([])
         
         # Set aspect ratio to honor M and N dimensions
         ax.set_box_aspect([n_size, m_size, (num_k_layers - 1) * k_spacing if num_k_layers > 1 else 1])
@@ -572,15 +787,16 @@ def plot_combined_grids(grids, dims, cmap, num_threads, output_prefix, show_numb
     if num_k_layers == 1:
         axes = [axes]
     
-    # Determine font size based on grid size
-    font_size = max(3, min(10, 250 / max(m_size, n_size)))
+    # Determine font size based on grid size (doubled for better readability)
+    font_size = max(4, min(14, 350 / max(m_size, n_size)))
     
     for k_layer, (grid, ax) in enumerate(zip(grids, axes)):
-        # Create a masked array to handle unassigned cells
-        masked_grid = np.ma.masked_where(grid == -1, grid)
+        # Create a masked array to handle unassigned cells with spread-out coloring
+        grid_normalized = spread_thread_colors(grid.flatten(), num_threads).reshape(grid.shape)
+        masked_grid = np.ma.masked_where(grid == -1, grid_normalized)
         
         # Plot the heatmap
-        im = ax.imshow(masked_grid, cmap=cmap, vmin=0, vmax=num_threads - 1, 
+        im = ax.imshow(masked_grid, cmap=cmap, vmin=0, vmax=1, 
                       aspect='auto', interpolation='nearest')
         
         # Add thread numbers to each cell if requested
@@ -592,7 +808,7 @@ def plot_combined_grids(grids, dims, cmap, num_threads, output_prefix, show_numb
                                      ha="center", va="center",
                                      color="white", fontsize=font_size,
                                      weight="bold")
-                        text.set_path_effects([patheffects.withStroke(linewidth=0.5, foreground='black')])
+                        text.set_path_effects([patheffects.withStroke(linewidth=0.8, foreground='black')])
         
         # Customize each subplot
         ax.set_xlabel('N-block', fontsize=10)
@@ -614,6 +830,10 @@ def plot_combined_grids(grids, dims, cmap, num_threads, output_prefix, show_numb
     fig.subplots_adjust(right=0.92)
     cbar_ax = fig.add_axes([0.94, 0.15, 0.01, 0.7])
     cbar = fig.colorbar(im, cax=cbar_ax)
+    # Set colorbar ticks to show actual thread IDs
+    tick_interval = max(1, num_threads // 10)
+    cbar.set_ticks(np.linspace(0, 1, min(num_threads, 11)))
+    cbar.set_ticklabels([str(int(i * (num_threads - 1) / (min(num_threads, 11) - 1))) for i in range(min(num_threads, 11))])
     cbar.set_label('Thread ID', rotation=270, labelpad=15, fontsize=11)
     
     # Add overall title
@@ -628,16 +848,15 @@ def plot_combined_grids(grids, dims, cmap, num_threads, output_prefix, show_numb
         plt.tight_layout(rect=[0, 0, 0.93, 0.95])
     
     # Save the combined figure
-    output_filename = f'{output_prefix}_combined.png'
-    plt.savefig(output_filename, dpi=150, bbox_inches='tight')
-    print(f'Saved combined image: {output_filename}')
+    output_filename_png = f'{output_prefix}_combined.png'
+    output_filename_pdf = f'{output_prefix}_combined.pdf'
+    plt.savefig(output_filename_png, dpi=150, bbox_inches='tight')
+    plt.savefig(output_filename_pdf, bbox_inches='tight')
+    print(f'Saved combined image: {output_filename_png} and {output_filename_pdf}')
     
     plt.close()
 
 
-def plot_separate_grids(grids, dims, cmap, num_threads, output_prefix, show_numbers):
-    """Plot each K-layer as a separate image."""
-    num_k_layers = len(grids)
 def plot_separate_grids(grids, dims, cmap, num_threads, output_prefix, show_numbers):
     """Plot each K-layer as a separate image."""
     num_k_layers = len(grids)
@@ -651,17 +870,26 @@ def plot_separate_grids(grids, dims, cmap, num_threads, output_prefix, show_numb
         fig_height = max(10, m_size * 0.3)
         fig, ax = plt.subplots(figsize=(fig_width, fig_height))
         
-        # Create a masked array to handle unassigned cells
-        masked_grid = np.ma.masked_where(grid == -1, grid)
+        # Use continuous color mapping for single layer plots, spread-out for multiple layers
+        if num_k_layers == 1:
+            # Original continuous mapping
+            grid_normalized = grid.astype(float) / (num_threads - 1) if num_threads > 1 else np.zeros_like(grid, dtype=float)
+            masked_grid = np.ma.masked_where(grid == -1, grid_normalized)
+            vmax = 1.0
+        else:
+            # Spread-out coloring for multiple layers
+            grid_normalized = spread_thread_colors(grid.flatten(), num_threads).reshape(grid.shape)
+            masked_grid = np.ma.masked_where(grid == -1, grid_normalized)
+            vmax = 1.0
         
         # Plot the heatmap
-        im = ax.imshow(masked_grid, cmap=cmap, vmin=0, vmax=num_threads - 1, 
+        im = ax.imshow(masked_grid, cmap=cmap, vmin=0, vmax=vmax, 
                       aspect='auto', interpolation='nearest')
         
         # Add thread numbers to each cell if requested
         if show_numbers:
-            # Determine font size based on grid size
-            font_size = max(4, min(10, 300 / max(m_size, n_size)))
+            # Determine font size based on grid size (doubled for better readability)
+            font_size = max(6, min(14, 450 / max(m_size, n_size)))
             
             for i in range(m_size):
                 for j in range(n_size):
@@ -670,7 +898,7 @@ def plot_separate_grids(grids, dims, cmap, num_threads, output_prefix, show_numb
                                      ha="center", va="center",
                                      color="white", fontsize=font_size,
                                      weight="bold")
-                        text.set_path_effects([patheffects.withStroke(linewidth=1, foreground='black')])
+                        text.set_path_effects([patheffects.withStroke(linewidth=1.5, foreground='black')])
         
         # Customize the plot
         ax.set_xlabel('N-block', fontsize=12)
@@ -681,6 +909,16 @@ def plot_separate_grids(grids, dims, cmap, num_threads, output_prefix, show_numb
         
         # Add colorbar
         cbar = plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+        # Set colorbar ticks to show actual thread IDs
+        if num_k_layers == 1:
+            # Continuous mapping: show actual thread IDs
+            tick_interval = max(1, num_threads // 10)
+            cbar.set_ticks(np.linspace(0, 1, min(num_threads, 11)))
+            cbar.set_ticklabels([str(int(i * (num_threads - 1) / (min(num_threads, 11) - 1))) for i in range(min(num_threads, 11))])
+        else:
+            # Spread mapping: approximate thread IDs
+            cbar.set_ticks(np.linspace(0, 1, min(num_threads, 11)))
+            cbar.set_ticklabels([str(int(i * (num_threads - 1) / (min(num_threads, 11) - 1))) for i in range(min(num_threads, 11))])
         cbar.set_label('Thread ID', rotation=270, labelpad=20, fontsize=12)
         
         # Add grid lines
@@ -696,9 +934,11 @@ def plot_separate_grids(grids, dims, cmap, num_threads, output_prefix, show_numb
         plt.tight_layout()
         
         # Save the figure
-        output_filename = f'{output_prefix}_k{k_layer}.png'
-        plt.savefig(output_filename, dpi=150, bbox_inches='tight')
-        print(f'Saved: {output_filename}')
+        output_filename_png = f'{output_prefix}_k{k_layer}.png'
+        output_filename_pdf = f'{output_prefix}_k{k_layer}.pdf'
+        plt.savefig(output_filename_png, dpi=150, bbox_inches='tight')
+        plt.savefig(output_filename_pdf, bbox_inches='tight')
+        print(f'Saved: {output_filename_png} and {output_filename_pdf}')
         
         plt.close()
     

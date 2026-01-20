@@ -19,7 +19,8 @@
 #define ALIGNMENT_SIZE 64
 //#define USE_EQN_REDUCE
 //#define BENCH_REDUCE
-#define PRINT_THREAD_WORK_ASSIGNMENT
+//#define USE_L2_PERF
+//#define PRINT_THREAD_WORK_ASSIGNMENT
 
 //#define USE_LLC_STAT
 //#define USE_DRAM_STAT
@@ -606,7 +607,7 @@ int gemm_benchmark(int argc, char** argv) {
   // Using -1 for CPU to measure all CPUs, pid 0 for current process
   for (int i = 0; i < num_cores; i++)
   {
-    fds_l2[i] = perf_event_open(&pe_l2, 0, -1, -1, 0);
+    fds_l2[i] = perf_event_open(&pe_l2, -1, i, -1, 0);
     if (fds_l2[i] < 0)
     {
       fprintf(stderr, "Warning: perf_event_open failed for L2 on core %d: %s\n", i, strerror(errno));
@@ -614,7 +615,7 @@ int gemm_benchmark(int argc, char** argv) {
       fds_l2[i] = -1;  // Mark as invalid
     }
     
-    fds_l2_ref[i] = perf_event_open(&pe_l2_ref, 0, -1, -1, 0);
+    fds_l2_ref[i] = perf_event_open(&pe_l2_ref, -1, i, -1, 0);
     if (fds_l2_ref[i] < 0)
     {
       fprintf(stderr, "Warning: perf_event_open failed for L2 references on core %d: %s\n", i, strerror(errno));
@@ -717,13 +718,13 @@ int gemm_benchmark(int argc, char** argv) {
   // Open counters again
   for (int i = 0; i < num_cores; i++)
   {
-    fds_l2[i] = perf_event_open(&pe_l2, 0, -1, -1, 0);
+    fds_l2[i] = perf_event_open(&pe_l2, -1, i, -1, 0);
     if (fds_l2[i] < 0) {
       fprintf(stderr, "Warning: perf_event_open failed for L2 on core %d (BENCH_REDUCE): %s\n", i, strerror(errno));
       fds_l2[i] = -1;
     }
     
-    fds_l2_ref[i] = perf_event_open(&pe_l2_ref, 0, -1, -1, 0);
+    fds_l2_ref[i] = perf_event_open(&pe_l2_ref, -1, i, -1, 0);
     if (fds_l2_ref[i] < 0) {
       fprintf(stderr, "Warning: perf_event_open failed for L2 references on core %d (BENCH_REDUCE): %s\n", i, strerror(errno));
       fds_l2_ref[i] = -1;
