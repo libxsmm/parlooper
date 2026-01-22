@@ -911,14 +911,14 @@ int gemm_benchmark(int argc, char** argv) {
 
 int main(int argc, char** argv) {
   int use_dtype = 1;
-  if (argc > 17) {
-    if (strcmp(argv[17],"BF16") == 0) {
+  if (argc > 18) {
+    if (strcmp(argv[18],"BF16") == 0) {
       use_dtype = 1;
     }
-    if (strcmp(argv[17],"BF8") == 0) {
+    if (strcmp(argv[18],"BF8") == 0) {
       use_dtype = 2;
     }
-    if (strcmp(argv[17],"FP32") == 0) {
+    if (strcmp(argv[18],"FP32") == 0) {
       use_dtype = 3;
     }
   }
