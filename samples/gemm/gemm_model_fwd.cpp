@@ -20,7 +20,7 @@
 //#define USE_EQN_REDUCE
 //#define BENCH_REDUCE
 //#define USE_L2_PERF
-//#define PRINT_THREAD_WORK_ASSIGNMENT
+#define PRINT_THREAD_WORK_ASSIGNMENT
 
 //#define USE_LLC_STAT
 //#define USE_DRAM_STAT

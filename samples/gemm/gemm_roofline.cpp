@@ -75,13 +75,14 @@ int main(int argc, char **argv) {
       b_slice_size_in_gb = (double)bn * (double)K_per_layer * dtype_size_in_bytes / (1024.0 * 1024.0 * 1024.0); // in GB
       c_slice_size_in_gb = (double)bm * (double)bn * dtype_size_in_bytes / (1024.0 * 1024.0 * 1024.0); // in GB
       double time_write_c_tile = 0;//c_slice_size_in_gb / c_bw_per_core;
+      double time_per_brgemm = gflops_per_brgemm / compute_per_core;
 
       // Cycles for brgemms when a and b come from memory
-      double time_brgemms_ab_mem = (brgemms_ab_mem * LIBXSMM_MAX(time_write_c_tile, (a_slice_size_in_gb + b_slice_size_in_gb) / bw_per_core));
-      double time_brgemms_a_only_mem = (brgemms_a_only_mem * LIBXSMM_MAX(time_write_c_tile, (a_slice_size_in_gb) / bw_per_core));
-      double time_brgemms_b_only_mem = (brgemms_b_only_mem * LIBXSMM_MAX(time_write_c_tile, (b_slice_size_in_gb) / bw_per_core));
+      double time_brgemms_ab_mem = (brgemms_ab_mem * LIBXSMM_MAX(time_per_brgemm, (a_slice_size_in_gb + b_slice_size_in_gb) / bw_per_core));
+      double time_brgemms_a_only_mem = (brgemms_a_only_mem * LIBXSMM_MAX(time_per_brgemm, (a_slice_size_in_gb) / bw_per_core));
+      double time_brgemms_b_only_mem = (brgemms_b_only_mem * LIBXSMM_MAX(time_per_brgemm, (b_slice_size_in_gb) / bw_per_core));
       double time_brgemms_c_write = ((double)brgemms_per_thread * c_slice_size_in_gb / c_bw_per_core);
-      double time_brgemms_compute = ((double)brgemms_ab_l2 * LIBXSMM_MAX(time_write_c_tile, gflops_per_brgemm / compute_per_core));
+      double time_brgemms_compute = ((double)brgemms_ab_l2 * LIBXSMM_MAX(time_per_brgemm, gflops_per_brgemm / compute_per_core));
       double total_time_in_sec = time_brgemms_ab_mem + time_brgemms_a_only_mem + time_brgemms_b_only_mem + time_brgemms_c_write + time_brgemms_compute;
 
       if (calculate_reduction_time == 1) {
