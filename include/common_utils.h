@@ -28,6 +28,11 @@
 #include <dnn_common.h>
 #include <vector>
 
+/* LIBXSMM_ACCESS_RAW was renamed to LIBXSMM_ACCESS_RW in newer LIBXSMM */
+#if !defined(LIBXSMM_ACCESS_RAW) && defined(LIBXSMM_ACCESS_RW)
+# define LIBXSMM_ACCESS_RAW(NDIMS, TYPESIZE, ARRAY, ...) LIBXSMM_ACCESS_RW(NDIMS, TYPESIZE, ARRAY, __VA_ARGS__)
+#endif
+
 double ifreq;
 
 #ifdef __x86_64__

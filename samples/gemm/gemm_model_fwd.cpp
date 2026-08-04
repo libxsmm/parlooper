@@ -17,7 +17,7 @@
 libxsmm_meltwfunction_unary unary_kernel_quant;
 libxsmm_meltwfunction_unary unary_kernel_absmax;
 libxsmm_meqn_function dequant_func;
-int use_tpp_for_quant = 0;
+int use_tpp_for_quant = 1;
 
 LIBXSMM_INLINE
 unsigned char pack_2bit_encoding(char m0k0, char m1k0, char m2k0, char m3k0) {
@@ -48,6 +48,9 @@ unsigned char pack_2bit_encoding(char m0k0, char m1k0, char m2k0, char m3k0) {
   }
   return result;
 }
+
+/* Hand-written AVX-512 quant/dequant paths, disabled by default since the TPP/JIT paths cover them */
+#if defined(PARLOOPER_QUANT_AVX512)
 
 void quantize_K_dim(float *in_ptr, unsigned char *out_ptr, float *out_scales, int group_size_k, int i_n, long K, float scale) {
   int k_groups = K/group_size_k;
@@ -259,6 +262,35 @@ void quantize_bn_x_K_generic(float *in_ptr, unsigned char *out_ptr, float *out_s
   }
 }
 
+#else
+
+void quantize_bn_x_K_generic(float *in_ptr, unsigned char *out_ptr, float *out_scales, int group_size_k, int i_n, long bn, long K, float scale) {
+  int in = 0;
+  int k_groups = K/group_size_k;
+  int g = 0;
+  int ik = 0;
+  for (in = 0; in < bn; in++) {
+    for (g = 0; g < k_groups; g++) {
+      const float *cur_in = (const float*)in_ptr + (i_n * bn + in) * K + g * group_size_k;
+      char *cur_out = (char*)out_ptr + (i_n * bn + in) * K + g * group_size_k;
+      float max_val = 0.0f;
+      float d = 0.0f;
+      float id = 0.0f;
+      for (ik = 0; ik < group_size_k; ik++) {
+        max_val = LIBXSMM_MAX(max_val, LIBXSMM_ABS(cur_in[ik]));
+      }
+      d = max_val / 127;
+      id = (d != 0) ? (1.0f / d) : 0;
+      out_scales[(i_n * bn + in) * k_groups + g] = d * scale;
+      for (ik = 0; ik < group_size_k; ik++) {
+        cur_out[ik] = (char)LIBXSMM_ROUNDF(cur_in[ik] * id);
+      }
+    }
+  }
+}
+
+#endif
+
 void quantize_bn_x_K(float *in_ptr, unsigned char *out_ptr, float *out_scales, int group_size_k, int i_n, long bn, long K, float scale) {
   if (use_tpp_for_quant > 0) {
     libxsmm_meltw_unary_param unary_param;
@@ -286,6 +318,7 @@ void quantize_bn_x_K(float *in_ptr, unsigned char *out_ptr, float *out_scales, i
       }
     }
   } else {
+#if defined(PARLOOPER_QUANT_AVX512)
     if (bn == 64) {
       if (group_size_k == 64) {
         quantize_64_x_K_gs_64(in_ptr, out_ptr, out_scales, i_n, K, scale);
@@ -301,8 +334,13 @@ void quantize_bn_x_K(float *in_ptr, unsigned char *out_ptr, float *out_scales, i
     } else {
       quantize_bn_x_K_generic(in_ptr, out_ptr, out_scales, group_size_k, i_n, bn, K, scale); 
     }
+#else
+    quantize_bn_x_K_generic(in_ptr, out_ptr, out_scales, group_size_k, i_n, bn, K, scale);
+#endif
   }
 }
+
+#if defined(PARLOOPER_QUANT_AVX512)
 
 void dequantize_64_x_64(unsigned int *int32_acc_ptr, float *f32_acc_ptr,  unsigned short *wei_scales_ptr, float *inp_scales, long k_groups, long gid, long M) {
   const int bm = 64;
@@ -321,6 +359,22 @@ void dequantize_64_x_64(unsigned int *int32_acc_ptr, float *f32_acc_ptr,  unsign
   }
 }
 
+#else
+
+void dequantize_bm_x_bn_generic(unsigned int *int32_acc_ptr, float *f32_acc_ptr,  unsigned short *wei_scales_ptr, float *inp_scales, long k_groups, long gid, long M, long bm, long bn) {
+  long i_n = 0, i_m = 0;
+  for (i_n = 0; i_n < bn; i_n++) {
+    const float dx = inp_scales[i_n * k_groups + gid];
+    for (i_m = 0; i_m < bm; i_m++) {
+      float dw = 0.0f;
+      libxsmm_convert_f16_f32((const libxsmm_float16*)wei_scales_ptr + i_m, &dw, 1);
+      f32_acc_ptr[i_n * M + i_m] += dx * dw * (float)((int*)int32_acc_ptr)[i_n * bm + i_m];
+    }
+  }
+}
+
+#endif
+
 void dequantize_bm_x_bn(unsigned int *int32_acc_ptr, float *f32_acc_ptr,  unsigned short *wei_scales_ptr, float *inp_scales, long k_groups, long gid, long M, long bm, long bn) {
   if (use_tpp_for_quant > 0) {
     libxsmm_meqn_param eqn_param;
@@ -333,6 +387,7 @@ void dequantize_bm_x_bn(unsigned int *int32_acc_ptr, float *f32_acc_ptr,  unsign
     eqn_param.output.primary = f32_acc_ptr;
     dequant_func(&eqn_param);
   } else {
+#if defined(PARLOOPER_QUANT_AVX512)
     if (bm == 64 && bn == 64) {
       dequantize_64_x_64(int32_acc_ptr, f32_acc_ptr, wei_scales_ptr, inp_scales, k_groups, gid, M);
     } else {
@@ -349,6 +404,9 @@ void dequantize_bm_x_bn(unsigned int *int32_acc_ptr, float *f32_acc_ptr,  unsign
         }
       }
     }
+#else
+    dequantize_bm_x_bn_generic(int32_acc_ptr, f32_acc_ptr, wei_scales_ptr, inp_scales, k_groups, gid, M, bm, bn);
+#endif
   }
 }
 
